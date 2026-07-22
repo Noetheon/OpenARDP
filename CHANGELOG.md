@@ -53,6 +53,9 @@ semantic versioning once the public package lifecycle begins.
   verification has the same meaning on Linux, macOS and Windows.
 - Selected SQLite `DELETE` journaling with `synchronous=EXTRA` for the observed affected SQLite runtime instead of WAL,
   and made migration history/table drift a fail-closed compatibility error.
+- Hardened CAS publication after a macOS CI race: POSIX now publishes with a no-clobber hard link plus staging unlink
+  and Windows with no-clobber `os.rename`, so duplicate writers converge through verified reuse instead of
+  `os.replace`; racing readers classify the transient internal second link with a re-check before judging it unsafe.
 
 ### Removed
 

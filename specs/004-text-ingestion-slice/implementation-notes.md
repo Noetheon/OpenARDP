@@ -84,7 +84,8 @@ Observed on macOS with Python 3.12.13 and SQLite 3.50.4:
 - `uv run ruff check .`: passed;
 - `uv run ruff format --check .`: 59 files already formatted;
 - `uv run mypy src`: passed for 30 source files;
-- `uv run pytest`: 384 passed in 13.36 seconds with 87.32 percent branch-aware coverage and network disabled;
+- `uv run mypy src --platform win32`: passed for 30 source files (added after the first Windows CI mypy stop);
+- `uv run pytest`: 389 passed in 14.20 seconds with 87.20 percent branch-aware coverage and network disabled;
 - `uv run --locked pre-commit run --all-files`: all four authoritative hooks passed on the final converged tree;
 - `uv build`: built `openardp-0.0.1.tar.gz` and `openardp-0.0.1-py3-none-any.whl`;
 - two consecutive `uv run --locked python scripts/generate_schemas.py --check` runs reported all five public schemas
@@ -108,6 +109,22 @@ Tradeoffs and residual boundaries:
 - a failed cross-resource operation can leave only complete unreferenced CAS objects, which read-only reachability reports;
   automatic deletion remains out of scope;
 - search, rich-document parsing, cross-version reconciliation, watchers, MCP/HTTP and export remain F005+ work.
+
+## Post-PR CAS publication hardening
+
+The first pull request matrix stopped the macOS job inside the F003 concurrent duplicate-write test and exposed a real
+publication race: two legitimate writers of identical bytes could `os.replace` the same destination inode while a
+concurrent `verify` held it open, failing spuriously. Publication is now platform-split no-clobber: POSIX publishes with
+`os.link` plus staging unlink and Windows with no-clobber `os.rename`; losers converge through verified reuse. The POSIX
+transient second link (winner between link and unlink) is classified by a bounded settling re-check that requires an
+observable staged twin inode and re-reads the destination before judging the link count unsafe, closing the observed
+check-to-scan time-of-check/time-of-use gap. Verification itself still rejects any multi-link entry.
+
+Focused evidence: one deterministic paused-winner interleaving regression, four settling classification contracts,
+twenty consecutive concurrency repetitions before the re-check hardening reproduced the race once under parallel load
+and eighty full-file repetitions after it passed; the complete local gate then passed on the final tree (389 tests,
+87.20 percent coverage, native plus Windows-platform strict mypy). The F003 research Decision 2 amendment records the
+mechanism change.
 
 ## Spec Kit convergence evidence
 

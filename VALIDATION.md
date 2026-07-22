@@ -84,9 +84,9 @@ remain later bounded work packages.
 ## Feature 004 local evidence
 
 Feature `004-text-ingestion-slice` implements the bounded local TXT/Markdown workflow without adding search, chunking,
-embedding, rich formats or MCP. The locally observed complete gate on macOS/Python 3.12 passed 384 offline tests with
-87.32 percent branch-aware coverage against the enforced 85 percent threshold. Ruff, formatting and strict mypy also
-passed across the complete repository.
+embedding, rich formats or MCP. The locally observed complete gate on macOS/Python 3.12 passed 389 offline tests with
+87.20 percent branch-aware coverage against the enforced 85 percent threshold. Ruff, formatting and strict mypy
+(native and Windows platform) also passed across the complete repository.
 
 Focused evidence covers incremental strict UTF-8 and Markdown normalization, spawned-worker timeout/crash cleanup and
 socket denial, atomic workspace markers, no-follow regular source snapshots, source-race detection, checksummed catalog
@@ -95,6 +95,11 @@ hits, A → B → A head selection, full CAS/semantic integrity checks, progress
 human/JSON CLI commands through the installed entry point. Spec Kit convergence also closed an empty-blockquote edge case
 with a bounded warning. Original source bytes, size, modification time and mode remained unchanged on the tested paths;
 access time is intentionally not claimed.
+
+The first pull request matrix stopped macOS on a real F003 CAS publication race. Publication is now no-clobber on both
+platforms (POSIX hard link plus staging unlink, Windows `os.rename`) with a bounded settling re-check for the transient
+internal second link; eighty loaded repetitions of the store suite passed on the final tree. The feature 004 notes carry
+the mechanism and evidence details.
 
 Cross-platform PR-head, merge and post-merge evidence is not yet recorded here. F004 remains locally implemented rather
 than externally closed until its focused pull request passes Ubuntu, macOS and Windows and the final evidence commit is

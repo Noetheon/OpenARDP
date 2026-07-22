@@ -13,6 +13,12 @@ semantic versioning once the public package lifecycle begins.
 - Offline repository validator for local Markdown evidence and governance consistency.
 - Apache-2.0 license, contribution process, security policy and feature-local implementation evidence.
 - Private `Noetheon/OpenARDP` GitHub remote with a successful first Ubuntu/macOS/Windows workflow run.
+- Strict Pydantic v2 contracts for Document Manifest, Content Block, Derivation Record, Relation and Context Bundle.
+- Five deterministic JSON Schema Draft 2020-12 contracts, five synthetic record fixtures and reviewed compatibility and
+  invariant-layer documentation.
+- RFC 8785 canonical JSON, strict raw-JSON inspection and domain-separated SHA-256 identities with independent golden
+  vectors and fresh-process determinism coverage.
+- Accepted ADR 0006 governing canonicalization, identity projections and migration requirements.
 
 ### Changed
 
@@ -20,10 +26,12 @@ semantic versioning once the public package lifecycle begins.
 - Limited feature 001 to package metadata and architecture namespaces.
 - Pinned uv 0.11.31 and enabled its bounded centralized-project-environment preview after both 0.11.16 and 0.11.31 local
   `.venv` directories reproduced a macOS file-provider hidden-`.pth` failure.
+- Added constrained Pydantic 2.12 and rfc8785 0.1 runtime dependencies behind the pure domain boundary.
+- Replaced the provisional three-schema drafts with generated, byte-stable contracts for all five F002 roots.
 
 ### Removed
 
-- Premature hashing, chunking, domain-model and CLI scaffold behavior that belongs to later bounded features.
+- Premature chunking and CLI scaffold behavior that belongs to later bounded features.
 - Placeholder runtime dependencies and extras for Docling, MCP, watchers and other later work packages.
 
 ### Security
@@ -32,6 +40,8 @@ semantic versioning once the public package lifecycle begins.
 - CI uses read-only permissions, non-persistent checkout credentials and full-SHA Action pins.
 - Private-phase vulnerability reporting avoids public exploit details and requires GitHub private vulnerability reporting
   to be enabled before a public release.
+- Document-originated content is fixed to the `data` role with instruction execution disabled; validation errors redact
+  raw inputs, and unit/contract suites remain network-blocked.
 
 ## Blueprint history
 

@@ -1,0 +1,35 @@
+{
+  "spec_version": "0.1.0",
+  "document_id": "01890f62-24e8-7c00-8000-000000000001",
+  "version_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "representation_id": "sha256:9ad52b273500960935a4231ef09dc6f964293b1b605b53dded338105df759583",
+  "title": "Synthetic untrusted document",
+  "state": "READY",
+  "created_at": "2026-07-22T12:30:00Z",
+  "source": {
+    "connector": "synthetic_fixture",
+    "locator": "fixture://domain/source.txt",
+    "media_type": "text/plain",
+    "byte_length": 58,
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "modified_at": "2026-07-22T12:29:00Z",
+    "extensions": {
+      "example.org/source-label": "redistributable"
+    }
+  },
+  "parser": {
+    "name": "synthetic-parser",
+    "version": "1.0.0",
+    "profile": "default",
+    "config_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "extensions": {}
+  },
+  "schema_versions": {
+    "block": "0.1.0",
+    "derivation": "0.1.0",
+    "relation": "0.1.0"
+  },
+  "extensions": {
+    "example.org/reviewed": true
+  }
+}

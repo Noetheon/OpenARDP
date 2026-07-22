@@ -1,56 +1,137 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openardp.example/schema/manifest-0.1.0.json",
-  "title": "OpenARDP Manifest",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "spec_version",
-    "document_id",
-    "version_id",
-    "representation_id",
-    "source",
-    "state",
-    "created_at"
-  ],
-  "properties": {
-    "spec_version": {
-      "type": "string",
-      "pattern": "^0\\.1\\.[0-9]+$"
-    },
-    "document_id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "version_id": {
-      "type": "string",
-      "pattern": "^sha256:[0-9a-f]{64}$"
-    },
-    "representation_id": {
-      "type": "string",
-      "pattern": "^sha256:[0-9a-f]{64}$"
-    },
-    "title": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "state": {
+  "$defs": {
+    "JsonValue": {},
+    "ManifestState": {
+      "description": "Lifecycle state recorded for a document representation.",
       "enum": [
         "STAGING",
         "READY",
         "FAILED",
         "DELETED"
-      ]
+      ],
+      "title": "ManifestState",
+      "type": "string"
     },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "source": {
-      "type": "object",
+    "ParserDescriptor": {
       "additionalProperties": false,
+      "description": "Parser identity and configuration used for a representation.",
+      "properties": {
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "profile": {
+          "minLength": 1,
+          "title": "Profile",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "profile",
+        "config_hash"
+      ],
+      "title": "ParserDescriptor",
+      "type": "object"
+    },
+    "SchemaVersions": {
+      "additionalProperties": false,
+      "description": "Installed representation-record schema releases.",
+      "properties": {
+        "block": {
+          "const": "0.1.0",
+          "title": "Block",
+          "type": "string"
+        },
+        "derivation": {
+          "const": "0.1.0",
+          "title": "Derivation",
+          "type": "string"
+        },
+        "relation": {
+          "const": "0.1.0",
+          "title": "Relation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block",
+        "derivation",
+        "relation"
+      ],
+      "title": "SchemaVersions",
+      "type": "object"
+    },
+    "SourceDescriptor": {
+      "additionalProperties": false,
+      "description": "Immutable source facts carried by a manifest.",
+      "properties": {
+        "byte_length": {
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "connector": {
+          "minLength": 1,
+          "title": "Connector",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "locator": {
+          "minLength": 1,
+          "title": "Locator",
+          "type": "string"
+        },
+        "media_type": {
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "modified_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "pattern": "T.+(?:Z|\\+00:00)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Modified At"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
       "required": [
         "connector",
         "locator",
@@ -58,57 +139,86 @@
         "byte_length",
         "sha256"
       ],
-      "properties": {
-        "connector": {
-          "type": "string"
-        },
-        "locator": {
-          "type": "string"
-        },
-        "media_type": {
-          "type": "string"
-        },
-        "byte_length": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "modified_at": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "date-time"
-        }
-      }
+      "title": "SourceDescriptor",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/manifest-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One logical document's exact source and representation revision.",
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
     },
-    "parser": {
-      "type": "object",
-      "additionalProperties": true,
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "profile": {
-          "type": "string"
-        }
-      }
-    },
-    "schema_versions": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "string"
-      }
+    "document_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Document Id",
+      "type": "string"
     },
     "extensions": {
-      "type": "object",
-      "additionalProperties": true
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "parser": {
+      "$ref": "#/$defs/ParserDescriptor"
+    },
+    "representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Representation Id",
+      "type": "string"
+    },
+    "schema_versions": {
+      "$ref": "#/$defs/SchemaVersions"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceDescriptor"
+    },
+    "spec_version": {
+      "const": "0.1.0",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/ManifestState"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Version Id",
+      "type": "string"
     }
-  }
+  },
+  "required": [
+    "spec_version",
+    "document_id",
+    "version_id",
+    "representation_id",
+    "state",
+    "created_at",
+    "source",
+    "parser",
+    "schema_versions"
+  ],
+  "title": "OpenARDP Manifest",
+  "type": "object",
+  "x-openardp-schema-version": "0.1.0"
 }

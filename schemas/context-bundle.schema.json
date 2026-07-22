@@ -1,32 +1,91 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openardp.example/schema/context-bundle-0.1.0.json",
-  "title": "OpenARDP Context Bundle",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "bundle_id",
-    "created_at",
-    "query",
-    "budget",
-    "items",
-    "versions",
-    "warnings"
-  ],
-  "properties": {
-    "bundle_id": {
-      "type": "string",
-      "format": "uuid"
+  "$defs": {
+    "BudgetUnit": {
+      "description": "Unit used by a context budget estimator.",
+      "enum": [
+        "tokens",
+        "characters",
+        "bytes"
+      ],
+      "title": "BudgetUnit",
+      "type": "string"
     },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
+    "BundleNotice": {
+      "additionalProperties": false,
+      "description": "Stable warning code and human-readable bundle message.",
+      "properties": {
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "BundleNotice",
+      "type": "object"
     },
-    "query": {
-      "type": "string",
-      "minLength": 1
+    "ContextBudget": {
+      "additionalProperties": false,
+      "description": "Declared bound and observed estimator usage for a context bundle.",
+      "properties": {
+        "actual_used": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Used"
+        },
+        "estimated_used": {
+          "minimum": 0,
+          "title": "Estimated Used",
+          "type": "integer"
+        },
+        "estimator": {
+          "minLength": 1,
+          "title": "Estimator",
+          "type": "string"
+        },
+        "limit": {
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "unit": {
+          "$ref": "#/$defs/BudgetUnit"
+        }
+      },
+      "required": [
+        "unit",
+        "limit",
+        "estimated_used",
+        "estimator"
+      ],
+      "title": "ContextBudget",
+      "type": "object"
     },
-    "mode": {
+    "ContextMode": {
+      "description": "Evidence-selection intent recorded by a bundle.",
       "enum": [
         "summary",
         "exact",
@@ -34,113 +93,500 @@
         "visual",
         "verification",
         "mixed"
-      ]
-    },
-    "budget": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "unit",
-        "limit",
-        "estimated_used"
       ],
+      "title": "ContextMode",
+      "type": "string"
+    },
+    "DataTrustClassification": {
+      "additionalProperties": false,
+      "description": "Trust metadata for content that must remain non-authoritative data.",
       "properties": {
-        "unit": {
-          "enum": [
-            "tokens",
-            "characters",
-            "bytes"
-          ]
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
         },
-        "limit": {
-          "type": "integer",
-          "minimum": 1
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
         },
-        "estimated_used": {
-          "type": "integer",
-          "minimum": 0
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
         },
-        "estimator": {
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "zone": {
+          "$ref": "#/$defs/TrustZone"
+        }
+      },
+      "required": [
+        "zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "DataTrustClassification",
+      "type": "object"
+    },
+    "EvidenceItem": {
+      "additionalProperties": false,
+      "description": "One selected evidence representation and its trust boundary.",
+      "properties": {
+        "artifact_handle": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Handle"
+        },
+        "artifact_id": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/EvidenceProvenance"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "representation": {
+          "$ref": "#/$defs/EvidenceRepresentation"
+        },
+        "trust": {
+          "$ref": "#/$defs/DataTrustClassification"
+        }
+      },
+      "required": [
+        "provenance",
+        "representation",
+        "reason",
+        "trust"
+      ],
+      "title": "EvidenceItem",
+      "type": "object"
+    },
+    "EvidenceProvenance": {
+      "additionalProperties": false,
+      "description": "Exact source-backed provenance for one selected block.",
+      "properties": {
+        "block_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
           "type": "string"
         }
-      }
-    },
-    "versions": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^sha256:[0-9a-f]{64}$"
       },
-      "minItems": 1,
-      "uniqueItems": true
+      "required": [
+        "document_id",
+        "version_id",
+        "representation_id",
+        "block_id",
+        "source"
+      ],
+      "title": "EvidenceProvenance",
+      "type": "object"
+    },
+    "EvidenceRepresentation": {
+      "description": "Representation level included or reported missing in a bundle.",
+      "enum": [
+        "metadata",
+        "outline",
+        "summary",
+        "exact",
+        "structured",
+        "visual_handle",
+        "original_handle"
+      ],
+      "title": "EvidenceRepresentation",
+      "type": "string"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "MissingEvidence": {
+      "additionalProperties": false,
+      "description": "Evidence requirement that could not be satisfied honestly.",
+      "properties": {
+        "evidence_type": {
+          "$ref": "#/$defs/EvidenceRepresentation"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VersionScope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "evidence_type",
+        "reason"
+      ],
+      "title": "MissingEvidence",
+      "type": "object"
+    },
+    "SelectionDecision": {
+      "additionalProperties": false,
+      "description": "Auditable context-selection decision.",
+      "properties": {
+        "decision": {
+          "minLength": 1,
+          "title": "Decision",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "stage": {
+          "minLength": 1,
+          "title": "Stage",
+          "type": "string"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Id"
+        }
+      },
+      "required": [
+        "stage",
+        "decision",
+        "reason"
+      ],
+      "title": "SelectionDecision",
+      "type": "object"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "description": "Precise source location treated as data rather than access authority.",
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "extraction_method": {
+          "minLength": 1,
+          "title": "Extraction Method",
+          "type": "string"
+        },
+        "native_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Native Id"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "slide": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Slide"
+        }
+      },
+      "required": [
+        "extraction_method"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    },
+    "VersionScope": {
+      "additionalProperties": false,
+      "description": "One exact logical document, source and representation revision.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id",
+        "representation_id"
+      ],
+      "title": "VersionScope",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/context-bundle-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Immutable audit record of selected, version-pinned evidence.",
+  "properties": {
+    "budget": {
+      "$ref": "#/$defs/ContextBudget"
+    },
+    "bundle_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Bundle Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
     },
     "items": {
-      "type": "array",
+      "default": [],
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "block_id",
-          "representation",
-          "reason",
-          "trust"
-        ],
-        "properties": {
-          "block_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "representation": {
-            "enum": [
-              "metadata",
-              "outline",
-              "summary",
-              "exact",
-              "structured",
-              "visual_handle",
-              "original_handle"
-            ]
-          },
-          "content": {
-            "type": [
-              "string",
-              "object",
-              "array",
-              "null"
-            ]
-          },
-          "artifact_handle": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reason": {
-            "type": "string"
-          },
-          "source_locator": {
-            "type": [
-              "object",
-              "null"
-            ]
-          },
-          "trust": {
-            "type": "object"
-          }
-        }
-      }
+        "$ref": "#/$defs/EvidenceItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "missing_evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/MissingEvidence"
+      },
+      "title": "Missing Evidence",
+      "type": "array"
+    },
+    "mode": {
+      "$ref": "#/$defs/ContextMode"
+    },
+    "query": {
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
     },
     "selection_trace": {
-      "type": "array",
+      "default": [],
       "items": {
-        "type": "object"
-      }
+        "$ref": "#/$defs/SelectionDecision"
+      },
+      "title": "Selection Trace",
+      "type": "array"
+    },
+    "versions": {
+      "items": {
+        "$ref": "#/$defs/VersionScope"
+      },
+      "minItems": 1,
+      "title": "Versions",
+      "type": "array"
     },
     "warnings": {
-      "type": "array",
+      "default": [],
       "items": {
-        "type": "string"
-      }
+        "$ref": "#/$defs/BundleNotice"
+      },
+      "title": "Warnings",
+      "type": "array"
     }
-  }
+  },
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "created_at",
+    "query",
+    "mode",
+    "budget",
+    "versions"
+  ],
+  "title": "OpenARDP Context Bundle",
+  "type": "object",
+  "x-openardp-schema-version": "0.1.0"
 }

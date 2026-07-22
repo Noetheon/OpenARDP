@@ -1,7 +1,8 @@
 # Validation status
 
-This file separates locally observed evidence from externally observed automation. Feature-specific acceptance evidence is recorded in
-[implementation-notes.md](specs/001-repository-baseline/implementation-notes.md).
+This file separates locally observed evidence from externally observed automation. Feature-specific acceptance evidence
+is recorded in the [feature 001 notes](specs/001-repository-baseline/implementation-notes.md) and
+[feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -38,6 +39,18 @@ duplicated here.
 Final Spec Kit convergence checked 26 requirements and success criteria, 18 user-story acceptance cases, nine plan
 decisions, ten constitutional articles and all 34 completed tasks. It found zero missing, partial, contradictory or
 unrequested implementation gaps, so no convergence tasks were appended.
+
+## Feature 002 local evidence
+
+Feature `002-domain-models-schemas` adds only pure domain validation and deterministic identity behavior. Its acceptance
+evidence covers five root models, five Draft 2020-12 schemas, five synthetic golden records, an independent
+canonicalization-vector file, strict raw-JSON rejection and 20 fresh-process determinism executions. The executable
+contracts remain free of filesystem, database, parser, retrieval, provider and interface I/O.
+
+The final local repository gate passed 185 tests with 100 percent statement and branch coverage; two consecutive schema
+checks, Ruff, formatting, strict mypy, the offline locked suite, build and staged pre-commit checks also passed. Exact
+schema hashes and Spec Kit evidence are maintained in the feature implementation notes. External Linux/macOS/Windows
+evidence must still be green before this section is treated as closed.
 
 ## Corrective environment verification
 

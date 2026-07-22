@@ -84,11 +84,14 @@ def test_only_reviewed_agent_skills_are_tracked(repository_root: Path) -> None:
     assert all(ALLOWED_AGENT_PATH.fullmatch(path) for path in tracked)
 
 
-def test_project_metadata_has_no_runtime_dependency(repository_root: Path) -> None:
-    """Keep feature 001 installable without product or provider dependencies."""
+def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root: Path) -> None:
+    """Limit F002 runtime code to validation and canonicalization dependencies."""
     project = _project_configuration(repository_root)["project"]
     assert project["requires-python"] == ">=3.12,<3.13"
-    assert project.get("dependencies", []) == []
+    assert project.get("dependencies", []) == [
+        "pydantic>=2.12.5,<2.13",
+        "rfc8785>=0.1.4,<0.2",
+    ]
     assert project.get("optional-dependencies", {}) == {}
     assert project["license"] == "Apache-2.0"
 

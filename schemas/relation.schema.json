@@ -1,0 +1,358 @@
+{
+  "$defs": {
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "description": "Reference to a content-addressed or derivation-key artifact.",
+      "properties": {
+        "artifact_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "record_type": {
+          "const": "artifact",
+          "title": "Record Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "artifact_id"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "BlockReference": {
+      "additionalProperties": false,
+      "description": "Exact block reference including source and representation scope.",
+      "properties": {
+        "block_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "record_type": {
+          "const": "block",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "document_id",
+        "version_id",
+        "representation_id",
+        "block_id"
+      ],
+      "title": "BlockReference",
+      "type": "object"
+    },
+    "ComponentDescriptor": {
+      "additionalProperties": false,
+      "description": "Provider-neutral identity of a component that produced a record.",
+      "properties": {
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "ComponentDescriptor",
+      "type": "object"
+    },
+    "DocumentVersionReference": {
+      "additionalProperties": false,
+      "description": "Reference to one logical document's exact source bytes.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "record_type": {
+          "const": "document_version",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "document_id",
+        "version_id"
+      ],
+      "title": "DocumentVersionReference",
+      "type": "object"
+    },
+    "ExternalReference": {
+      "additionalProperties": false,
+      "description": "Namespaced opaque external entity reference with no fetch authority.",
+      "properties": {
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "namespace": {
+          "minLength": 1,
+          "title": "Namespace",
+          "type": "string"
+        },
+        "record_id": {
+          "minLength": 1,
+          "title": "Record Id",
+          "type": "string"
+        },
+        "record_type": {
+          "const": "external",
+          "title": "Record Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "namespace",
+        "record_id"
+      ],
+      "title": "ExternalReference",
+      "type": "object"
+    },
+    "GenerationProvenance": {
+      "additionalProperties": false,
+      "description": "Component and time that generated a derived or inferred record.",
+      "properties": {
+        "component": {
+          "$ref": "#/$defs/ComponentDescriptor"
+        },
+        "created_at": {
+          "format": "date-time",
+          "pattern": "T.+(?:Z|\\+00:00)$",
+          "title": "Created At",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "component",
+        "created_at"
+      ],
+      "title": "GenerationProvenance",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "RelationKind": {
+      "description": "Supported structural, provenance and semantic edge kinds.",
+      "enum": [
+        "contains",
+        "precedes",
+        "caption_of",
+        "source_for",
+        "derived_from",
+        "mentions",
+        "supersedes",
+        "same_logical_block_as"
+      ],
+      "title": "RelationKind",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/relation-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One typed directed edge with deterministic semantic identity.",
+  "properties": {
+    "algorithm_version": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Algorithm Version"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "extensions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "kind": {
+      "$ref": "#/$defs/RelationKind"
+    },
+    "provenance": {
+      "$ref": "#/$defs/GenerationProvenance"
+    },
+    "relation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Relation Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "discriminator": {
+        "mapping": {
+          "artifact": "#/$defs/ArtifactReference",
+          "block": "#/$defs/BlockReference",
+          "document_version": "#/$defs/DocumentVersionReference",
+          "external": "#/$defs/ExternalReference"
+        },
+        "propertyName": "record_type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BlockReference"
+        },
+        {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        {
+          "$ref": "#/$defs/DocumentVersionReference"
+        },
+        {
+          "$ref": "#/$defs/ExternalReference"
+        }
+      ],
+      "title": "Source"
+    },
+    "target": {
+      "discriminator": {
+        "mapping": {
+          "artifact": "#/$defs/ArtifactReference",
+          "block": "#/$defs/BlockReference",
+          "document_version": "#/$defs/DocumentVersionReference",
+          "external": "#/$defs/ExternalReference"
+        },
+        "propertyName": "record_type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BlockReference"
+        },
+        {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        {
+          "$ref": "#/$defs/DocumentVersionReference"
+        },
+        {
+          "$ref": "#/$defs/ExternalReference"
+        }
+      ],
+      "title": "Target"
+    }
+  },
+  "required": [
+    "schema_version",
+    "relation_id",
+    "kind",
+    "source",
+    "target",
+    "provenance"
+  ],
+  "title": "OpenARDP Relation",
+  "type": "object",
+  "x-openardp-schema-version": "0.1.0"
+}

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openardp.example/schema/context-bundle-0.1.0.json",
+  "title": "OpenARDP Context Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_id",
+    "created_at",
+    "query",
+    "budget",
+    "items",
+    "versions",
+    "warnings"
+  ],
+  "properties": {
+    "bundle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "summary",
+        "exact",
+        "numeric",
+        "visual",
+        "verification",
+        "mixed"
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "limit",
+        "estimated_used"
+      ],
+      "properties": {
+        "unit": {
+          "enum": [
+            "tokens",
+            "characters",
+            "bytes"
+          ]
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "estimated_used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimator": {
+          "type": "string"
+        }
+      }
+    },
+    "versions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^sha256:[0-9a-f]{64}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block_id",
+          "representation",
+          "reason",
+          "trust"
+        ],
+        "properties": {
+          "block_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "representation": {
+            "enum": [
+              "metadata",
+              "outline",
+              "summary",
+              "exact",
+              "structured",
+              "visual_handle",
+              "original_handle"
+            ]
+          },
+          "content": {
+            "type": [
+              "string",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "artifact_handle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source_locator": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "trust": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "selection_trace": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

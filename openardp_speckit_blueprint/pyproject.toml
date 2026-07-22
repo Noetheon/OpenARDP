@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openardp"
+version = "0.0.1"
+description = "Reference implementation for reusable, provenance-rich agent-ready document packages"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "Apache-2.0" }
+authors = [{ name = "OpenARDP contributors" }]
+dependencies = [
+  "pydantic>=2.11,<3",
+  "typer>=0.16,<1",
+  "platformdirs>=4.3,<5",
+]
+
+[project.optional-dependencies]
+docling = ["docling>=2.70,<3"]
+mcp = ["mcp>=1.27,<2"]
+watch = ["watchfiles>=1.1,<2"]
+dev = [
+  "mypy>=1.16,<2",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+  "jsonschema>=4.24,<5",
+]
+
+[project.scripts]
+openardp = "openardp.interfaces.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openardp"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["openardp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config -q"
+
+[tool.coverage.run]
+branch = true
+source = ["openardp"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85

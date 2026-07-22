@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openardp.example/schema/block-0.1.0.json",
+  "title": "OpenARDP Content Block",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "block_id",
+    "document_id",
+    "version_id",
+    "kind",
+    "order",
+    "canonical_hash",
+    "source",
+    "trust"
+  ],
+  "properties": {
+    "block_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "document_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "kind": {
+      "enum": [
+        "title",
+        "heading",
+        "paragraph",
+        "list",
+        "list_item",
+        "table",
+        "code",
+        "equation",
+        "picture",
+        "chart",
+        "note",
+        "page",
+        "slide",
+        "other"
+      ]
+    },
+    "order": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "structured": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ]
+    },
+    "asset_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "canonical_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "extraction_method"
+      ],
+      "properties": {
+        "extraction_method": {
+          "type": "string"
+        },
+        "native_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "slide": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "bbox": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zone",
+        "role",
+        "instruction_execution_allowed",
+        "integrity",
+        "sensitivity"
+      ],
+      "properties": {
+        "zone": {
+          "enum": [
+            "local_trusted",
+            "organization_trusted",
+            "external_untrusted",
+            "model_derived"
+          ]
+        },
+        "role": {
+          "enum": [
+            "data",
+            "metadata"
+          ]
+        },
+        "instruction_execution_allowed": {
+          "const": false
+        },
+        "integrity": {
+          "enum": [
+            "verified_sha256",
+            "unverified"
+          ]
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "anyOf": [
+        {
+          "required": [
+            "text"
+          ]
+        },
+        {
+          "required": [
+            "structured"
+          ]
+        },
+        {
+          "required": [
+            "asset_id"
+          ]
+        }
+      ]
+    }
+  ]
+}

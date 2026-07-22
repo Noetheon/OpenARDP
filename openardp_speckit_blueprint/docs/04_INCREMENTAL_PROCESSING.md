@@ -1,0 +1,97 @@
+# Incremental processing and cache invalidation
+
+## 1. Honest guarantee levels
+
+### Level 0 — identical-version reuse (MVP mandatory)
+
+If source SHA-256 and processing profile are already known, perform no parsing or enrichment.
+
+### Level 1 — block-level downstream reuse (MVP mandatory)
+
+A changed file may be parsed again, but unchanged normalized blocks reuse summaries, captions, embeddings and index entries.
+
+### Level 2 — format-aware parse optimization (post-MVP)
+
+- PPTX: hash slide XML, notes, relationships and referenced assets; reparse changed parts.
+- DOCX: hash package parts and use paragraph/table anchors; carefully account for styles, numbering, headers and fields.
+- XLSX: hash sheets/shared strings/styles/dependencies.
+- PDF: compare page-level extraction/render fingerprints after parsing; true incremental parsing is parser-dependent.
+
+## 2. Event pipeline
+
+```text
+file event
+→ debounce by path
+→ wait for stable size/mtime and successful shared/read lock
+→ stream SHA-256
+→ lookup version/profile
+→ skip OR enqueue ingestion
+→ parse in staging worker
+→ normalize
+→ reconcile blocks with prior version
+→ compute change set
+→ commit canonical version
+→ invalidate/reuse derived artifacts
+→ update indexes
+```
+
+## 3. Debounce and stable snapshot
+
+A Word save may create temporary files, rename files or emit several events. The watcher must:
+
+- ignore Office lock files such as `~$...`;
+- coalesce events for a configurable quiet period;
+- require two equal `(size, mtime)` observations;
+- open and hash a snapshot, not assume the event path remains stable;
+- retry sharing violations;
+- detect deletion separately.
+
+## 4. Block reconciliation
+
+Apply in order:
+
+1. native stable ID match;
+2. exact canonical content hash in same structural neighborhood;
+3. table/asset identity match;
+4. structural path and normalized-text similarity;
+5. sequence alignment for remaining siblings;
+6. new identity if confidence is insufficient.
+
+Persist `same_logical_block_as` with confidence and algorithm version. Do not automatically transfer derived artifacts
+across a low-confidence match.
+
+## 5. Dependency invalidation
+
+Each derivation records direct input artifact hashes. A derivation is current only when:
+
+- every dependency is available;
+- dependency hashes match;
+- generator/profile versions match;
+- security/policy profile permits reuse;
+- it has not been explicitly revoked.
+
+Parent summaries depend on child block hashes or child summary artifacts. A table edit therefore invalidates the table
+summary and ancestors, but not unrelated images.
+
+## 6. Queue semantics
+
+- at-least-once delivery;
+- idempotent jobs;
+- deterministic deduplication key;
+- bounded retries;
+- dead-letter state with actionable error details;
+- cancellation when a newer source version supersedes an unstarted job.
+
+## 7. Microsoft 365 synchronization
+
+Enterprise connector design:
+
+1. Graph change notification wakes the connector.
+2. Connector executes the saved Drive delta link.
+3. Delta results update the local source catalog.
+4. Content is fetched only for relevant changed items.
+5. New delta link is persisted atomically.
+6. Lifecycle events renew or reauthorize subscriptions.
+7. Periodic reconciliation protects against missed notifications.
+
+Notifications are not treated as a complete event log.

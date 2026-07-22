@@ -145,4 +145,18 @@ requires the focused PR-head, post-merge `main` and final evidence-commit matric
 
 ## External validation evidence
 
-Pending pull request, merge and post-merge cross-platform CI.
+- Pull request: [#4](https://github.com/Noetheon/OpenARDP/pull/4)
+- Final PR-head workflow: [29961130435](https://github.com/Noetheon/OpenARDP/actions/runs/29961130435)
+- Linux: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29961130435/job/89062149886) — passed in 49 seconds
+- macOS: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29961130435/job/89062149864) — passed in 40 seconds
+- Windows: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29961130435/job/89062149796) — passed in 1 minute 43 seconds
+- Squash merge: [`e30b293f51fb57e250351dd39f35763af820449e`](https://github.com/Noetheon/OpenARDP/commit/e30b293f51fb57e250351dd39f35763af820449e)
+- Post-merge `main` workflow: [29961311398](https://github.com/Noetheon/OpenARDP/actions/runs/29961311398)
+  - [Ubuntu](https://github.com/Noetheon/OpenARDP/actions/runs/29961311398/job/89062716026) — passed in 50 seconds
+  - [macOS](https://github.com/Noetheon/OpenARDP/actions/runs/29961311398/job/89062715965) — passed in 52 seconds
+  - [Windows](https://github.com/Noetheon/OpenARDP/actions/runs/29961311398/job/89062715994) — passed in 1 minute 40 seconds
+
+The superseded PR-head workflow [29960461367](https://github.com/Noetheon/OpenARDP/actions/runs/29960461367) remains part
+of the audit trail: its Windows job exposed the directory-entry identity gap fixed in `cee0fdc`, and the first matrix
+exposed the macOS publication race fixed in `ee06912`. F004 is complete: local convergence, final PR-head cross-platform
+CI, squash merge and post-merge `main` CI are all recorded and green.

@@ -101,9 +101,22 @@ platforms (POSIX hard link plus staging unlink, Windows `os.rename`) with a boun
 internal second link; eighty loaded repetitions of the store suite passed on the final tree. The feature 004 notes carry
 the mechanism and evidence details.
 
-Cross-platform PR-head, merge and post-merge evidence is not yet recorded here. F004 remains locally implemented rather
-than externally closed until its focused pull request passes Ubuntu, macOS and Windows and the final evidence commit is
-green on `main`.
+Cross-platform PR-head, merge and post-merge evidence is recorded in the closure section below and in the feature 004
+notes.
+
+## Feature 004 external verification completed
+
+[Pull request #4](https://github.com/Noetheon/OpenARDP/pull/4) merged F004 as commit
+[`e30b293f51fb57e250351dd39f35763af820449e`](https://github.com/Noetheon/OpenARDP/commit/e30b293f51fb57e250351dd39f35763af820449e).
+The final PR-head workflow [29961130435](https://github.com/Noetheon/OpenARDP/actions/runs/29961130435) and the
+post-merge `main` workflow [29961311398](https://github.com/Noetheon/OpenARDP/actions/runs/29961311398) both completed
+successfully on Ubuntu, macOS and Windows. They repeated the locked environment setup, Ruff, formatting, strict mypy,
+the 389-test network-blocked suite, distribution builds and tracked-file drift verification.
+
+The superseded PR-head run [29960461367](https://github.com/Noetheon/OpenARDP/actions/runs/29960461367) remains
+intentionally visible: it exposed that Windows `DirEntry.stat` caches directory data without a file index, so the
+staged-twin scan now requests complete identities explicitly, and both later Windows jobs passed. This closes the
+cross-platform execution and final Spec Kit convergence boundary for feature 004.
 
 ## Corrective environment verification
 

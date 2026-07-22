@@ -47,7 +47,7 @@ evidence covers five root models, five Draft 2020-12 schemas, five synthetic gol
 canonicalization-vector file, strict raw-JSON rejection and 20 fresh-process determinism executions. The executable
 contracts remain free of filesystem, database, parser, retrieval, provider and interface I/O.
 
-The final local repository gate passed 185 tests with 100 percent statement and branch coverage; two consecutive schema
+The final local repository gate passed 186 tests with 100 percent statement and branch coverage; two consecutive schema
 checks, Ruff, formatting, strict mypy, the offline locked suite, build and staged pre-commit checks also passed. Exact
 schema hashes and Spec Kit evidence are maintained in the feature implementation notes. External Linux/macOS/Windows
 evidence must still be green before this section is treated as closed.

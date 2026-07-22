@@ -68,11 +68,11 @@ Observed on macOS with CPython 3.12.13 and uv 0.11.31:
 | `uv run ruff check .` | Passed |
 | `uv run ruff format --check .` | Passed; 25 files already formatted |
 | `uv run mypy src` | Passed; 13 source files, zero issues |
-| `uv run pytest` | Passed; 185 tests, 100 percent statement and branch coverage |
+| `uv run pytest` | Passed; 186 tests, 100 percent statement and branch coverage |
 | `uv run --locked pre-commit run --all-files` | Passed all four hooks, including the final staged-file rerun |
 | `uv build` | Built wheel and source distribution successfully |
 | `git diff --check` | Passed |
-| `UV_OFFLINE=true uv run --locked pytest` | Passed; 185 tests, 100 percent statement and branch coverage |
+| `UV_OFFLINE=true uv run --locked pytest` | Passed; 186 tests, 100 percent statement and branch coverage |
 
 The recurring workspace file-provider warning about replacing the `.venv` discovery link remains non-fatal; uv resolves the configured centralized environment and every command above exits successfully.
 
@@ -83,13 +83,13 @@ The recurring workspace file-provider warning about replacing the `.venv` discov
 - SHA-256 content identity proves integrity/equality under the documented projection, not authorship, authorization or trust.
 - Three-platform portability is not claimed from local evidence; the publication fields below must be populated from the actual pull-request and post-merge workflow runs.
 
-The first PR matrix exposed a Windows-only portability defect before merge: Git's default CRLF checkout changed reviewed schema bytes, and one Unicode fixture read relied on the host locale. T052 fixes the root cause with explicit LF attributes and UTF-8 decoding, backed by a repository contract. The failed run remains part of the audit trail; only a subsequent all-green matrix can close T048.
+The [first PR matrix](https://github.com/Noetheon/OpenARDP/actions/runs/29931948083) exposed a Windows-only portability defect before merge: Git's default CRLF checkout changed reviewed schema bytes, and one Unicode fixture read relied on the host locale. T052 fixes the root cause with explicit LF attributes and UTF-8 decoding, backed by a repository contract. The failed run remains part of the audit trail; the subsequent matrix passed on all three operating systems.
 
 ### Publication evidence fields
 
-- Pull request: pending publication after local convergence
-- Pull-request matrix run: pending publication after local convergence
-- Linux job: pending publication after local convergence
-- macOS job: pending publication after local convergence
-- Windows job: pending publication after local convergence
+- Pull request: [#2](https://github.com/Noetheon/OpenARDP/pull/2)
+- Pull-request matrix run: [29932152848](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848)
+- Linux job: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964385078) — passed in 27 seconds
+- macOS job: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964384956) — passed in 25 seconds
+- Windows job: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964385203) — passed in 1 minute 8 seconds
 - Post-merge `main` run: pending merge

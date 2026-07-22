@@ -118,7 +118,8 @@ concurrent `verify` held it open, failing spuriously. Publication is now platfor
 `os.link` plus staging unlink and Windows with no-clobber `os.rename`; losers converge through verified reuse. The POSIX
 transient second link (winner between link and unlink) is classified by a bounded settling re-check that requires an
 observable staged twin inode and re-reads the destination before judging the link count unsafe, closing the observed
-check-to-scan time-of-check/time-of-use gap. Verification itself still rejects any multi-link entry.
+check-to-scan time-of-check/time-of-use gap. The twin scan reads complete identities explicitly because Windows
+`DirEntry.stat` caches directory data without a file index. Verification itself still rejects any multi-link entry.
 
 Focused evidence: one deterministic paused-winner interleaving regression, four settling classification contracts,
 twenty consecutive concurrency repetitions before the re-check hardening reproduced the race once under parallel load

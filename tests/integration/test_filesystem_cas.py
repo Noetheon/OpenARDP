@@ -25,6 +25,13 @@ def _object_path(root: Path, object_id: str) -> Path:
     return root / "objects" / "sha256" / digest[:2] / digest[2:4] / digest[4:]
 
 
+def _hard_link_or_skip(source: Path, link_name: Path) -> None:
+    try:
+        os.link(source, link_name)
+    except OSError as error:
+        pytest.skip(f"hard link creation unavailable: {error}")
+
+
 def _put_in_spawned_process(arguments: tuple[str, bytes]) -> tuple[str, int]:
     root, payload = arguments
     result = FilesystemObjectStore(Path(root)).put_chunks((payload,))
@@ -148,7 +155,7 @@ def test_settling_check_recognizes_internal_publication_twin(tmp_path: Path) -> 
     result = store.put_chunks((b"settling twin",))
     destination = _object_path(tmp_path, result.object_id)
     twin = tmp_path / "staging" / "object-synthetic.part"
-    os.link(destination, twin)
+    _hard_link_or_skip(destination, twin)
     try:
         assert destination.stat().st_nlink == 2
         with pytest.raises(UnsafeStoreEntry, match="hard-linked"):
@@ -168,7 +175,7 @@ def test_settling_check_rejects_external_hard_link(tmp_path: Path) -> None:
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     external = elsewhere / "object-hardlink"
-    os.link(destination, external)
+    _hard_link_or_skip(destination, external)
     try:
         assert destination.stat().st_nlink == 2
         assert store._publication_link_is_settling(destination) is False
@@ -185,7 +192,7 @@ def test_settling_check_requires_an_observable_twin(
     result = store.put_chunks((b"hidden twin",))
     destination = _object_path(tmp_path, result.object_id)
     twin = tmp_path / "staging" / "object-hidden.part"
-    os.link(destination, twin)
+    _hard_link_or_skip(destination, twin)
     monkeypatch.setattr(store, "_staging_twin_exists", lambda _: False)
     try:
         assert store._publication_link_is_settling(destination) is False

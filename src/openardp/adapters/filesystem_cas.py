@@ -346,7 +346,9 @@ class FilesystemObjectStore:
             with os.scandir(self._staging) as entries:
                 for entry in entries:
                     try:
-                        entry_metadata = entry.stat(follow_symlinks=False)
+                        # DirEntry.stat caches Windows directory data without a file
+                        # index, so request the complete identity from the OS.
+                        entry_metadata = os.stat(entry.path, follow_symlinks=False)
                     except OSError:
                         continue
                     if stat.S_ISREG(entry_metadata.st_mode) and self._file_identity(

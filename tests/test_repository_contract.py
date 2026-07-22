@@ -124,6 +124,22 @@ def test_ignore_rules_cover_local_state(repository_root: Path) -> None:
     assert required <= set(patterns)
 
 
+def test_text_contracts_use_cross_platform_lf_checkouts(repository_root: Path) -> None:
+    """Keep byte-reviewed schemas and UTF-8 sources stable on Windows checkouts."""
+    attributes = (repository_root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    required = {
+        "*.json text eol=lf",
+        "*.lock text eol=lf",
+        "*.md text eol=lf",
+        "*.py text eol=lf",
+        "*.toml text eol=lf",
+        "*.txt text eol=lf",
+        "*.yaml text eol=lf",
+        "*.yml text eol=lf",
+    }
+    assert required <= set(attributes)
+
+
 def test_pytest_enforces_coverage_and_no_network(repository_root: Path) -> None:
     """Keep coverage and network policy inside the authoritative pytest command."""
     config = _project_configuration(repository_root)

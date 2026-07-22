@@ -3,7 +3,7 @@ Generated for feature 002 convergence on 2026-07-22.
 
 Scope
 -----
-This inventory describes the 152 version-controlled files expected after the
+This inventory describes the 153 version-controlled files expected after the
 domain-contract change is staged. Ignored environments, caches, build
 artifacts, coverage output and operating-system metadata are excluded.
 
@@ -14,7 +14,7 @@ Area                          Files
 .specify                         21
 docs                             21
 prompts                           1
-repository root                 16
+repository root                 17
 schemas                           6
 scripts                           6
 spec-kit                         21
@@ -22,7 +22,7 @@ specs                            21
 src/openardp                     14
 tests                            14
 ----------------------------  -----
-Total                           152
+Total                           153
 
 Reproduce
 ---------
@@ -36,6 +36,8 @@ Boundary notes
 - `.agents/` contains only the ten reviewed Spec Kit `SKILL.md` files.
 - `.specify/` contains the reviewed Spec Kit execution layer and active-feature
   locator; it contains no credentials or local agent sessions.
+- `.gitattributes` fixes reviewed text contracts to LF so byte-level schema
+  verification is identical on Linux, macOS and Windows checkouts.
 - `src/openardp/domain/` contains only the reviewed F002 pure record,
   validation and canonical-identity modules. Ports, adapters, services and
   interfaces remain empty.

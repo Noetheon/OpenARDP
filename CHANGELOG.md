@@ -28,6 +28,8 @@ semantic versioning once the public package lifecycle begins.
   `.venv` directories reproduced a macOS file-provider hidden-`.pth` failure.
 - Added constrained Pydantic 2.12 and rfc8785 0.1 runtime dependencies behind the pure domain boundary.
 - Replaced the provisional three-schema drafts with generated, byte-stable contracts for all five F002 roots.
+- Fixed repository text contracts to LF and made canonicalization fixture decoding explicitly UTF-8 so byte-level
+  verification has the same meaning on Linux, macOS and Windows.
 
 ### Removed
 

@@ -32,7 +32,7 @@ FIXTURE_PATH = Path(__file__).parents[1] / "fixtures" / "domain" / "canonicaliza
 
 def _vectors() -> dict[str, object]:
     """Load reviewed independent canonicalization and identity vectors."""
-    return json.loads(FIXTURE_PATH.read_text())
+    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
 
 
 def test_basic_canonical_json_is_order_independent() -> None:

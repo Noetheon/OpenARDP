@@ -135,6 +135,7 @@
 - [X] T049 [US2] Exclude endpoint `extensions` from the version-1 relation projection, reject undeclared endpoint fields and add regression vectors in `src/openardp/domain/identity.py`, `tests/domain/test_identity.py` and `tests/fixtures/domain/canonicalization-vectors.json`
 - [X] T050 [US1] Complete explicit invariant-branch coverage for locators, blocks, derivation lifecycle states, every relation reference variant and context consistency rules in `tests/domain/test_common.py` and `tests/domain/test_models.py`
 - [X] T051 [US1] Introduce a schema-visible data-only trust subtype for content-bearing records and prove schema/model agreement in `src/openardp/domain/common.py`, the root models and `tests/contract/test_domain_schemas.py`
+- [X] T052 [US3] Enforce LF checkouts for reviewed text contracts, decode Unicode vectors explicitly as UTF-8 and add a repository regression contract in `.gitattributes`, `tests/domain/test_identity.py` and `tests/test_repository_contract.py`
 
 ---
 

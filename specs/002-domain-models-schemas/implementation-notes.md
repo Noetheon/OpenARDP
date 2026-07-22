@@ -83,6 +83,8 @@ The recurring workspace file-provider warning about replacing the `.venv` discov
 - SHA-256 content identity proves integrity/equality under the documented projection, not authorship, authorization or trust.
 - Three-platform portability is not claimed from local evidence; the publication fields below must be populated from the actual pull-request and post-merge workflow runs.
 
+The first PR matrix exposed a Windows-only portability defect before merge: Git's default CRLF checkout changed reviewed schema bytes, and one Unicode fixture read relied on the host locale. T052 fixes the root cause with explicit LF attributes and UTF-8 decoding, backed by a repository contract. The failed run remains part of the audit trail; only a subsequent all-green matrix can close T048.
+
 ### Publication evidence fields
 
 - Pull request: pending publication after local convergence

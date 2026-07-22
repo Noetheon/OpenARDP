@@ -201,9 +201,10 @@ OpenARDP behaviors are absent.
   product behavior is outside this feature.
 - External link reachability and the correctness of external publications are not evaluated by offline documentation
   checks; only repository-local targets and explicitly required files are baseline contracts.
-- The repository currently has no GitHub remote. The security policy can define the required private-first channel and CI
-  contract locally, but real Security Advisory availability and Linux/Windows workflow runs remain pre-publication
-  operational checks rather than claims of already observed external execution.
+- The repository is hosted privately at `Noetheon/OpenARDP`. GitHub Actions run `29926478593` observed the complete
+  Ubuntu, macOS and Windows matrix successfully. GitHub's repository security-advisory and private-vulnerability-reporting
+  interfaces apply to public repositories, so the private phase retains the metadata-only fallback in `SECURITY.md` and
+  requires that channel to be enabled before public release.
 - Initial dependency installation can require package-index access, but test execution and repository validation do not
   perform application or model network calls.
 - Feature artifacts are located through `.specify/feature.json`; no feature-branch hook is configured, so this first

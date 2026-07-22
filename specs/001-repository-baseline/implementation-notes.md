@@ -9,8 +9,7 @@
 ## Acceptance criteria reconciliation
 
 This matrix restates the active work-package contract, as required by `AGENTS.md`, and ties each outcome to observed or
-inspectable evidence. A contract pass is distinguished from external runner evidence that cannot exist before a GitHub
-remote exists.
+inspectable evidence. Local contract checks and externally observed runner evidence remain distinguished explicitly.
 
 | ID | Acceptance criterion | Evidence | Status |
 |---|---|---|---|
@@ -32,7 +31,7 @@ remote exists.
 | FR-016 | Ignore rules cover environments, caches, coverage, OS state and secrets. | `.gitignore` contract test | Pass |
 | FR-017 | Decisions, commands, results, trade-offs and risks are recorded here. | This implementation record | Pass |
 | FR-018 | Baseline adds no runtime dependency, provider or future abstraction. | Empty runtime dependency set and source-boundary tests | Pass |
-| SC-001 | A clean checkout is reproducible on Linux, macOS and Windows. | Clean/repeated macOS run passed; least-privilege matrix is declared | Contract pass; Linux/Windows execution pending remote |
+| SC-001 | A clean checkout is reproducible on Linux, macOS and Windows. | GitHub Actions run `29926478593`: Ubuntu, macOS and Windows jobs passed every workflow step | Pass |
 | SC-002 | A repeated locked sync/gate run creates no unintended tracked change. | Repeated sync and staged-diff comparison | Pass locally |
 | SC-003 | Representative lint/format/type/test/coverage/network faults are rejected. | Seven disposable probes | Pass |
 | SC-004 | CI has zero write permission, persisted credentials and mutable actions. | Static workflow and immutable-reference tests | Pass |
@@ -87,6 +86,7 @@ the intended feature change is staged.
 | `git ls-remote` for both reviewed action tags | Pass; both configured 40-character revisions matched their annotated release tags |
 | `git diff --cached --check` | Pass; zero whitespace errors |
 | Spec Kit convergence | Pass; 26 requirements/criteria, 18 acceptance cases, nine plan decisions, ten constitutional articles and 34 tasks checked with zero findings |
+| `gh run watch 29926478593 --exit-status` | Pass; Ubuntu in 15 seconds, macOS in 18 seconds and Windows in 41 seconds |
 
 The built wheel contained `openardp/__init__.py`, all five namespace packages and `py.typed`; its isolated Python 3.12
 import reported version `0.0.1` and exposed no console entry point.
@@ -112,8 +112,9 @@ governance artifacts brought that slice to green before later stories proceeded.
 
 ## Trade-offs and remaining risks
 
-- There is no GitHub remote. Linux/Windows job execution and private GitHub Security Advisory availability remain
-  unobserved pre-publication checks; workflow policy tests are not presented as runtime evidence.
+- The repository is private at `Noetheon/OpenARDP`, and the first full three-platform workflow run passed. GitHub limits
+  repository security advisories and private vulnerability reporting to public repositories; `SECURITY.md` therefore
+  keeps a no-details fallback for the private phase and requires enabling the structured channel before public release.
 - Exact uv and full-SHA action pins trade automatic updates for reviewable reproducibility. They require deliberate,
   tested maintenance when upgraded.
 - The centralized project-environment capability is a uv preview bounded by the exact tool pin. On this workspace, the

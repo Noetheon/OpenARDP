@@ -9,12 +9,16 @@ are implemented and released.
 
 ## Report a vulnerability privately
 
-Use the repository's **GitHub Security Advisory → Report a vulnerability** form when a public remote is available. This is
-the required private-first channel; do not open a public issue with exploit details.
+OpenARDP is currently a private GitHub repository. GitHub exposes repository security advisories and private vulnerability
+reporting for public repositories, so a **Report a vulnerability** form is not available during this private phase.
 
-This local repository currently has no GitHub remote. Until a private advisory channel is configured, contact the
-repository owner through an already established private channel and first request a secure reporting route without
-sending vulnerability details. External publication is blocked until that route exists.
+If you already have a private channel to the repository owner, use it first and request a secure reporting route without
+sending vulnerability details in the initial message. If no private channel exists, open a metadata-only repository issue
+that says only that you need a private security contact. Do not include affected components, exploit details, logs,
+attachments or impact claims in that issue. Move the substantive report to the private route supplied by the owner.
+
+Before any public release, the owner must enable GitHub private vulnerability reporting and replace this fallback with the
+repository's **Security → Advisories → Report a vulnerability** form. Never open a public issue containing exploit details.
 
 Never include real confidential documents, production credentials or unnecessary personal data in a report. Use a minimal
 synthetic reproducer wherever possible.

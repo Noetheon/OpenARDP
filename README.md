@@ -15,6 +15,7 @@ The repository is implementing the roadmap one bounded GitHub Spec Kit feature a
 - installable package metadata and empty architecture namespaces;
 - Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege cross-platform CI configuration;
+- observed green Ubuntu, macOS and Windows GitHub Actions execution;
 - offline Markdown/governance validation;
 - license, contribution, security and validation evidence.
 

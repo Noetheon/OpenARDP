@@ -1,7 +1,6 @@
 # Validation status
 
-This file separates locally observed evidence from automation that can be observed only after the repository has a
-GitHub remote. Feature-specific acceptance evidence is recorded in
+This file separates locally observed evidence from externally observed automation. Feature-specific acceptance evidence is recorded in
 [implementation-notes.md](specs/001-repository-baseline/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
@@ -66,15 +65,27 @@ Disposable probes confirmed that the baseline rejects:
 
 All disposable probe files were outside the repository or removed after the check.
 
-## External verification still required
+## External verification completed
 
-The repository has no configured GitHub remote. Therefore this local result does not claim that GitHub-hosted Linux or
-Windows jobs have executed, nor that a private GitHub Security Advisory channel is currently available. The committed
-workflow statically declares the Linux/macOS/Windows matrix and its least-privilege contract; actual matrix evidence and
-Security Advisory availability remain pre-publication operational checks.
+The repository is hosted privately at [Noetheon/OpenARDP](https://github.com/Noetheon/OpenARDP). GitHub Actions run
+[`29926478593`](https://github.com/Noetheon/OpenARDP/actions/runs/29926478593) executed against commit
+`4126188aa2289803e6e464f8d262bc4558381ab3` and completed successfully on all declared runners:
 
-PowerShell bootstrap parser execution was not repeated locally because `pwsh` is not installed. The script remains part
-of the preserved bootstrap package; feature 001 does not modify its behavior.
+- Ubuntu: every locked-sync, quality, test, build and no-diff step passed in 15 seconds;
+- macOS: every step passed in 18 seconds;
+- Windows: every step passed in 41 seconds.
+
+This closes the cross-platform execution boundary for feature 001. The local `main`, `origin/main` and workflow head SHA
+were verified as identical before the evidence update.
+
+GitHub documents repository security advisories and private vulnerability reporting for public repositories. Because
+OpenARDP remains private, `SECURITY.md` provides a metadata-only fallback that never asks a reporter to disclose exploit
+details publicly. The structured GitHub channel must be enabled when the repository becomes public.
+
+## Remaining release-governance checks
+
+PowerShell bootstrap parser execution was not repeated locally because `pwsh` is not installed. The Windows feature-001
+workflow passed, but it does not invoke the preserved bootstrap script; feature 001 does not modify that script's behavior.
 
 Ownership, employer-IP, public-name and trademark clearance also remain release-governance requirements. None of the
 local engineering gates is evidence that the product is production-ready; document ingestion and every product security

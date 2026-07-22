@@ -85,7 +85,7 @@ def test_only_reviewed_agent_skills_are_tracked(repository_root: Path) -> None:
 
 
 def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root: Path) -> None:
-    """Limit F002 runtime code to validation and canonicalization dependencies."""
+    """Keep F003 persistence on the standard library plus reviewed F002 dependencies."""
     project = _project_configuration(repository_root)["project"]
     assert project["requires-python"] == ">=3.12,<3.13"
     assert project.get("dependencies", []) == [

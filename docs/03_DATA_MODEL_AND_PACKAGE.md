@@ -104,6 +104,21 @@ OCR may be necessary to expose scanned content, but it remains a derived asserti
 
 ## 5. Core entities
 
+### Runtime persistence records (F003)
+
+- `StoredObject`: canonical `sha256:<lowercase-hex>` identity plus verified byte length. Exact bytes remain in the CAS.
+- `SourceKey`: exact binary-collated `(connector, opaque locator)` key; the locator is metadata, never a filesystem path.
+- `LogicalDocument`: stable UUIDv7 assigned on first registration and reused across source versions.
+- `DocumentVersion`: immutable source-version fact whose `version_id` equals its source object's identity, plus typed,
+  ordered object references carrying verified byte lengths.
+- `Job` and `JobEvent`: durable queued/running/terminal projection, bounded attempts, revision fencing, lease ownership and
+  sanitized append-only transition evidence. Raw lease tokens are capabilities and are not records.
+- `ReferenceSnapshot` and `ReachabilityReport`: deterministic read-only views of all historical version/job roots,
+  verified objects, complete candidates and integrity/layout inconsistencies.
+
+These runtime records are internal Python/catalog contracts. They do not change the F002 public JSON Schema release and
+do not claim that a parser representation or portable package exists.
+
 ### Document manifest
 
 See `schemas/manifest.schema.json`.
@@ -186,6 +201,10 @@ later services. See [`schemas/README.md`](../schemas/README.md) for the complete
 
 `integrity.json` lists every packaged file path, byte length and SHA-256. Portable import verifies all records before making
 them available. Optional signatures/attestations are post-MVP.
+
+At runtime, F003 applies the same original-first principle before portable packaging exists: SHA-256 is computed over
+exact streamed bytes, canonical leaves are immutable, catalog object lengths cannot drift and every reachability inventory
+rehashes complete files. Derived data remains disposable; no F003 record authorizes content to execute tools.
 
 ## 9. Alignment strategy
 

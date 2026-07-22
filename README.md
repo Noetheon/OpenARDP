@@ -8,9 +8,9 @@ representation, and let agents retrieve the smallest sufficient evidence instead
 
 ## Current status
 
-The repository implements the roadmap one bounded GitHub Spec Kit feature at a time. Feature
-`001-repository-baseline` established the reproducible engineering foundation, and
-`002-domain-models-schemas` adds the first production domain contracts:
+The repository implements the roadmap one bounded GitHub Spec Kit feature at a time. Features
+`001-repository-baseline` and `002-domain-models-schemas` established the reproducible foundation and public domain
+contracts. Feature `003-cas-sqlite-catalog` adds the first local persistence slice:
 
 - Python 3.12 and uv with a committed lock;
 - installable package metadata and empty architecture namespaces;
@@ -22,11 +22,15 @@ The repository implements the roadmap one bounded GitHub Spec Kit feature at a t
 - strict, frozen Pydantic v2 models for Manifest, Block, Derivation, Relation and Context Bundle;
 - five reviewed JSON Schema Draft 2020-12 contracts with synthetic golden fixtures;
 - strict raw-JSON validation, RFC 8785 canonical bytes and versioned SHA-256 identity projections;
-- deterministic schema regeneration and drift checks.
+- deterministic schema regeneration and drift checks;
+- an immutable streaming filesystem CAS with atomic same-filesystem publication and full integrity verification;
+- a checksummed, transactionally migrated SQLite catalog for exact source keys, source-version facts and fenced jobs;
+- provider-neutral object-store/catalog ports plus persistence and read-only reachability services;
+- deterministic crash, concurrency, path-safety, migration, restart and reclamation-candidate tests.
 
-There is deliberately **no document parser, database, artifact store, ingestion workflow, search, context compiler,
-MCP server, watcher, model provider, cloud connector or `openardp` product command yet**. F002 provides pure validation
-and identity contracts only; operational capabilities belong to later features in
+There is deliberately **no document parser, normalized ingestion workflow, search/index, context compiler, MCP server,
+watcher, model provider, cloud connector, automatic garbage deletion or `openardp` product command yet**. F003 exposes a
+Python library persistence boundary; parsing and end-user workflows belong to later features in
 [the feature map](spec-kit/FEATURE_MAP.md).
 
 ## Product thesis
@@ -105,8 +109,9 @@ The hooks use the locked project tools rather than separately resolved hook envi
 uv build
 ```
 
-The wheel exposes `openardp.__version__`, `py.typed`, the pure `openardp.domain` record/identity API and the still-empty
-`ports`, `adapters`, `services` and `interfaces` namespaces.
+The wheel exposes `openardp.__version__`, `py.typed`, the pure `openardp.domain` record/identity API, provider-neutral
+persistence ports, reviewed filesystem/SQLite adapters and persistence/reachability services. The `interfaces` namespace
+remains empty until a later CLI/MCP feature.
 
 Validate or regenerate the reviewed public schemas with:
 
@@ -138,8 +143,8 @@ feature begins. See [the operating procedure](spec-kit/OPERATING_PROCEDURE.md) a
 - `services/`: use cases and orchestration.
 - `interfaces/`: CLI, MCP and later HTTP entry points.
 
-Dependencies point inward. Feature 002 fills only the pure domain boundary; later features add ports and operational
-behavior without moving I/O into the models.
+Dependencies point inward. Feature 003 keeps storage I/O in adapters and cross-resource ordering in services; domain
+models remain pure and provider-neutral.
 
 ## Read first
 

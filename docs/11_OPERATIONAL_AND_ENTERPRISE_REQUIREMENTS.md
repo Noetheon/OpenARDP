@@ -34,6 +34,10 @@ Metrics:
 
 Do not attach document text, embeddings or filenames containing personal data to telemetry by default.
 
+F003 does not yet emit an observability backend. Its error boundary deliberately reports identifiers/classifications only:
+source locators, document bytes, raw SQL parameters, raw lease tokens and untrusted exception text are excluded. Future
+telemetry adapters must preserve that default.
+
 ## Data lifecycle
 
 - Source binaries: reference or copy according to governance policy.
@@ -41,6 +45,10 @@ Do not attach document text, embeddings or filenames containing personal data to
 - Derived artifacts: configurable TTL and recomputable.
 - Deleted source: preserve/tombstone based on policy; remove from default retrieval immediately.
 - Garbage collection: mark-and-sweep from live manifests and retention holds.
+
+F003 implements only the safe observation prerequisite: every historical source-version and job object reference is a
+conservative live root; verified unreferenced objects are advisory candidates; missing, corrupt, malformed, unsafe and
+staging entries are inconsistencies. There is no deletion API, retention decision or secure-erasure claim.
 
 ## Authorization
 
@@ -60,6 +68,17 @@ For enterprise mode:
 - reproducible indexes from canonical records;
 - documented restore drills;
 - saved Graph delta state and a safe full-rescan procedure.
+
+### Current local persistence recovery boundary
+
+- CAS publication is atomic on the configured same filesystem and synchronized with the strongest supported local calls.
+- SQLite uses checksummed ordered migrations, rollback journaling and `synchronous=EXTRA`; a pending chain commits wholly
+  or rolls back wholly.
+- Reopen validates migration order/checksums, exact expected tables, foreign keys and supported revision before work.
+- Expired running jobs are requeued only while attempts remain; exhausted work becomes terminal and repeated recovery is
+  empty until state changes again.
+- Backups, point-in-time recovery, network filesystems, disk failure and universal power-loss durability are not provided
+  by F003 and require explicit operational validation in the deployment environment.
 
 ## Cost controls
 

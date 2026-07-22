@@ -34,7 +34,11 @@ DOMAIN_MODULES = {
     "identity",
     "manifest",
     "relation",
+    "storage",
 }
+PORT_MODULES = {"catalog", "object_store"}
+ADAPTER_MODULES = {"filesystem_cas", "sqlite_catalog", "sqlite_migrations"}
+SERVICE_MODULES = {"persistence", "reachability"}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:
@@ -65,11 +69,24 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
     assert importlib.util.find_spec(module_name) is None
 
 
-def test_domain_module_surface_is_bounded_to_feature_002() -> None:
-    """Expose only the reviewed domain-contract modules introduced by F002."""
-    domain = importlib.import_module("openardp.domain")
-    discovered = {module.name for module in pkgutil.iter_modules(domain.__path__)}
-    assert discovered == DOMAIN_MODULES
+@pytest.mark.parametrize(
+    ("package_name", "expected_modules"),
+    (
+        ("openardp.domain", DOMAIN_MODULES),
+        ("openardp.ports", PORT_MODULES),
+        ("openardp.adapters", ADAPTER_MODULES),
+        ("openardp.services", SERVICE_MODULES),
+        ("openardp.interfaces", set()),
+    ),
+)
+def test_module_surface_is_bounded_to_feature_003(
+    package_name: str,
+    expected_modules: set[str],
+) -> None:
+    """Expose exactly the reviewed F002 domain and F003 persistence modules."""
+    package = importlib.import_module(package_name)
+    discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
+    assert discovered == expected_modules
 
 
 def test_typing_marker_is_packaged() -> None:

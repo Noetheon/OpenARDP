@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import importlib.metadata
 import importlib.util
+import pkgutil
 import tomllib
 from pathlib import Path
 from types import ModuleType
@@ -23,9 +24,17 @@ BOUNDARY_MODULES = (
 )
 FORBIDDEN_MODULES = (
     "openardp.core",
-    "openardp.domain.models",
     "openardp.interfaces.cli",
 )
+DOMAIN_MODULES = {
+    "block",
+    "common",
+    "context",
+    "derivation",
+    "identity",
+    "manifest",
+    "relation",
+}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:
@@ -52,8 +61,15 @@ def test_architecture_boundary_is_importable_and_documented(module_name: str) ->
 
 @pytest.mark.parametrize("module_name", FORBIDDEN_MODULES)
 def test_later_feature_module_is_absent(module_name: str) -> None:
-    """Prevent later work-package behavior from leaking into feature 001."""
+    """Prevent later work-package behavior from leaking into the current feature."""
     assert importlib.util.find_spec(module_name) is None
+
+
+def test_domain_module_surface_is_bounded_to_feature_002() -> None:
+    """Expose only the reviewed domain-contract modules introduced by F002."""
+    domain = importlib.import_module("openardp.domain")
+    discovered = {module.name for module in pkgutil.iter_modules(domain.__path__)}
+    assert discovered == DOMAIN_MODULES
 
 
 def test_typing_marker_is_packaged() -> None:

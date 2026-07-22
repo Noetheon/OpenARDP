@@ -1,0 +1,251 @@
+{
+  "$defs": {
+    "ComponentDescriptor": {
+      "additionalProperties": false,
+      "description": "Provider-neutral identity of a component that produced a record.",
+      "properties": {
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "ComponentDescriptor",
+      "type": "object"
+    },
+    "DataTrustClassification": {
+      "additionalProperties": false,
+      "description": "Trust metadata for content that must remain non-authoritative data.",
+      "properties": {
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "zone": {
+          "$ref": "#/$defs/TrustZone"
+        }
+      },
+      "required": [
+        "zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "DataTrustClassification",
+      "type": "object"
+    },
+    "DerivationState": {
+      "description": "Lifecycle of a disposable derived artifact.",
+      "enum": [
+        "PENDING",
+        "READY",
+        "FAILED",
+        "STALE",
+        "REVOKED"
+      ],
+      "title": "DerivationState",
+      "type": "string"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/derivation-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Reproducibility, trust and lifecycle facts for one derived artifact.",
+  "properties": {
+    "artifact_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "pattern": "T.+(?:Z|\\+00:00)$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed At"
+    },
+    "config_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "generator": {
+      "$ref": "#/$defs/ComponentDescriptor"
+    },
+    "input_hashes": {
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Input Hashes",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "model_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Id"
+    },
+    "output_hash": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Hash"
+    },
+    "prompt_hash": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt Hash"
+    },
+    "quality_signals": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Quality Signals",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/DerivationState"
+    },
+    "trust": {
+      "$ref": "#/$defs/DataTrustClassification"
+    }
+  },
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "state",
+    "generator",
+    "input_hashes",
+    "config_hash",
+    "created_at",
+    "trust"
+  ],
+  "title": "OpenARDP Derivation Record",
+  "type": "object",
+  "x-openardp-schema-version": "0.1.0"
+}

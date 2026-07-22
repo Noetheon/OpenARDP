@@ -35,10 +35,18 @@ uv run pre-commit install
 uv run pre-commit run --all-files
 ```
 
-## 5. Understand the current boundary
+## 5. Validate the public domain contracts
 
-Feature 001 provides the repository baseline only. No product CLI or document-processing capability is implemented yet.
-Continue with feature 002 only after feature 001 converges and all checks pass.
+Feature 002 provides strict Manifest, Block, Derivation, Relation and Context Bundle models plus deterministic public
+schemas and identities. Its focused offline acceptance scenarios are in
+[the feature quickstart](specs/002-domain-models-schemas/quickstart.md). The shortest schema drift check is:
+
+```bash
+uv run --locked python scripts/generate_schemas.py --check
+```
+
+These are pure contracts, not document-processing behavior. No parser, persistence, retrieval, context compiler, MCP or
+product CLI exists yet. Continue with feature 003 only after feature 002 converges and all checks pass.
 
 For contribution rules, security reporting and evidence, use [CONTRIBUTING.md](CONTRIBUTING.md),
 [SECURITY.md](SECURITY.md) and [VALIDATION.md](VALIDATION.md).

@@ -84,11 +84,14 @@ def test_only_reviewed_agent_skills_are_tracked(repository_root: Path) -> None:
     assert all(ALLOWED_AGENT_PATH.fullmatch(path) for path in tracked)
 
 
-def test_project_metadata_has_no_runtime_dependency(repository_root: Path) -> None:
-    """Keep feature 001 installable without product or provider dependencies."""
+def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root: Path) -> None:
+    """Limit F002 runtime code to validation and canonicalization dependencies."""
     project = _project_configuration(repository_root)["project"]
     assert project["requires-python"] == ">=3.12,<3.13"
-    assert project.get("dependencies", []) == []
+    assert project.get("dependencies", []) == [
+        "pydantic>=2.12.5,<2.13",
+        "rfc8785>=0.1.4,<0.2",
+    ]
     assert project.get("optional-dependencies", {}) == {}
     assert project["license"] == "Apache-2.0"
 
@@ -119,6 +122,22 @@ def test_ignore_rules_cover_local_state(repository_root: Path) -> None:
         "Desktop.ini",
     }
     assert required <= set(patterns)
+
+
+def test_text_contracts_use_cross_platform_lf_checkouts(repository_root: Path) -> None:
+    """Keep byte-reviewed schemas and UTF-8 sources stable on Windows checkouts."""
+    attributes = (repository_root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    required = {
+        "*.json text eol=lf",
+        "*.lock text eol=lf",
+        "*.md text eol=lf",
+        "*.py text eol=lf",
+        "*.toml text eol=lf",
+        "*.txt text eol=lf",
+        "*.yaml text eol=lf",
+        "*.yml text eol=lf",
+    }
+    assert required <= set(attributes)
 
 
 def test_pytest_enforces_coverage_and_no_network(repository_root: Path) -> None:

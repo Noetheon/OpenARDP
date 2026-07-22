@@ -8,8 +8,9 @@ representation, and let agents retrieve the smallest sufficient evidence instead
 
 ## Current status
 
-The repository is implementing the roadmap one bounded GitHub Spec Kit feature at a time. Feature
-`001-repository-baseline` establishes only the reproducible engineering foundation:
+The repository implements the roadmap one bounded GitHub Spec Kit feature at a time. Feature
+`001-repository-baseline` established the reproducible engineering foundation, and
+`002-domain-models-schemas` adds the first production domain contracts:
 
 - Python 3.12 and uv with a committed lock;
 - installable package metadata and empty architecture namespaces;
@@ -18,10 +19,15 @@ The repository is implementing the roadmap one bounded GitHub Spec Kit feature a
 - observed green Ubuntu, macOS and Windows GitHub Actions execution;
 - offline Markdown/governance validation;
 - license, contribution, security and validation evidence.
+- strict, frozen Pydantic v2 models for Manifest, Block, Derivation, Relation and Context Bundle;
+- five reviewed JSON Schema Draft 2020-12 contracts with synthetic golden fixtures;
+- strict raw-JSON validation, RFC 8785 canonical bytes and versioned SHA-256 identity projections;
+- deterministic schema regeneration and drift checks.
 
-There is deliberately **no document parser, domain document model, hashing API, database, ingestion, search, context
-compiler, MCP server, watcher, model provider, cloud connector or `openardp` product command yet**. Those capabilities
-belong to later features in [the feature map](spec-kit/FEATURE_MAP.md).
+There is deliberately **no document parser, database, artifact store, ingestion workflow, search, context compiler,
+MCP server, watcher, model provider, cloud connector or `openardp` product command yet**. F002 provides pure validation
+and identity contracts only; operational capabilities belong to later features in
+[the feature map](spec-kit/FEATURE_MAP.md).
 
 ## Product thesis
 
@@ -99,8 +105,15 @@ The hooks use the locked project tools rather than separately resolved hook envi
 uv build
 ```
 
-The wheel currently exposes only `openardp.__version__`, `py.typed` and the `domain`, `ports`, `adapters`, `services` and
-`interfaces` namespaces.
+The wheel exposes `openardp.__version__`, `py.typed`, the pure `openardp.domain` record/identity API and the still-empty
+`ports`, `adapters`, `services` and `interfaces` namespaces.
+
+Validate or regenerate the reviewed public schemas with:
+
+```bash
+uv run --locked python scripts/generate_schemas.py --check
+uv run --locked python scripts/generate_schemas.py --write  # explicit review action only
+```
 
 ## Spec Kit workflow
 
@@ -125,7 +138,8 @@ feature begins. See [the operating procedure](spec-kit/OPERATING_PROCEDURE.md) a
 - `services/`: use cases and orchestration.
 - `interfaces/`: CLI, MCP and later HTTP entry points.
 
-Dependencies point inward. Feature 001 creates only the namespaces; later features add tested contracts and behavior.
+Dependencies point inward. Feature 002 fills only the pure domain boundary; later features add ports and operational
+behavior without moving I/O into the models.
 
 ## Read first
 

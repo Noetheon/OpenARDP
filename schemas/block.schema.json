@@ -1,40 +1,7 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openardp.example/schema/block-0.1.0.json",
-  "title": "OpenARDP Content Block",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "block_id",
-    "document_id",
-    "version_id",
-    "kind",
-    "order",
-    "canonical_hash",
-    "source",
-    "trust"
-  ],
-  "properties": {
-    "block_id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "document_id": {
-      "type": "string",
-      "format": "uuid"
-    },
-    "version_id": {
-      "type": "string",
-      "pattern": "^sha256:[0-9a-f]{64}$"
-    },
-    "parent_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "format": "uuid"
-    },
-    "kind": {
+  "$defs": {
+    "BlockKind": {
+      "description": "Normalized source-backed block categories.",
       "enum": [
         "title",
         "heading",
@@ -50,147 +17,335 @@
         "page",
         "slide",
         "other"
-      ]
-    },
-    "order": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "text": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "structured": {
-      "type": [
-        "object",
-        "array",
-        "null"
-      ]
-    },
-    "asset_id": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "canonical_hash": {
-      "type": "string",
-      "pattern": "^sha256:[0-9a-f]{64}$"
-    },
-    "source": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": [
-        "extraction_method"
       ],
+      "title": "BlockKind",
+      "type": "string"
+    },
+    "DataTrustClassification": {
+      "additionalProperties": false,
+      "description": "Trust metadata for content that must remain non-authoritative data.",
       "properties": {
-        "extraction_method": {
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
           "type": "string"
         },
-        "native_id": {
-          "type": [
-            "string",
-            "null"
-          ]
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
         },
-        "page": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 1
-        },
-        "slide": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 1
-        },
-        "bbox": {
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "number"
-          },
-          "minItems": 4,
-          "maxItems": 4
+        "zone": {
+          "$ref": "#/$defs/TrustZone"
         }
-      }
-    },
-    "trust": {
-      "type": "object",
-      "additionalProperties": false,
+      },
       "required": [
         "zone",
         "role",
-        "instruction_execution_allowed",
         "integrity",
         "sensitivity"
       ],
-      "properties": {
-        "zone": {
-          "enum": [
-            "local_trusted",
-            "organization_trusted",
-            "external_untrusted",
-            "model_derived"
-          ]
-        },
-        "role": {
-          "enum": [
-            "data",
-            "metadata"
-          ]
-        },
-        "instruction_execution_allowed": {
-          "const": false
-        },
-        "integrity": {
-          "enum": [
-            "verified_sha256",
-            "unverified"
-          ]
-        },
-        "sensitivity": {
-          "enum": [
-            "public",
-            "internal",
-            "confidential",
-            "restricted",
-            "unknown"
-          ]
-        }
-      }
+      "title": "DataTrustClassification",
+      "type": "object"
     },
-    "extensions": {
-      "type": "object",
-      "additionalProperties": true
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "description": "Precise source location treated as data rather than access authority.",
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "extraction_method": {
+          "minLength": 1,
+          "title": "Extraction Method",
+          "type": "string"
+        },
+        "native_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Native Id"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "slide": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Slide"
+        }
+      },
+      "required": [
+        "extraction_method"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
     }
   },
-  "allOf": [
+  "$id": "https://openardp.example/schema/block-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "anyOf": [
     {
-      "anyOf": [
-        {
-          "required": [
-            "text"
-          ]
-        },
-        {
-          "required": [
-            "structured"
-          ]
-        },
-        {
-          "required": [
-            "asset_id"
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    {
+      "properties": {
+        "structured": {
+          "type": [
+            "object",
+            "array"
           ]
         }
+      },
+      "required": [
+        "structured"
+      ]
+    },
+    {
+      "properties": {
+        "asset_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id"
       ]
     }
-  ]
+  ],
+  "description": "One canonical content unit pinned to a source representation.",
+  "properties": {
+    "asset_id": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Asset Id"
+    },
+    "block_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Block Id",
+      "type": "string"
+    },
+    "canonical_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Canonical Hash",
+      "type": "string"
+    },
+    "document_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "kind": {
+      "$ref": "#/$defs/BlockKind"
+    },
+    "order": {
+      "title": "Order",
+      "type": "integer"
+    },
+    "parent_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Id"
+    },
+    "representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Representation Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceLocator"
+    },
+    "structured": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Structured"
+    },
+    "text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Text"
+    },
+    "trust": {
+      "$ref": "#/$defs/DataTrustClassification"
+    },
+    "version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Version Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "block_id",
+    "document_id",
+    "version_id",
+    "representation_id",
+    "kind",
+    "order",
+    "canonical_hash",
+    "source",
+    "trust"
+  ],
+  "title": "OpenARDP Content Block",
+  "type": "object",
+  "x-openardp-schema-version": "0.1.0"
 }

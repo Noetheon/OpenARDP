@@ -1,0 +1,37 @@
+{
+  "openardp": {
+    "block_hash": "sha256:65e8edebbfc562dffec2144a664a7c9afa9f5b6899d0e6346d29f6acaae6e84e",
+    "derivation_artifact_id": "sha256:13c823fd412bcddac4bedee8d24821a6767674e370d65529c8f241200d67efe4",
+    "relation_id": "sha256:58ee5e49825fb927466226d0eb940c3a10888f8af51a7182fdba683845bcf0d2",
+    "representation_id": "sha256:9ad52b273500960935a4231ef09dc6f964293b1b605b53dded338105df759583",
+    "source_version_id": "sha256:22b8c3a50bb243746e8e0324d5d639e28c1f0f48e15ad81e508ef7c5f7df13ae"
+  },
+  "rfc_main": {
+    "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\"/\"}",
+    "sha256": "sha256:6d77565c0fe51d7346bd5debb08f2eebbe9bde01eade30b34e2011f360f91b0e",
+    "value": {
+      "literals": [null, true, false],
+      "numbers": [333333333.33333329, 1e+30, 4.5, 0.002, 1e-27],
+      "string": "€$\u000f\nA'B\"\\\"/"
+    }
+  },
+  "unicode_distinct": {
+    "nfc": "é",
+    "nfc_sha256": "sha256:f2886017e9c7abacf804b54d64787dce2b611c9544ba21f3affdd126a6e50086",
+    "nfd": "é",
+    "nfd_sha256": "sha256:3d68ce21f2899a475713cdbe7562ba9bdb6b1dfde8af1f221bdff4a0935b53b2"
+  },
+  "utf16_sort": {
+    "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+    "sha256": "sha256:5e321556d22018a9656991a9e94f77ec175fa193e52a2429d312f8419ec8b08c",
+    "value": {
+      "€": "Euro Sign",
+      "\r": "Carriage Return",
+      "דּ": "Hebrew Letter Dalet With Dagesh",
+      "1": "One",
+      "😀": "Emoji: Grinning Face",
+      "": "Control",
+      "ö": "Latin Small Letter O With Diaeresis"
+    }
+  }
+}

@@ -1,10 +1,10 @@
 OpenARDP repository inventory
-Generated for feature 001 convergence on 2026-07-22.
+Generated for feature 002 convergence on 2026-07-22.
 
 Scope
 -----
-This inventory describes the 120 version-controlled files expected after the
-repository-baseline change is staged. Ignored environments, caches, build
+This inventory describes the 153 version-controlled files expected after the
+domain-contract change is staged. Ignored environments, caches, build
 artifacts, coverage output and operating-system metadata are excluded.
 
 Area                          Files
@@ -12,17 +12,17 @@ Area                          Files
 .agents                          10
 .github                           1
 .specify                         21
-docs                             20
+docs                             21
 prompts                           1
-repository root                 16
-schemas                           3
-scripts                           5
+repository root                 17
+schemas                           6
+scripts                           6
 spec-kit                         21
-specs                            11
-src/openardp                      7
-tests                             4
+specs                            21
+src/openardp                     14
+tests                            14
 ----------------------------  -----
-Total                           120
+Total                           153
 
 Reproduce
 ---------
@@ -36,10 +36,12 @@ Boundary notes
 - `.agents/` contains only the ten reviewed Spec Kit `SKILL.md` files.
 - `.specify/` contains the reviewed Spec Kit execution layer and active-feature
   locator; it contains no credentials or local agent sessions.
-- `src/openardp/` contains only package metadata, `py.typed` and the five empty
-  architectural namespaces. Product behavior is intentionally absent.
-- Deleted blueprint placeholders (`core.py`, domain models, CLI and their two
-  behavior tests) are not part of the baseline because later work packages own
-  those contracts.
+- `.gitattributes` fixes reviewed text contracts to LF so byte-level schema
+  verification is identical on Linux, macOS and Windows checkouts.
+- `src/openardp/domain/` contains only the reviewed F002 pure record,
+  validation and canonical-identity modules. Ports, adapters, services and
+  interfaces remain empty.
+- Parser, persistence, retrieval, context-compilation, provider and CLI
+  behavior remain absent because later work packages own those contracts.
 - The authoritative exact path list is Git itself; this summary is checked
   during convergence to avoid maintaining a second hand-written file manifest.

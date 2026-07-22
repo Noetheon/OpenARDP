@@ -45,7 +45,9 @@ current bytes.
 
 ### `representation_id`
 
-Hash of source version, parser identity/version/config and normalization schema version.
+Version-1 domain-separated RFC 8785 identity over the source version, parser name/version/profile/configuration hash and
+normalization schema version. It changes when the parsing recipe changes even when the authoritative bytes do not.
+Document title/state, timestamps, source locations, extensions and unrelated parser metadata are excluded.
 
 ### `block_id`
 
@@ -60,7 +62,20 @@ Never encode page numbers into permanent block identity because pagination chang
 
 ### `artifact_id`
 
-Content/derivation key as defined in the architecture.
+For derivations, a version-1 recipe identity over ordered direct inputs, generator name/version/profile, optional model,
+configuration hash and optional prompt hash. It is not proof of output bytes: `output_hash` separately records produced
+content integrity.
+
+### Canonicalization and identity governance
+
+All structured identity envelopes use RFC 8785 without Unicode normalization. Values outside the interoperable JSON
+domain—non-finite floats, unsafe integers, lone surrogates, cycles, non-string mapping keys and runtime-only Python
+objects—are rejected rather than coerced. Source versions remain direct SHA-256 digests of original bytes.
+
+Block content identity includes only `kind`, `text`, `structured` and `asset_id`. Relation identity includes only the kind
+and complete typed source/target references. Operational metadata is intentionally excluded. The exact preimages are in
+the [F002 domain contract](../specs/002-domain-models-schemas/contracts/domain-contracts.md) and the governing decision is
+[ADR 0006](adr/0006-rfc8785-canonical-identities.md).
 
 ## 4. Canonical versus derived data
 
@@ -97,10 +112,10 @@ See `schemas/manifest.schema.json`.
 
 Required fields:
 
-- `block_id`, `document_id`, `version_id`;
+- `block_id`, `document_id`, `version_id`, `representation_id`;
 - `kind`;
 - `parent_id`, `order`;
-- `content` or structured payload reference;
+- at least one non-null `text`, `structured` or `asset_id` payload;
 - source locator and coordinates;
 - canonical content hash;
 - trust and sensitivity labels;
@@ -108,7 +123,9 @@ Required fields:
 
 ### Relation
 
-Examples:
+Relations use a deterministic edge ID and discriminated source/target references. A block reference pins document,
+source version, representation and block; artifact, document-version and namespaced external references carry their own
+complete identities. Examples:
 
 - `contains`;
 - `precedes`;
@@ -122,6 +139,12 @@ Examples:
 ### Derivation record
 
 Captures generator, model, input artifacts, prompt/config hashes, timestamps, quality signals and lifecycle state.
+
+### Context Bundle
+
+An immutable, budgeted evidence handoff with exact `{document_id, version_id, representation_id}` scopes, selected
+evidence, provenance, selection decisions, notices and explicit missing-evidence records. It validates internal scope and
+budget consistency but does not retrieve data or compile context in F002.
 
 ## 6. Trust model fields
 
@@ -145,11 +168,19 @@ in a document.
 ## 7. Schema evolution
 
 - Use semantic versioning for package/specification versions.
-- Readers must reject unsupported major versions.
-- Readers should ignore unknown extension properties under `extensions`.
-- Minor versions may add optional fields only.
+- The installed F002 readers accept exactly reviewed release `0.1.0`; a well-formed but uninstalled minor is rejected
+  distinctly from malformed text and an unsupported major family.
+- Core records are closed. Readers preserve JSON-only unknown data only under `extensions`.
+- A future minor may add optional fields only through a new reviewed schema; an old reader is not required to accept an
+  uninstalled release.
 - Canonicalization rules and ID algorithms are versioned independently.
 - Maintain golden package fixtures for every supported version.
+- Removing fields, weakening invariants or changing identity inputs requires an ADR and migration analysis.
+
+Schema-expressible rules (shape, required members, enum/pattern/bounds and structural alternatives) are enforced by both
+the public schema and model. Recomputed identifiers, lifecycle combinations, budget comparisons and within-record scope
+membership are record-semantic model rules. Cross-record existence and graph properties are aggregate-semantic rules for
+later services. See [`schemas/README.md`](../schemas/README.md) for the complete matrix.
 
 ## 8. Integrity
 

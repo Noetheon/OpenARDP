@@ -7,6 +7,7 @@ import os
 import re
 import stat
 import tempfile
+import time
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from pathlib import Path
@@ -91,8 +92,27 @@ class FilesystemObjectStore:
                 )
 
             try:
-                os.replace(temporary, destination)
+                if os.name == "nt":
+                    os.rename(temporary, destination)
+                else:
+                    os.link(temporary, destination, follow_symlinks=False)
+                    try:
+                        temporary.unlink()
+                    except OSError:
+                        with suppress(OSError):
+                            destination.unlink()
+                        raise ObjectPublicationError(
+                            f"object publication failed for {object_id}"
+                        ) from None
                 published = True
+            except FileExistsError:
+                return self._reuse_existing(
+                    temporary,
+                    object_id=object_id,
+                    byte_length=byte_length,
+                )
+            except ObjectStoreError:
+                raise
             except OSError:
                 if self._lexists(destination):
                     try:
@@ -271,9 +291,73 @@ class FilesystemObjectStore:
         object_id: str,
         byte_length: int,
     ) -> StoredObject:
-        verified = self.verify(object_id, expected_length=byte_length)
+        deadline = time.monotonic() + 1.0
+        while True:
+            try:
+                verified = self.verify(object_id, expected_length=byte_length)
+                break
+            except UnsafeStoreEntry:
+                destination = self._path_for_id(object_id)
+                if not self._publication_link_is_settling(destination):
+                    raise
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.001)
         temporary.unlink(missing_ok=True)
         return verified
+
+    def _publication_link_is_settling(self, destination: Path) -> bool:
+        """Recognize only the transient internal hard link used for POSIX publication."""
+        try:
+            for directory in (
+                self._root,
+                self._objects,
+                self._algorithm_root,
+                destination.parent.parent,
+                destination.parent,
+            ):
+                self._assert_directory(directory)
+            metadata = destination.lstat()
+        except (FileNotFoundError, UnsafeStoreEntry):
+            return False
+        for _ in range(3):
+            if not self._safe_regular_metadata(destination, metadata):
+                return False
+            if metadata.st_nlink <= 1:
+                return True
+            if self._staging_twin_exists(metadata):
+                return True
+            # The twin may vanish between the metadata read and the staging scan;
+            # re-read the destination before judging the link count unsafe.
+            time.sleep(0.001)
+            try:
+                metadata = destination.lstat()
+            except FileNotFoundError:
+                return False
+        return False
+
+    def _safe_regular_metadata(self, path: Path, metadata: os.stat_result) -> bool:
+        """Check the non-link regular-file invariant without the link-count rule."""
+        return not self._is_link_or_junction(path, metadata) and stat.S_ISREG(metadata.st_mode)
+
+    def _staging_twin_exists(self, metadata: os.stat_result) -> bool:
+        """Find a staged temporary file holding the same inode as the destination."""
+        try:
+            with os.scandir(self._staging) as entries:
+                for entry in entries:
+                    try:
+                        # DirEntry.stat caches Windows directory data without a file
+                        # index, so request the complete identity from the OS.
+                        entry_metadata = os.stat(entry.path, follow_symlinks=False)
+                    except OSError:
+                        continue
+                    if stat.S_ISREG(entry_metadata.st_mode) and self._file_identity(
+                        entry_metadata
+                    ) == self._file_identity(metadata):
+                        return True
+        except OSError:
+            return False
+        return False
 
     def _path_for_id(self, object_id: str) -> Path:
         match = _OBJECT_ID.fullmatch(object_id)

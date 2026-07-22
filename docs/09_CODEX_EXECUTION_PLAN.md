@@ -72,11 +72,13 @@ Acceptance:
 - path traversal tests pass.
 
 Delivered boundaries include immutable streaming CAS publication, exact source-key/UUIDv7 registration, atomic
-source-version/reference facts, two checksummed SQLite revisions, SHA-256 lease fencing, append-only job events, bounded
-restart recovery and advisory read-only reachability. Parser/`READY` representation semantics, FTS and automatic deletion
+source-version/reference facts, three checksummed SQLite revisions, SHA-256 lease fencing, append-only job/ingestion events,
+bounded restart recovery, advisory read-only reachability and the complete F004 text slice. FTS and automatic deletion
 remain later work packages.
 
 ## Work package 3 — text vertical slice
+
+**Implementation status: complete locally; external convergence evidence pending.**
 
 Implement TXT/MD parser, normalizer, ingestion service and CLI commands `init`, `ingest`, `list`, `status`, `outline`, `get`.
 

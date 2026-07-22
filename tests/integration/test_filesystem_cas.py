@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import multiprocessing
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -12,7 +13,7 @@ import pytest
 
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
 from openardp.domain.storage import StoreAnomalyCode
-from openardp.ports.object_store import ObjectCorrupt, ObjectPublicationError
+from openardp.ports.object_store import ObjectCorrupt, ObjectPublicationError, UnsafeStoreEntry
 
 
 def _identity(payload: bytes) -> str:
@@ -22,6 +23,13 @@ def _identity(payload: bytes) -> str:
 def _object_path(root: Path, object_id: str) -> Path:
     digest = object_id.removeprefix("sha256:")
     return root / "objects" / "sha256" / digest[:2] / digest[2:4] / digest[4:]
+
+
+def _hard_link_or_skip(source: Path, link_name: Path) -> None:
+    try:
+        os.link(source, link_name)
+    except OSError as error:
+        pytest.skip(f"hard link creation unavailable: {error}")
 
 
 def _put_in_spawned_process(arguments: tuple[str, bytes]) -> tuple[str, int]:
@@ -77,6 +85,132 @@ def test_thirty_two_concurrent_duplicate_writes_converge(tmp_path: Path) -> None
     assert {result.byte_length for result in results} == {len(payload)}
     leaves = [path for path in (tmp_path / "objects").rglob("*") if path.is_file()]
     assert leaves == [_object_path(tmp_path, _identity(payload))]
+
+
+def test_duplicate_writer_never_replaces_a_newly_published_leaf(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Hold the winning publish open while a duplicate verifies the same complete leaf."""
+    store = FilesystemObjectStore(tmp_path)
+    payload = b"exclusive publication"
+    published = threading.Event()
+    release = threading.Event()
+    settling_checked = threading.Event()
+    original_settling_check = store._publication_link_is_settling
+
+    def observed_settling_check(destination: Path) -> bool:
+        is_settling = original_settling_check(destination)
+        if is_settling:
+            settling_checked.set()
+        return is_settling
+
+    monkeypatch.setattr(store, "_publication_link_is_settling", observed_settling_check)
+
+    if os.name == "nt":
+        real_publish = os.rename
+
+        def paused_publish(source: object, destination: object) -> None:
+            real_publish(source, destination)
+            published.set()
+            assert release.wait(timeout=5)
+
+        monkeypatch.setattr(os, "rename", paused_publish)
+    else:
+        real_link = os.link
+
+        def paused_publish(
+            source: object,
+            destination: object,
+            *,
+            follow_symlinks: bool = True,
+        ) -> None:
+            real_link(source, destination, follow_symlinks=follow_symlinks)
+            published.set()
+            assert release.wait(timeout=5)
+
+        monkeypatch.setattr(os, "link", paused_publish)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        winner = executor.submit(store.put_chunks, (payload,))
+        assert published.wait(timeout=5)
+        duplicate = executor.submit(store.put_chunks, (payload,))
+        if os.name == "nt":
+            duplicate_result = duplicate.result(timeout=5)
+        else:
+            assert settling_checked.wait(timeout=5)
+            duplicate_result = None
+        release.set()
+        duplicate_result = duplicate_result or duplicate.result(timeout=5)
+        assert winner.result(timeout=5) == duplicate_result
+
+    leaf = _object_path(tmp_path, _identity(payload))
+    assert leaf.read_bytes() == payload
+    assert leaf.stat().st_nlink == 1
+
+
+def test_settling_check_recognizes_internal_publication_twin(tmp_path: Path) -> None:
+    """Classify a staged twin holding the second link as transient publication."""
+    store = FilesystemObjectStore(tmp_path)
+    result = store.put_chunks((b"settling twin",))
+    destination = _object_path(tmp_path, result.object_id)
+    twin = tmp_path / "staging" / "object-synthetic.part"
+    _hard_link_or_skip(destination, twin)
+    try:
+        assert destination.stat().st_nlink == 2
+        with pytest.raises(UnsafeStoreEntry, match="hard-linked"):
+            store.verify(result.object_id)
+        assert store._publication_link_is_settling(destination) is True
+    finally:
+        twin.unlink()
+    assert destination.stat().st_nlink == 1
+    assert store._publication_link_is_settling(destination) is True
+
+
+def test_settling_check_rejects_external_hard_link(tmp_path: Path) -> None:
+    """Refuse to treat a second link outside staging as transient publication."""
+    store = FilesystemObjectStore(tmp_path)
+    result = store.put_chunks((b"external link",))
+    destination = _object_path(tmp_path, result.object_id)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    external = elsewhere / "object-hardlink"
+    _hard_link_or_skip(destination, external)
+    try:
+        assert destination.stat().st_nlink == 2
+        assert store._publication_link_is_settling(destination) is False
+    finally:
+        external.unlink()
+
+
+def test_settling_check_requires_an_observable_twin(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep the link count unsafe when no staged twin can be observed."""
+    store = FilesystemObjectStore(tmp_path)
+    result = store.put_chunks((b"hidden twin",))
+    destination = _object_path(tmp_path, result.object_id)
+    twin = tmp_path / "staging" / "object-hidden.part"
+    _hard_link_or_skip(destination, twin)
+    monkeypatch.setattr(store, "_staging_twin_exists", lambda _: False)
+    try:
+        assert store._publication_link_is_settling(destination) is False
+    finally:
+        twin.unlink()
+
+
+def test_settling_check_rejects_missing_and_symlinked_destination(tmp_path: Path) -> None:
+    """Report vanished and non-regular destinations as unsafe, never as settling."""
+    store = FilesystemObjectStore(tmp_path)
+    destination = _object_path(tmp_path, _identity(b"ghost"))
+    assert store._publication_link_is_settling(destination) is False
+    destination.parent.mkdir(parents=True)
+    try:
+        destination.symlink_to(tmp_path / "staging")
+    except OSError as error:
+        pytest.skip(f"symlink creation unavailable: {error}")
+    assert store._publication_link_is_settling(destination) is False
 
 
 def test_spawned_process_duplicate_writes_converge(tmp_path: Path) -> None:
@@ -143,10 +277,11 @@ def test_publication_failure_cleans_temp_and_keeps_destination_absent(
     """Keep an atomic replacement error from becoming visible state."""
     store = FilesystemObjectStore(tmp_path)
 
-    def fail_replace(_: object, __: object) -> None:
+    def fail_publish(_: object, __: object, **___: object) -> None:
         raise OSError("synthetic replace failure")
 
-    monkeypatch.setattr(os, "replace", fail_replace)
+    primitive = "rename" if os.name == "nt" else "link"
+    monkeypatch.setattr(os, primitive, fail_publish)
 
     with pytest.raises(ObjectPublicationError, match="publication failed"):
         store.put_chunks((b"abc",))

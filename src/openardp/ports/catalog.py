@@ -6,6 +6,21 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 from uuid import UUID
 
+from openardp.domain.ingestion import (
+    DocumentHead,
+    DocumentHeadUpdate,
+    DocumentSummary,
+    IngestionDisposition,
+    IngestionEvent,
+    ParserRecipe,
+    ReadyRepresentationCommit,
+    RepresentationAcquireResult,
+    RepresentationAggregate,
+    RepresentationBlock,
+    RepresentationCommitResult,
+    RepresentationLease,
+    RepresentationScope,
+)
 from openardp.domain.storage import (
     DocumentVersion,
     Job,
@@ -65,6 +80,42 @@ class LeaseConflict(CatalogError):
     """Raised when owner, fencing token, revision or expiry proof is stale."""
 
 
+class RepresentationConflict(CatalogError):
+    """Raised when immutable representation facts are reused inconsistently."""
+
+
+class RepresentationLeaseConflict(CatalogError):
+    """Raised when representation owner, token, revision or expiry proof is stale."""
+
+
+class RepresentationBusy(CatalogError):
+    """Raised when another unexpired owner holds the representation claim."""
+
+
+class RepresentationIncomplete(CatalogError):
+    """Raised when a requested representation is not complete and READY."""
+
+
+class RepresentationIntegrityError(CatalogError):
+    """Raised when representation objects or projections fail verification."""
+
+
+class DocumentNotFound(CatalogError):
+    """Raised when a requested logical document does not exist."""
+
+
+class RepresentationNotFound(CatalogError):
+    """Raised when a requested representation scope does not exist."""
+
+
+class BlockNotFound(CatalogError):
+    """Raised when a requested normalized block does not exist."""
+
+
+class AmbiguousBlock(CatalogError):
+    """Raised when a block handle does not identify one current block."""
+
+
 @runtime_checkable
 class Catalog(Protocol):
     """Atomic local catalog boundary for source facts and generic work."""
@@ -97,6 +148,112 @@ class Catalog(Protocol):
 
     def list_versions(self, document_id: UUID) -> tuple[DocumentVersion, ...]:
         """Return deterministic committed source versions for one document."""
+        ...
+
+    def get_document(self, document_id: UUID) -> LogicalDocument | None:
+        """Return one registered logical document or no result."""
+        ...
+
+    def get_document_by_source(self, source_key: SourceKey) -> LogicalDocument | None:
+        """Return the logical document for one exact source key or no result."""
+        ...
+
+    def list_documents(self) -> tuple[LogicalDocument, ...]:
+        """Return every logical document in deterministic source-key order."""
+        ...
+
+    def acquire_representation(
+        self,
+        scope: RepresentationScope,
+        recipe: ParserRecipe,
+        *,
+        owner_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_until: datetime,
+    ) -> RepresentationAcquireResult:
+        """Claim, reuse or report busy processing for one representation scope."""
+        ...
+
+    def renew_representation(
+        self,
+        scope: RepresentationScope,
+        *,
+        owner_id: str,
+        lease_token: str,
+        expected_revision: int,
+        now: datetime,
+        lease_until: datetime,
+    ) -> RepresentationLease:
+        """Renew one active fenced representation claim."""
+        ...
+
+    def fail_representation(
+        self,
+        scope: RepresentationScope,
+        *,
+        owner_id: str,
+        lease_token: str,
+        expected_revision: int,
+        now: datetime,
+        failure_code: str,
+    ) -> RepresentationAggregate:
+        """Record one sanitized failed representation attempt."""
+        ...
+
+    def commit_ready_representation(
+        self,
+        commit: ReadyRepresentationCommit,
+        *,
+        owner_id: str | None,
+        lease_token: str | None,
+        expected_revision: int | None,
+        disposition: IngestionDisposition,
+    ) -> RepresentationCommitResult:
+        """Atomically make one complete immutable representation READY."""
+        ...
+
+    def load_representation(
+        self,
+        scope: RepresentationScope,
+    ) -> RepresentationAggregate | None:
+        """Return one header and complete block projection from one snapshot."""
+        ...
+
+    def record_ready_ingest(
+        self,
+        scope: RepresentationScope,
+        *,
+        source_observed_at: datetime,
+        ingested_at: datetime,
+        disposition: IngestionDisposition,
+    ) -> DocumentHeadUpdate:
+        """Append a verified READY reuse event and update the current head."""
+        ...
+
+    def get_document_head(self, document_id: UUID) -> DocumentHead | None:
+        """Return the current successful observation for one document."""
+        ...
+
+    def list_document_summaries(self) -> tuple[DocumentSummary, ...]:
+        """Return deterministic body-free current document summaries."""
+        ...
+
+    def resolve_ready_representation(
+        self,
+        document_id: UUID,
+        *,
+        version_id: str | None,
+    ) -> RepresentationAggregate | None:
+        """Resolve one current or historical READY aggregate deterministically."""
+        ...
+
+    def find_current_blocks(self, block_id: UUID) -> tuple[RepresentationBlock, ...]:
+        """Return current-head projections matching one logical block handle."""
+        ...
+
+    def list_ingestion_events(self, document_id: UUID) -> tuple[IngestionEvent, ...]:
+        """Return append-only successful ingest evidence in sequence order."""
         ...
 
     def create_job(self, spec: JobSpec) -> Job:

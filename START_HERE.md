@@ -56,8 +56,18 @@ reachability as Python library APIs. Its focused offline acceptance commands are
 uv run --locked pytest tests/integration tests/security/test_storage_boundaries.py --no-cov
 ```
 
-F003 does not parse documents, mark an F002 representation `READY`, index content or delete reachability candidates.
-Feature 004 is the next bounded work package in the feature map.
+Feature 004 adds the bounded local TXT/Markdown vertical slice. Its focused acceptance commands and supported Markdown
+subset are in [the F004 quickstart](specs/004-text-ingestion-slice/quickstart.md). A minimal workflow is:
+
+```bash
+openardp init --store .openardp
+openardp ingest ./notes.md --store .openardp --json
+openardp list --store .openardp --json
+```
+
+F004 creates complete F002 manifests and blocks, verifies READY cache candidates physically and semantically, and exposes
+progressive outline/exact-block navigation. It does not add FTS, chunking, embeddings, rich document formats, MCP or
+automatic deletion. Feature 005 is the next bounded work package in the feature map.
 
 For contribution rules, security reporting and evidence, use [CONTRIBUTING.md](CONTRIBUTING.md),
 [SECURITY.md](SECURITY.md) and [VALIDATION.md](VALIDATION.md).

@@ -31,6 +31,8 @@
 
 **Primary sources**: [Python 3.12 tempfile](https://docs.python.org/3.12/library/tempfile.html), [Python 3.12 os](https://docs.python.org/3.12/library/os.html), [POSIX rename](https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html), [Microsoft MoveFileEx](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexa).
 
+**Amendment (F004 hardening)**: A macOS CI race during feature 004 showed that `os.replace` lets two legitimate duplicate writers swap the same destination inode while a concurrent `verify` holds it open, producing spurious `UnsafeStoreEntry`/`ObjectCorrupt` failures. Publication is now platform-split no-clobber: POSIX links the staged file to the destination (`os.link` fails with `FileExistsError` when it exists) and then unlinks the staged name, while Windows keeps the no-clobber `os.rename` behavior. The POSIX transient second link is recognized by a bounded settling re-check that confirms a staged twin inode before any reuse verification retries; the transient never passes verification and still fails closed once no twin can be observed. The original hard-link rejection applied to a single cross-platform mechanism; the portability concern is now answered by the platform split. See the feature 004 implementation notes.
+
 ## Decision 3 — Validate the managed object tree without interpreting user paths
 
 **Decision**: Public reads accept only `sha256:<64 lowercase hex>`. Only validated digest segments build object paths. Managed ancestors and leaves are inspected without following links; symlinks, Windows junctions, non-regular leaves, hard-linked leaves where link counts are reliable, and malformed tree entries are reported as unsafe.

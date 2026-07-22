@@ -28,6 +28,18 @@ semantic versioning once the public package lifecycle begins.
 - Synthetic offline integration/security coverage for publication faults, SQLite migration rollback, independent-reader
   visibility, lease fencing, process restart, unsafe filesystem layouts and byte-for-byte non-mutating analysis.
 - Accepted ADR 0002 governing the MVP filesystem-CAS and SQLite durability boundary.
+- Explicit version-1 local workspaces and the installable `openardp` CLI with `init`, `ingest`, `list`, `status`, `outline`
+  and `get`, including stable human/JSON error classifications.
+- Provider-neutral deterministic text parser contracts, strict incremental UTF-8 handling, reviewed TXT/Markdown block
+  normalization and a killable spawned-worker product adapter with portable limits and socket denial.
+- Safe regular-file local snapshots that reject unsafe path components and special files, detect read races, preserve
+  original bytes/size/mtime/mode and feed parsers only from the verified CAS object.
+- Checksummed SQLite revision 3 for fenced document representations, complete block projections, current document heads
+  and append-only ingestion evidence.
+- Parse-once ingestion and progressive query services with canonical F002 manifest/block objects, deterministic UUIDv8
+  block handles, full cache verification, A → B → A correctness and body-minimizing navigation.
+- Synthetic offline F004 coverage for parser isolation, source races, representation rollback boundaries, concurrent
+  cache hits, corruption, source removal and all six CLI commands.
 
 ### Changed
 
@@ -41,6 +53,9 @@ semantic versioning once the public package lifecycle begins.
   verification has the same meaning on Linux, macOS and Windows.
 - Selected SQLite `DELETE` journaling with `synchronous=EXTRA` for the observed affected SQLite runtime instead of WAL,
   and made migration history/table drift a fail-closed compatibility error.
+- Hardened CAS publication after a macOS CI race: POSIX now publishes with a no-clobber hard link plus staging unlink
+  and Windows with no-clobber `os.rename`, so duplicate writers converge through verified reuse instead of
+  `os.replace`; racing readers classify the transient internal second link with a re-check before judging it unsafe.
 
 ### Removed
 

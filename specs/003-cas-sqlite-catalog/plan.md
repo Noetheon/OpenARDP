@@ -68,7 +68,7 @@ There is no distributed transaction across the filesystem and SQLite. The catalo
 
 ### Filesystem publication
 
-Objects use `objects/sha256/ab/cd/<remaining-60-hex>`. A secure temporary file below the same storage root is written and hashed incrementally, flushed and synchronized, then atomically published with `os.replace`. Existing destinations are verified before reuse and corrupt/non-regular entries are never silently repaired. Legitimate concurrent writers can replace only with complete bytes that hash to the same destination. The managed root must be private to the OpenARDP process boundary; Python's cross-platform standard library cannot prove race-free safety against an actively malicious same-user filesystem writer.
+Objects use `objects/sha256/ab/cd/<remaining-60-hex>`. A secure temporary file below the same storage root is written and hashed incrementally, flushed and synchronized, then atomically published no-clobber (POSIX hard link plus staging unlink, Windows `os.rename`; amended from `os.replace` after the F004 macOS CI race, see research Decision 2). Existing destinations are verified before reuse and corrupt/non-regular entries are never silently repaired. The managed root must be private to the OpenARDP process boundary; Python's cross-platform standard library cannot prove race-free safety against an actively malicious same-user filesystem writer.
 
 ### SQLite profile
 

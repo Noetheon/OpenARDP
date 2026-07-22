@@ -34,7 +34,7 @@ Metrics:
 
 Do not attach document text, embeddings or filenames containing personal data to telemetry by default.
 
-F003 does not yet emit an observability backend. Its error boundary deliberately reports identifiers/classifications only:
+F004 still does not emit an observability backend. Its error boundary deliberately reports identifiers/classifications only:
 source locators, document bytes, raw SQL parameters, raw lease tokens and untrusted exception text are excluded. Future
 telemetry adapters must preserve that default.
 
@@ -46,9 +46,10 @@ telemetry adapters must preserve that default.
 - Deleted source: preserve/tombstone based on policy; remove from default retrieval immediately.
 - Garbage collection: mark-and-sweep from live manifests and retention holds.
 
-F003 implements only the safe observation prerequisite: every historical source-version and job object reference is a
-conservative live root; verified unreferenced objects are advisory candidates; missing, corrupt, malformed, unsafe and
-staging entries are inconsistencies. There is no deletion API, retention decision or secure-erasure claim.
+F004 extends the safe observation prerequisite: every historical representation manifest/native/block object joins all
+source-version and job references as a conservative live root. Verified unreferenced objects remain advisory candidates;
+missing, corrupt, malformed, unsafe and staging entries are inconsistencies. There is no deletion API, retention decision
+or secure-erasure claim.
 
 ## Authorization
 
@@ -75,6 +76,8 @@ For enterprise mode:
 - SQLite uses checksummed ordered migrations, rollback journaling and `synchronous=EXTRA`; a pending chain commits wholly
   or rolls back wholly.
 - Reopen validates migration order/checksums, exact expected tables, foreign keys and supported revision before work.
+- Text representations use fenced claims and one atomic READY/head/event transaction; parser workers are killable and do
+  not hold a SQLite transaction while processing.
 - Expired running jobs are requeued only while attempts remain; exhausted work becomes terminal and repeated recovery is
   empty until state changes again.
 - Backups, point-in-time recovery, network filesystems, disk failure and universal power-loss durability are not provided

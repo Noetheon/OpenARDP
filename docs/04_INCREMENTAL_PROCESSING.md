@@ -6,9 +6,16 @@
 
 If source SHA-256 and processing profile are already known, perform no parsing or enrichment.
 
+F004 implements this level for local TXT/Markdown. It verifies the source object, manifest and every block object plus
+their semantic projections before recording `CACHE_HIT`; corruption fails explicitly and never triggers a concealed
+automatic reparse.
+
 ### Level 1 — block-level downstream reuse (MVP mandatory)
 
 A changed file may be parsed again, but unchanged normalized blocks reuse summaries, captions, embeddings and index entries.
+
+F004 derives stable source-backed block handles but does not yet reconcile or transfer downstream artifacts across changed
+versions. That policy remains a later feature and therefore this level is architectural, not yet delivered.
 
 ### Level 2 — format-aware parse optimization (post-MVP)
 
@@ -34,6 +41,11 @@ file event
 → invalidate/reuse derived artifacts
 → update indexes
 ```
+
+The diagram is the target watcher/enrichment pipeline. F004 has no watcher: an explicit `ingest` snapshots one regular
+source descriptor, parses the verified CAS object in a spawned worker, commits one complete representation, and advances a
+document head by source-observation time. Reverting A → B → A reuses historical A and advances the head without rewriting
+its first source-version facts.
 
 ## 3. Debounce and stable snapshot
 

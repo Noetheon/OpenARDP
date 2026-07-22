@@ -52,25 +52,22 @@ reconcile authoritative state using delta APIs.
 
 ### Ingestion coordinator
 
-- acquires a per-document lock;
-- waits for a stable file snapshot;
-- computes SHA-256 while streaming;
-- checks whether the version already exists;
-- invokes parser and normalizer in a staging transaction;
-- validates schemas and invariants;
-- atomically commits catalog rows and artifact references.
+The implemented F004 coordinator snapshots an explicitly selected regular local file into CAS, registers or reuses its
+immutable source version, and acquires a fenced representation claim. Parsing runs outside SQLite against CAS bytes only;
+the complete manifest, native reference, normalized block projections, head and ingestion event then become visible in
+one immediate transaction. An unchanged candidate is reused only after physical and semantic verification of every READY
+artifact. F004 does not yet provide a watcher or a general per-document scheduling lock.
 
 ### Parser adapters
 
-`ParserAdapter` returns:
+`ParserAdapter` receives byte chunks plus a declared media type and returns deterministic candidate blocks, hierarchy,
+line provenance and bounded warnings under an immutable recipe. For F004 the exact source CAS object is also the lossless
+native artifact. The product composition always uses a fresh spawned `IsolatedParserAdapter`; the pure adapter is reserved
+for deterministic unit tests. The worker receives no source path, denies socket creation and is bounded by bytes, line
+length, block count and wall-clock time.
 
-- parser-native lossless representation;
-- normalized candidate blocks/assets/relations;
-- warnings and quality signals;
-- parser/model/version metadata.
-
-Default rich adapter: Docling. Lightweight fallback: MarkItDown. Optional complex-PDF adapter: MinerU. Native Open XML
-adapter is a later optimization for part-level change detection, not the first parser.
+The built-in `openardp-text` adapter supports only UTF-8 TXT and a reviewed Markdown subset. Docling and other rich-format
+providers remain later adapters rather than implicit F004 dependencies.
 
 ### Normalizer
 
@@ -79,10 +76,11 @@ in derived artifacts, never in canonical source blocks.
 
 ### Catalog
 
-The implemented F003 SQLite catalog records exact source-key identity, logical documents, immutable source-version facts,
-object references, checksummed schema history and recoverable job/event state. Later features add block metadata,
-derivation dependencies, staleness and index state through append-only migrations. Binary and large JSON artifacts live
-in the content-addressed store rather than ordinary catalog rows.
+The implemented SQLite catalog records exact source-key identity, logical documents, immutable source-version facts,
+object references, recoverable job/event state and, since revision 3, fenced document representations, body-free block
+projections, current heads and append-only ingestion evidence. Later features add derivation dependencies, staleness and
+index state through append-only migrations. Binary and canonical JSON bodies live in the content-addressed store rather
+than ordinary catalog rows.
 
 Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
 an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
@@ -191,20 +189,18 @@ Graph webhooks/Event Grid → reconciliation queue → drive delta crawler
 
 ## 4. Transaction boundaries
 
-F003 implements a narrower source-fact boundary: document-version header, source-object metadata and all explicit object
-references become visible in one SQLite commit. This fact does **not** mean a parsed representation is `READY`. A complete
-object published before a failed catalog commit is a safe reachability candidate.
-
-The later end-to-end ingestion boundary remains:
+F003's source-fact boundary remains unchanged. F004 additionally implements the complete text-representation boundary:
 
 A version becomes `READY` only after:
 
 1. source object stored or source reference verified;
 2. parser-native artifact stored;
 3. normalized blocks validated;
-4. asset hashes verified;
-5. catalog transaction committed;
-6. required indexes committed.
+4. every required object hash and semantic scope verified;
+5. catalog representation, block projections, head and event committed atomically.
+
+F004's processing profile requires no index because F005 is not installed. A complete object published before a failed
+catalog transaction is a safe reachability candidate, never a partially visible READY representation.
 
 Optional enrichment may remain `PENDING`. Search must expose artifact freshness.
 
@@ -219,6 +215,10 @@ Optional enrichment may remain `PENDING`. Search must expose artifact freshness.
 F003 concretely enforces exact source-key uniqueness, composite immutable version identity and job revision compare-and-set
 fencing. Raw caller lease tokens are never stored; only SHA-256 token hashes are durable. Lease expiry equality counts as
 expired, mutating timestamps cannot move backward, retries are bounded and every state change appends a sanitized event.
+
+F004 applies the same fencing posture to `(document_id, version_id, representation_id)`. One unexpired owner may parse;
+same-token retries are idempotent, stale owners cannot commit, and forced parsing of READY state succeeds only when the
+new canonical aggregate is byte-identical to the persisted evidence.
 
 ## 6. Failure behavior
 

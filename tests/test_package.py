@@ -24,7 +24,9 @@ BOUNDARY_MODULES = (
 )
 FORBIDDEN_MODULES = (
     "openardp.core",
-    "openardp.interfaces.cli",
+    "openardp.adapters.docling",
+    "openardp.interfaces.mcp",
+    "openardp.services.search",
 )
 DOMAIN_MODULES = {
     "block",
@@ -35,10 +37,20 @@ DOMAIN_MODULES = {
     "manifest",
     "relation",
     "storage",
+    "ingestion",
 }
-PORT_MODULES = {"catalog", "object_store"}
-ADAPTER_MODULES = {"filesystem_cas", "sqlite_catalog", "sqlite_migrations"}
-SERVICE_MODULES = {"persistence", "reachability"}
+PORT_MODULES = {"catalog", "object_store", "parser"}
+ADAPTER_MODULES = {
+    "filesystem_cas",
+    "isolated_parser",
+    "local_source",
+    "local_workspace",
+    "sqlite_catalog",
+    "sqlite_migrations",
+    "text_parser",
+}
+SERVICE_MODULES = {"document_query", "ingestion", "persistence", "reachability"}
+INTERFACE_MODULES = {"cli"}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:
@@ -76,14 +88,14 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.ports", PORT_MODULES),
         ("openardp.adapters", ADAPTER_MODULES),
         ("openardp.services", SERVICE_MODULES),
-        ("openardp.interfaces", set()),
+        ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_003(
+def test_module_surface_is_bounded_to_feature_004(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002 domain and F003 persistence modules."""
+    """Expose exactly the reviewed F002-F004 modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules
@@ -95,13 +107,13 @@ def test_typing_marker_is_packaged() -> None:
     assert (package_root / "py.typed").is_file()
 
 
-def test_no_openardp_console_script_is_installed(repository_root: Path) -> None:
-    """Keep product commands outside the repository-baseline feature."""
+def test_exact_openardp_console_script_is_installed(repository_root: Path) -> None:
+    """Expose only the reviewed F004 command composition root."""
     project = _project_metadata(repository_root)
-    assert "scripts" not in project
+    assert project["scripts"] == {"openardp": "openardp.interfaces.cli:main"}
     openardp_entries = {
-        entry.name
+        (entry.name, entry.value)
         for entry in importlib.metadata.entry_points(group="console_scripts")
         if entry.value.startswith("openardp")
     }
-    assert openardp_entries == set()
+    assert openardp_entries == {("openardp", "openardp.interfaces.cli:main")}

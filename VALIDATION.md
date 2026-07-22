@@ -3,7 +3,8 @@
 This file separates locally observed evidence from externally observed automation. Feature-specific acceptance evidence
 is recorded in the [feature 001 notes](specs/001-repository-baseline/implementation-notes.md),
 [feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md) and
-[feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md).
+[feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md) and
+[feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -80,6 +81,25 @@ This closes F003's local filesystem CAS, transactional SQLite catalog, durable j
 boundary. It does not validate parsers, complete document representations, retrieval or automatic deletion; those
 remain later bounded work packages.
 
+## Feature 004 local evidence
+
+Feature `004-text-ingestion-slice` implements the bounded local TXT/Markdown workflow without adding search, chunking,
+embedding, rich formats or MCP. The locally observed complete gate on macOS/Python 3.12 passed 384 offline tests with
+87.32 percent branch-aware coverage against the enforced 85 percent threshold. Ruff, formatting and strict mypy also
+passed across the complete repository.
+
+Focused evidence covers incremental strict UTF-8 and Markdown normalization, spawned-worker timeout/crash cleanup and
+socket denial, atomic workspace markers, no-follow regular source snapshots, source-race detection, checksummed catalog
+revision 3, fenced representation retries, six atomic READY rollback points, sequential and concurrent verified cache
+hits, A → B → A head selection, full CAS/semantic integrity checks, progressive outline reads, source removal and all six
+human/JSON CLI commands through the installed entry point. Spec Kit convergence also closed an empty-blockquote edge case
+with a bounded warning. Original source bytes, size, modification time and mode remained unchanged on the tested paths;
+access time is intentionally not claimed.
+
+Cross-platform PR-head, merge and post-merge evidence is not yet recorded here. F004 remains locally implemented rather
+than externally closed until its focused pull request passes Ubuntu, macOS and Windows and the final evidence commit is
+green on `main`.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden
@@ -129,5 +149,5 @@ PowerShell bootstrap parser execution was not repeated locally because `pwsh` is
 workflow passed, but it does not invoke the preserved bootstrap script; feature 001 does not modify that script's behavior.
 
 Ownership, employer-IP, public-name and trademark clearance also remain release-governance requirements. None of the
-local engineering gates is evidence that the product is production-ready; document ingestion and every product security
-boundary belong to later work packages.
+local engineering gates is evidence that the product is production-ready; search, rich-format ingestion, broader security
+hardening, enterprise connectors and release operations remain later work packages.

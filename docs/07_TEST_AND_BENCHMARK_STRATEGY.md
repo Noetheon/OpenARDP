@@ -104,7 +104,18 @@ The repository-wide Ruff, formatting, strict-mypy, coverage, pre-commit and buil
 these tests proves behavior on the tested runtime/filesystem; it is not a universal sudden-power-loss or hostile-same-user
 guarantee.
 
-## 5. Benchmark conditions
+## 5. F004 offline text-ingestion verification
+
+F004 adds deterministic coverage for strict UTF-8 chunk boundaries, BOM/newline behavior, the reviewed Markdown subset,
+spawn timeout/crash cleanup and socket denial; workspace marker compatibility; source links/special files/races and
+immutability; migration-3 fencing and six transaction fault points; sequential/concurrent cache reuse; changed/reverted
+versions; artifact corruption; progressive structural-only reads; source removal; and all six CLI commands.
+
+The complete repository suite currently contains 384 offline tests and exceeds the enforced 85 percent branch-aware
+coverage threshold. This is local implementation evidence; cross-platform pull-request and post-merge workflows remain
+required before F004 is externally closed.
+
+## 6. Benchmark conditions
 
 ### A — raw file workflow
 
@@ -122,7 +133,7 @@ Chunked text + retrieval.
 
 Normalized blocks + versioning + provenance + progressive context + optional visual escalation.
 
-## 6. Workloads
+## 7. Workloads
 
 - document summary;
 - exact fact lookup;

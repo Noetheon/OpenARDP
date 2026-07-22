@@ -16,6 +16,9 @@ dependencies = [
   "rfc8785>=0.1.4,<0.2",
 ]
 
+[project.scripts]
+openardp = "openardp.interfaces.cli:main"
+
 [dependency-groups]
 dev = [
   "jsonschema>=4.24,<5",

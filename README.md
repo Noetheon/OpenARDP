@@ -10,7 +10,8 @@ representation, and let agents retrieve the smallest sufficient evidence instead
 
 The repository implements the roadmap one bounded GitHub Spec Kit feature at a time. Features
 `001-repository-baseline` and `002-domain-models-schemas` established the reproducible foundation and public domain
-contracts. Feature `003-cas-sqlite-catalog` adds the first local persistence slice:
+contracts. Feature `003-cas-sqlite-catalog` added the first local persistence slice. Feature
+`004-text-ingestion-slice` now supplies the first complete operator workflow:
 
 - Python 3.12 and uv with a committed lock;
 - installable package metadata and empty architecture namespaces;
@@ -18,7 +19,7 @@ contracts. Feature `003-cas-sqlite-catalog` adds the first local persistence sli
 - least-privilege cross-platform CI configuration;
 - observed green Ubuntu, macOS and Windows GitHub Actions execution;
 - offline Markdown/governance validation;
-- license, contribution, security and validation evidence.
+- license, contribution, security and validation evidence;
 - strict, frozen Pydantic v2 models for Manifest, Block, Derivation, Relation and Context Bundle;
 - five reviewed JSON Schema Draft 2020-12 contracts with synthetic golden fixtures;
 - strict raw-JSON validation, RFC 8785 canonical bytes and versioned SHA-256 identity projections;
@@ -26,12 +27,22 @@ contracts. Feature `003-cas-sqlite-catalog` adds the first local persistence sli
 - an immutable streaming filesystem CAS with atomic same-filesystem publication and full integrity verification;
 - a checksummed, transactionally migrated SQLite catalog for exact source keys, source-version facts and fenced jobs;
 - provider-neutral object-store/catalog ports plus persistence and read-only reachability services;
-- deterministic crash, concurrency, path-safety, migration, restart and reclamation-candidate tests.
+- deterministic crash, concurrency, path-safety, migration, restart and reclamation-candidate tests;
+- an explicit versioned local workspace and installable `openardp` command;
+- read-only, race-detecting snapshots of regular `.txt`, `.md` and `.markdown` sources into the immutable CAS;
+- strict incremental UTF-8 parsing and a reviewed Markdown subset behind a provider-neutral parser port;
+- a default killable spawned parser worker with input, line, block and wall-clock bounds and denied socket creation;
+- revision-3 SQLite representations with fenced `STAGING`/`FAILED`/`READY` transitions, current heads and append-only
+  ingestion events;
+- canonical F002 manifest/block CAS records with deterministic SHA-256-derived UUIDv8 block handles and untrusted-data
+  labels;
+- verified unchanged-source cache hits, changed immutable versions, force convergence and A → B → A head correctness;
+- body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation.
 
-There is deliberately **no document parser, normalized ingestion workflow, search/index, context compiler, MCP server,
-watcher, model provider, cloud connector, automatic garbage deletion or `openardp` product command yet**. F003 exposes a
-Python library persistence boundary; parsing and end-user workflows belong to later features in
-[the feature map](spec-kit/FEATURE_MAP.md).
+The built-in parser is intentionally limited to local UTF-8 text and a documented Markdown subset; it does not claim
+CommonMark or rich-document fidelity. There is still deliberately **no search/index, chunking, embedding, context
+compiler, MCP server, watcher, model provider, cloud connector, rich-document parser or automatic garbage deletion**.
+Those remain separate features in [the feature map](spec-kit/FEATURE_MAP.md).
 
 ## Product thesis
 
@@ -88,6 +99,21 @@ uv run pytest
 
 Pytest includes branch coverage, an 85 percent threshold, socket blocking and offline repository/documentation checks.
 
+## Use the local text workflow
+
+```bash
+openardp init --store .openardp
+openardp ingest ./notes.md --store .openardp
+openardp list --store .openardp
+openardp status ./notes.md --store .openardp
+openardp outline <document-uuid> --store .openardp
+openardp get <block-uuid> --store .openardp
+```
+
+Add `--json` to any command for one stable versioned stdout envelope. Only `get` returns a full block body. Every command
+other than `init` requires an already marked compatible workspace; commands never search parent directories or initialize
+state implicitly.
+
 Validate the repository directly with:
 
 ```bash
@@ -110,8 +136,8 @@ uv build
 ```
 
 The wheel exposes `openardp.__version__`, `py.typed`, the pure `openardp.domain` record/identity API, provider-neutral
-persistence ports, reviewed filesystem/SQLite adapters and persistence/reachability services. The `interfaces` namespace
-remains empty until a later CLI/MCP feature.
+persistence/parser ports, reviewed filesystem/SQLite/text adapters, ingestion/query services and the `openardp` CLI. MCP
+and HTTP interfaces remain later features.
 
 Validate or regenerate the reviewed public schemas with:
 
@@ -143,8 +169,8 @@ feature begins. See [the operating procedure](spec-kit/OPERATING_PROCEDURE.md) a
 - `services/`: use cases and orchestration.
 - `interfaces/`: CLI, MCP and later HTTP entry points.
 
-Dependencies point inward. Feature 003 keeps storage I/O in adapters and cross-resource ordering in services; domain
-models remain pure and provider-neutral.
+Dependencies point inward. Features 003–004 keep storage, source and parser I/O in adapters and cross-resource ordering in
+services; domain models remain pure and provider-neutral.
 
 ## Read first
 

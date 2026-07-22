@@ -1,0 +1,438 @@
+"""Validate OpenARDP repository documentation and governance without network access."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import tomllib
+import unicodedata
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+_EXCLUDED_DIRECTORIES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "dist",
+    "htmlcov",
+    "venv",
+}
+_EXTERNAL_SCHEMES = {"http", "https", "mailto"}
+_FORBIDDEN_SCHEMES = {"file", "sandbox"}
+_WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
+_INLINE_LINK = re.compile(r"!?\[[^\]\n]*\]\(([^)\n]*)\)")
+_REFERENCE_DEFINITION = re.compile(r"^[ \t]{0,3}\[([^\]\n]+)\]:[ \t]*(.+)$", re.MULTILINE)
+_REFERENCE_USE = re.compile(r"!?\[([^\]\n]+)\]\[([^\]\n]*)\]")
+_ATX_HEADING = re.compile(r"^[ \t]{0,3}#{1,6}[ \t]+(.+?)\s*$")
+_SETEXT_HEADING = re.compile(r"^[ \t]*(?:=+|-+)[ \t]*$")
+_REQUIRED_GOVERNANCE_FILES = (
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md",
+    "START_HERE.md",
+    "VALIDATION.md",
+    "pyproject.toml",
+    "uv.lock",
+)
+_CANONICAL_COMMANDS = (
+    "uv sync --all-extras --locked",
+    "uv run ruff check .",
+    "uv run ruff format --check .",
+    "uv run mypy src",
+    "uv run pytest",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Diagnostic:
+    """One deterministic repository validation finding."""
+
+    path: Path
+    line: int
+    code: str
+    target: str
+    message: str
+
+    def render(self, root: Path) -> str:
+        """Render the finding relative to the repository root."""
+        try:
+            display_path = self.path.relative_to(root).as_posix()
+        except ValueError:
+            display_path = self.path.as_posix()
+        return f"{display_path}:{self.line}: {self.code}: {self.target}: {self.message}"
+
+
+def _line_number(text: str, offset: int) -> int:
+    """Return the one-based line number for a character offset."""
+    return text.count("\n", 0, offset) + 1
+
+
+def _blank_preserving_newlines(text: str) -> str:
+    """Replace content with spaces while preserving line structure."""
+    return "".join("\n" if character == "\n" else " " for character in text)
+
+
+def _mask_inline_code(line: str) -> str:
+    """Mask paired inline-code spans without changing string offsets."""
+    characters = list(line)
+    index = 0
+    while index < len(line):
+        if line[index] != "`":
+            index += 1
+            continue
+        end_of_run = index
+        while end_of_run < len(line) and line[end_of_run] == "`":
+            end_of_run += 1
+        marker = line[index:end_of_run]
+        closing = line.find(marker, end_of_run)
+        if closing < 0:
+            index = end_of_run
+            continue
+        for position in range(index, closing + len(marker)):
+            if characters[position] != "\n":
+                characters[position] = " "
+        index = closing + len(marker)
+    return "".join(characters)
+
+
+def _mask_code(text: str) -> str:
+    """Mask fenced and inline code while preserving lines and offsets."""
+    result: list[str] = []
+    fence_character = ""
+    fence_length = 0
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        fence = re.match(r"(`{3,}|~{3,})", stripped)
+        if fence_character:
+            result.append(_blank_preserving_newlines(line))
+            if (
+                fence
+                and fence.group(1)[0] == fence_character
+                and len(fence.group(1)) >= fence_length
+            ):
+                fence_character = ""
+                fence_length = 0
+            continue
+        if fence:
+            fence_character = fence.group(1)[0]
+            fence_length = len(fence.group(1))
+            result.append(_blank_preserving_newlines(line))
+            continue
+        result.append(_mask_inline_code(line))
+    return "".join(result)
+
+
+def _extract_destination(raw_destination: str) -> str:
+    """Extract a Markdown destination while ignoring an optional title."""
+    stripped = raw_destination.strip()
+    if not stripped:
+        return ""
+    if stripped.startswith("<"):
+        closing = stripped.find(">", 1)
+        return stripped[1:closing] if closing >= 0 else stripped[1:]
+    return stripped.split(maxsplit=1)[0]
+
+
+def _normalize_reference(reference: str) -> str:
+    """Normalize a Markdown reference label."""
+    return " ".join(reference.casefold().split())
+
+
+def _case_status(root: Path, candidate: Path) -> str:
+    """Return exact, mismatch or missing for a path independent of host case rules."""
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError:
+        return "missing"
+    current = root
+    mismatch = False
+    for part in relative.parts:
+        try:
+            entries = {entry.name: entry for entry in current.iterdir()}
+        except (FileNotFoundError, NotADirectoryError, PermissionError):
+            return "missing"
+        if part in entries:
+            current = entries[part]
+            continue
+        matches = [entry for name, entry in entries.items() if name.casefold() == part.casefold()]
+        if not matches:
+            return "missing"
+        mismatch = True
+        current = sorted(matches, key=lambda entry: entry.name)[0]
+    return "mismatch" if mismatch else "exact"
+
+
+def _heading_slug(heading: str) -> str:
+    """Create a deterministic GitHub-style Markdown heading slug."""
+    value = re.sub(r"!?\[([^\]]*)\]\([^)]+\)", r"\1", heading)
+    value = re.sub(r"<[^>]+>", "", value)
+    value = unicodedata.normalize("NFC", value).strip().casefold()
+    value = re.sub(r"[^\w\- ]", "", value, flags=re.UNICODE)
+    return re.sub(r"\s", "-", value)
+
+
+def _markdown_anchors(path: Path) -> set[str]:
+    """Return unique heading anchors, including duplicate suffixes."""
+    masked = _mask_code(path.read_text(encoding="utf-8"))
+    lines = masked.splitlines()
+    headings: list[str] = []
+    for index, line in enumerate(lines):
+        atx = _ATX_HEADING.match(line)
+        if atx:
+            headings.append(re.sub(r"[ \t]+#+[ \t]*$", "", atx.group(1)).strip())
+            continue
+        if index + 1 < len(lines) and line.strip() and _SETEXT_HEADING.match(lines[index + 1]):
+            headings.append(line.strip())
+    anchors: set[str] = set()
+    counts: dict[str, int] = {}
+    for heading in headings:
+        base = _heading_slug(heading)
+        count = counts.get(base, 0)
+        anchor = base if count == 0 else f"{base}-{count}"
+        counts[base] = count + 1
+        anchors.add(anchor)
+    return anchors
+
+
+def _diagnostic(
+    source: Path,
+    line: int,
+    code: str,
+    target: str,
+    message: str,
+) -> Diagnostic:
+    """Create one diagnostic with normalized source metadata."""
+    return Diagnostic(path=source, line=line, code=code, target=target, message=message)
+
+
+def _validate_target(root: Path, source: Path, line: int, target: str) -> Diagnostic | None:
+    """Validate one Markdown target without opening external resources."""
+    if not target:
+        return _diagnostic(source, line, "MD001", target, "link target is empty")
+    if _WINDOWS_DRIVE.match(target) or "\\" in target:
+        return _diagnostic(source, line, "MD005", target, "local target is not portable")
+
+    parsed = urlsplit(target)
+    scheme = parsed.scheme.casefold()
+    if scheme in _EXTERNAL_SCHEMES:
+        return None
+    if scheme in _FORBIDDEN_SCHEMES or scheme:
+        return _diagnostic(source, line, "MD003", target, "target scheme is not allowed")
+    if parsed.netloc:
+        return _diagnostic(source, line, "MD003", target, "scheme-relative target is not allowed")
+
+    decoded_path = unquote(parsed.path)
+    if "\\" in decoded_path:
+        return _diagnostic(source, line, "MD005", target, "local target is not portable")
+    if decoded_path.startswith("/"):
+        return _diagnostic(source, line, "MD004", target, "absolute local target is not allowed")
+    if not decoded_path and not parsed.fragment:
+        return _diagnostic(source, line, "MD001", target, "link target is empty")
+
+    root_absolute = Path(os.path.abspath(root))
+    candidate = source if not decoded_path else Path(os.path.abspath(source.parent / decoded_path))
+    if not candidate.is_relative_to(root_absolute):
+        return _diagnostic(source, line, "MD009", target, "local target escapes repository")
+
+    case_status = _case_status(root_absolute, candidate)
+    if case_status == "missing":
+        return _diagnostic(source, line, "MD006", target, "local target does not exist")
+    if case_status == "mismatch":
+        return _diagnostic(source, line, "MD007", target, "local target path case does not match")
+    try:
+        resolved = candidate.resolve(strict=True)
+    except (FileNotFoundError, OSError):
+        return _diagnostic(source, line, "MD006", target, "local target does not exist")
+    if not resolved.is_relative_to(root_absolute.resolve()):
+        return _diagnostic(source, line, "MD009", target, "local target escapes repository")
+
+    fragment = unquote(parsed.fragment)
+    if (
+        fragment
+        and candidate.suffix.casefold() == ".md"
+        and fragment not in _markdown_anchors(candidate)
+    ):
+        return _diagnostic(source, line, "MD008", target, "Markdown heading does not exist")
+    return None
+
+
+def _sort_diagnostics(root: Path, diagnostics: Iterable[Diagnostic]) -> list[Diagnostic]:
+    """Sort findings by stable repository-relative metadata."""
+    return sorted(
+        diagnostics,
+        key=lambda item: (
+            item.path.relative_to(root).as_posix()
+            if item.path.is_relative_to(root)
+            else item.path.as_posix(),
+            item.line,
+            item.code,
+            item.target,
+            item.message,
+        ),
+    )
+
+
+def _discover_markdown(root: Path) -> list[Path]:
+    """Discover repository Markdown while excluding generated local outputs."""
+    return sorted(
+        path
+        for path in root.rglob("*.md")
+        if not (_EXCLUDED_DIRECTORIES & set(path.relative_to(root).parts))
+    )
+
+
+def validate_markdown(root: Path, paths: Iterable[Path] | None = None) -> list[Diagnostic]:
+    """Validate local Markdown targets and headings without network access."""
+    root = Path(os.path.abspath(root))
+    markdown_paths = (
+        _discover_markdown(root) if paths is None else sorted(Path(path) for path in paths)
+    )
+    diagnostics: list[Diagnostic] = []
+    for source in markdown_paths:
+        text = source.read_text(encoding="utf-8")
+        masked = _mask_code(text)
+        definitions: dict[str, str] = {}
+        for definition in _REFERENCE_DEFINITION.finditer(masked):
+            label = _normalize_reference(definition.group(1))
+            definitions[label] = _extract_destination(definition.group(2))
+        for link in _INLINE_LINK.finditer(masked):
+            target = _extract_destination(link.group(1))
+            finding = _validate_target(root, source, _line_number(masked, link.start()), target)
+            if finding:
+                diagnostics.append(finding)
+        for reference in _REFERENCE_USE.finditer(masked):
+            label = reference.group(2) or reference.group(1)
+            normalized = _normalize_reference(label)
+            line = _line_number(masked, reference.start())
+            if normalized not in definitions:
+                diagnostics.append(
+                    _diagnostic(source, line, "MD002", label, "reference definition does not exist")
+                )
+                continue
+            finding = _validate_target(root, source, line, definitions[normalized])
+            if finding:
+                diagnostics.append(finding)
+    return _sort_diagnostics(root, diagnostics)
+
+
+def _governance_finding(root: Path, code: str, target: str, message: str) -> Diagnostic:
+    """Create a root-level governance diagnostic."""
+    return _diagnostic(root / target, 1, code, target, message)
+
+
+def validate_governance(root: Path) -> list[Diagnostic]:
+    """Validate required policy files and cross-document baseline consistency."""
+    root = Path(os.path.abspath(root))
+    diagnostics: list[Diagnostic] = []
+    for name in _REQUIRED_GOVERNANCE_FILES:
+        if not (root / name).is_file():
+            diagnostics.append(
+                _governance_finding(root, "GOV001", name, "required repository artifact is missing")
+            )
+
+    pyproject_path = root / "pyproject.toml"
+    if pyproject_path.is_file():
+        try:
+            with pyproject_path.open("rb") as stream:
+                configuration = tomllib.load(stream)
+            project = configuration["project"]
+            uv_config = configuration["tool"]["uv"]
+        except (KeyError, tomllib.TOMLDecodeError) as error:
+            diagnostics.append(
+                _governance_finding(root, "GOV002", "pyproject.toml", f"invalid metadata: {error}")
+            )
+        else:
+            expected_metadata = {
+                "license": (project.get("license"), "Apache-2.0"),
+                "requires-python": (project.get("requires-python"), ">=3.12,<3.13"),
+                "required-version": (uv_config.get("required-version"), "==0.11.31"),
+                "preview-features": (
+                    uv_config.get("preview-features"),
+                    ["centralized-project-envs"],
+                ),
+            }
+            for field, (actual, expected) in expected_metadata.items():
+                if actual != expected:
+                    diagnostics.append(
+                        _governance_finding(
+                            root,
+                            "GOV003",
+                            "pyproject.toml",
+                            f"{field} must equal {expected!r}, found {actual!r}",
+                        )
+                    )
+
+    license_path = root / "LICENSE"
+    if license_path.is_file():
+        license_text = license_path.read_text(encoding="utf-8")
+        if "Apache License\nVersion 2.0, January 2004" not in license_text:
+            diagnostics.append(
+                _governance_finding(root, "GOV004", "LICENSE", "Apache-2.0 text is incomplete")
+            )
+
+    documents_requiring_commands = ("README.md", "START_HERE.md", "CONTRIBUTING.md")
+    for name in documents_requiring_commands:
+        path = root / name
+        if not path.is_file():
+            continue
+        content = path.read_text(encoding="utf-8")
+        for command in _CANONICAL_COMMANDS:
+            if command not in content:
+                diagnostics.append(
+                    _governance_finding(
+                        root,
+                        "GOV005",
+                        name,
+                        f"canonical command is missing: {command}",
+                    )
+                )
+
+    readme_path = root / "README.md"
+    if readme_path.is_file():
+        readme = readme_path.read_text(encoding="utf-8")
+        for name in ("CHANGELOG.md", "CONTRIBUTING.md", "LICENSE", "SECURITY.md", "VALIDATION.md"):
+            if f"]({name})" not in readme:
+                diagnostics.append(
+                    _governance_finding(
+                        root,
+                        "GOV006",
+                        "README.md",
+                        f"governance link is missing: {name}",
+                    )
+                )
+    return _sort_diagnostics(root, diagnostics)
+
+
+def validate_repository(root: Path) -> list[Diagnostic]:
+    """Return all offline Markdown and governance findings for a repository."""
+    root = Path(os.path.abspath(root))
+    return _sort_diagnostics(root, [*validate_markdown(root), *validate_governance(root)])
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run repository validation and return a shell-friendly status code."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("root", nargs="?", type=Path, default=Path.cwd())
+    arguments = parser.parse_args(argv)
+    root = Path(os.path.abspath(arguments.root))
+    diagnostics = validate_repository(root)
+    for diagnostic in diagnostics:
+        print(diagnostic.render(root))
+    if diagnostics:
+        print(f"Repository validation failed with {len(diagnostics)} finding(s).")
+        return 1
+    print("Repository validation passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

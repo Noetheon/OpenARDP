@@ -1,80 +1,45 @@
-.github/workflows/ci.yml
-.gitignore
-.pytest_cache/.gitignore
-.pytest_cache/CACHEDIR.TAG
-.pytest_cache/README.md
-.pytest_cache/v/cache/nodeids
-.python-version
-AGENTS.md
-BLUEPRINT_INVENTORY.txt
-CONTRIBUTING.md
-README.md
-REFERENCES.md
-REVISION_NOTES.md
-SECURITY.md
-START_HERE.md
-VALIDATION.md
-docs/00_EXECUTIVE_BRIEF.md
-docs/01_PRODUCT_REQUIREMENTS.md
-docs/02_ARCHITECTURE.md
-docs/03_DATA_MODEL_AND_PACKAGE.md
-docs/04_INCREMENTAL_PROCESSING.md
-docs/05_CONTEXT_COMPILER_AND_MCP.md
-docs/06_SECURITY_THREAT_MODEL.md
-docs/07_TEST_AND_BENCHMARK_STRATEGY.md
-docs/08_ROADMAP_AND_GOVERNANCE.md
-docs/09_CODEX_EXECUTION_PLAN.md
-docs/10_PRIOR_ART_AND_BUILD_DECISIONS.md
-docs/11_OPERATIONAL_AND_ENTERPRISE_REQUIREMENTS.md
-docs/12_SPEC_KIT_INTEGRATION.md
-docs/13_STEP_BY_STEP_USER_GUIDE.md
-docs/14_MIGRATION_FROM_PREVIOUS_BLUEPRINT.md
-docs/adr/0001-use-docling-as-default-parser.md
-docs/adr/0002-sqlite-and-filesystem-cas-for-mvp.md
-docs/adr/0003-embeddings-optional.md
-docs/adr/0004-read-only-mcp-first.md
-docs/adr/0005-portable-zip-runtime-cas.md
-prompts/CODEX_MASTER_PROMPT.md
-pyproject.toml
-schemas/block.schema.json
-schemas/context-bundle.schema.json
-schemas/manifest.schema.json
-scripts/apply-speckit-overlay.py
-scripts/bootstrap-speckit.ps1
-scripts/bootstrap-speckit.sh
-spec-kit/AFTER_BOOTSTRAP_CHECKLIST.md
-spec-kit/CONSTITUTION_SOURCE.md
-spec-kit/FEATURE_MAP.md
-spec-kit/FIRST_CODEX_SESSION.md
-spec-kit/OPERATING_PROCEDURE.md
-spec-kit/PINNED_VERSION.txt
-spec-kit/README.md
-spec-kit/feature-prompts/001-repository-baseline.md
-spec-kit/feature-prompts/002-domain-models-schemas.md
-spec-kit/feature-prompts/003-cas-sqlite-catalog.md
-spec-kit/feature-prompts/004-text-ingestion-slice.md
-spec-kit/feature-prompts/005-lexical-search.md
-spec-kit/feature-prompts/006-docling-adapter.md
-spec-kit/feature-prompts/007-context-compiler.md
-spec-kit/feature-prompts/008-read-only-mcp.md
-spec-kit/feature-prompts/009-local-watcher.md
-spec-kit/feature-prompts/010-reconciliation-derivation-dag.md
-spec-kit/feature-prompts/011-visual-evidence.md
-spec-kit/feature-prompts/012-portable-ardp-package.md
-spec-kit/feature-prompts/013-benchmark-security-gate.md
-spec-kit/feature-prompts/014-microsoft-graph-spike.md
-specs/README.md
-src/openardp/__init__.py
-src/openardp/adapters/__init__.py
-src/openardp/core.py
-src/openardp/domain/__init__.py
-src/openardp/domain/models.py
-src/openardp/interfaces/__init__.py
-src/openardp/interfaces/cli.py
-src/openardp/ports/__init__.py
-src/openardp/services/__init__.py
-tests/test_core.py
-tests/test_models.py
+OpenARDP repository inventory
+Generated for feature 001 convergence on 2026-07-22.
 
-Total files: 77
+Scope
+-----
+This inventory describes the 120 version-controlled files expected after the
+repository-baseline change is staged. Ignored environments, caches, build
+artifacts, coverage output and operating-system metadata are excluded.
 
+Area                          Files
+----------------------------  -----
+.agents                          10
+.github                           1
+.specify                         21
+docs                             20
+prompts                           1
+repository root                 16
+schemas                           3
+scripts                           5
+spec-kit                         21
+specs                            11
+src/openardp                      7
+tests                             4
+----------------------------  -----
+Total                           120
+
+Reproduce
+---------
+Run the following after staging the intended change:
+
+    git ls-files | LC_ALL=C sort
+    git ls-files | wc -l
+
+Boundary notes
+--------------
+- `.agents/` contains only the ten reviewed Spec Kit `SKILL.md` files.
+- `.specify/` contains the reviewed Spec Kit execution layer and active-feature
+  locator; it contains no credentials or local agent sessions.
+- `src/openardp/` contains only package metadata, `py.typed` and the five empty
+  architectural namespaces. Product behavior is intentionally absent.
+- Deleted blueprint placeholders (`core.py`, domain models, CLI and their two
+  behavior tests) are not part of the baseline because later work packages own
+  those contracts.
+- The authoritative exact path list is Git itself; this summary is checked
+  during convergence to avoid maintaining a second hand-written file manifest.

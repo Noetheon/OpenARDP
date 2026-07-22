@@ -1,35 +1,33 @@
 [build-system]
-requires = ["hatchling>=1.27"]
+requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
 name = "openardp"
 version = "0.0.1"
-description = "Reference implementation for reusable, provenance-rich agent-ready document packages"
+description = "Local-first foundation for reusable, provenance-rich agent-ready documents"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
-license = { text = "Apache-2.0" }
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "OpenARDP contributors" }]
-dependencies = [
-  "pydantic>=2.11,<3",
-  "typer>=0.16,<1",
-  "platformdirs>=4.3,<5",
-]
+dependencies = []
 
-[project.optional-dependencies]
-docling = ["docling>=2.70,<3"]
-mcp = ["mcp>=1.27,<2"]
-watch = ["watchfiles>=1.1,<2"]
+[dependency-groups]
 dev = [
+  "jsonschema>=4.24,<5",
   "mypy>=1.16,<2",
+  "pre-commit>=4.4,<5",
   "pytest>=8.4,<9",
   "pytest-cov>=6.2,<7",
+  "pytest-socket>=0.7,<1",
   "ruff>=0.12,<1",
-  "jsonschema>=4.24,<5",
 ]
 
-[project.scripts]
-openardp = "openardp.interfaces.cli:app"
+[tool.uv]
+required-version = "==0.11.31"
+default-groups = ["dev"]
+preview-features = ["centralized-project-envs"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/openardp"]
@@ -39,8 +37,11 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "SIM", "S", "RUF"]
-ignore = ["S101"]
+select = ["E", "F", "I", "B", "UP", "SIM", "S", "RUF", "D"]
+ignore = ["S101", "D203", "D213"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
 python_version = "3.12"
@@ -49,7 +50,18 @@ packages = ["openardp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers --strict-config -q"
+pythonpath = ["."]
+required_plugins = ["pytest-cov>=6.2", "pytest-socket>=0.7"]
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--disable-socket",
+  "--cov=openardp",
+  "--cov-branch",
+  "--cov-report=term-missing",
+  "--cov-fail-under=85",
+  "-q",
+]
 
 [tool.coverage.run]
 branch = true

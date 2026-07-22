@@ -1,0 +1,33 @@
+minimum_pre_commit_version: "4.4.0"
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run --locked ruff check .
+        language: unsupported
+        pass_filenames: false
+        always_run: true
+
+      - id: ruff-format-check
+        name: Ruff format check
+        entry: uv run --locked ruff format --check .
+        language: unsupported
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy
+        name: Strict mypy
+        entry: uv run --locked mypy src
+        language: unsupported
+        pass_filenames: false
+        always_run: true
+
+      - id: pytest
+        name: Pytest with coverage and no network
+        entry: uv run --locked pytest
+        language: unsupported
+        pass_filenames: false
+        always_run: true

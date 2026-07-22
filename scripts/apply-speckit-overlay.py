@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 def main() -> int:
+    """Copy the reviewed OpenARDP overlay into an initialized Spec Kit tree."""
     root = Path(__file__).resolve().parents[1]
     specify_dir = root / ".specify"
     if not specify_dir.is_dir():

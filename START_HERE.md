@@ -1,46 +1,47 @@
 # Start here
 
-Use this package instead of the previous ZIP for a new Codex implementation.
+OpenARDP is implemented feature by feature. The Spec Kit integration and Constitution are already committed; do not rerun
+bootstrap during normal clone setup and do not request the full platform as one feature.
 
-## 1. Create the baseline commit
+## 1. Read the project rules
 
-```bash
-git init
-git add .
-git commit -m "chore: add OpenARDP architecture and Spec Kit blueprint"
-```
+Read [AGENTS.md](AGENTS.md), the [Constitution](.specify/memory/constitution.md), the
+[feature map](spec-kit/FEATURE_MAP.md) and the active feature's `spec.md`, `plan.md` and `tasks.md`.
 
-## 2. Initialize GitHub Spec Kit
+## 2. Reproduce the environment
 
-macOS/Linux:
+Prerequisites are Git and uv 0.11.31. The repository selects Python 3.12.
 
 ```bash
-bash scripts/bootstrap-speckit.sh
+uv sync --all-extras --locked
 ```
 
-Windows PowerShell:
+uv stores this derived environment in its disposable cache and attempts to expose the normal `.venv` discovery link. It
+can resolve the cached environment directly if a file provider blocks that link; no manual path setting is required.
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-./scripts/bootstrap-speckit.ps1
-```
-
-## 3. Commit the generated integration
+## 3. Run every mandatory gate
 
 ```bash
-git status
-git add .
-git commit -m "chore: initialize Spec Kit for Codex"
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest
 ```
 
-## 4. Check readiness
+## 4. Enable and exercise commit-time checks
 
-Complete [`spec-kit/AFTER_BOOTSTRAP_CHECKLIST.md`](spec-kit/AFTER_BOOTSTRAP_CHECKLIST.md).
+```bash
+uv run pre-commit install
+uv run pre-commit run --all-files
+```
 
-## 5. Start Codex
+## 5. Understand the current boundary
 
-Open Codex from this repository root and paste [`spec-kit/FIRST_CODEX_SESSION.md`](spec-kit/FIRST_CODEX_SESSION.md).
+Feature 001 provides the repository baseline only. No product CLI or document-processing capability is implemented yet.
+Continue with feature 002 only after feature 001 converges and all checks pass.
 
-The first feature is `001-repository-baseline`. Do not request the complete platform in one pass.
+For contribution rules, security reporting and evidence, use [CONTRIBUTING.md](CONTRIBUTING.md),
+[SECURITY.md](SECURITY.md) and [VALIDATION.md](VALIDATION.md).
 
-For all details, read [`docs/13_STEP_BY_STEP_USER_GUIDE.md`](docs/13_STEP_BY_STEP_USER_GUIDE.md).
+The bootstrap/recovery procedure remains documented in [the Spec Kit integration guide](docs/12_SPEC_KIT_INTEGRATION.md)
+and [step-by-step guide](docs/13_STEP_BY_STEP_USER_GUIDE.md).

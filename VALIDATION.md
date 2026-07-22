@@ -1,48 +1,81 @@
-# Blueprint validation status
+# Validation status
 
-Validated on 2026-07-22 in the artifact-generation environment.
+This file separates locally observed evidence from automation that can be observed only after the repository has a
+GitHub remote. Feature-specific acceptance evidence is recorded in
+[implementation-notes.md](specs/001-repository-baseline/implementation-notes.md).
 
-## Passed offline checks
+## Blueprint relocation and Spec Kit bootstrap
 
-- Python source, tests and helper scripts compile successfully.
-- Four scaffold tests pass with `PYTHONPATH=src python -m pytest -q`.
-- All included JSON Schemas pass `Draft202012Validator.check_schema`.
-- The Spec Kit overlay script was executed against a temporary `.specify/` directory.
-- The generated constitution was byte-identical to `spec-kit/CONSTITUTION_SOURCE.md`.
-- The overlay marker and source-of-truth map were created successfully.
-- `scripts/bootstrap-speckit.sh` passes `bash -n` syntax validation.
-- All relative Markdown links resolve to existing files.
-- All 14 work packages have a corresponding bounded Spec Kit feature prompt.
-- The repository contains no generated `__pycache__` directories.
+The extracted blueprint was first preserved in commit `6596eb6`. Its visible and hidden files were then compared
+byte-for-byte with their repository-root destinations before the accidental nested directory was removed in commit
+`56155e9`.
 
-## Checks deferred to the user's implementation environment
+The pinned bootstrap subsequently completed on this machine:
 
-The full bootstrap attempted to install the pinned `specify-cli==0.13.3`, but the isolated artifact environment's internal
-package gateway returned HTTP 503. Therefore the following could not be executed end-to-end here:
+- `specify-cli==0.13.3` installed successfully;
+- `specify init --here --force --integration codex` generated the local execution layer;
+- the generated constitution was byte-identical to `spec-kit/CONSTITUTION_SOURCE.md`;
+- `specify integration status` reported the Codex integration as healthy;
+- the reviewed bootstrap state was committed as `acf8aea`.
 
-- installation of the pinned Spec Kit CLI;
-- `specify init --here --force --integration codex`;
-- verification of generated `.agents/skills/` files;
-- `specify integration status` after real initialization;
-- PowerShell parser validation because `pwsh` is not installed;
-- `uv sync`, Ruff and strict mypy using downloaded project dependencies.
+The earlier artifact-generation note about an HTTP 503 is historical and no longer describes this repository state.
 
-The failure was environmental rather than a detected project or script error. The bootstrap scripts stop on installation
-failure and make no claim that Spec Kit was initialized.
+## Feature 001 local evidence
 
-## Required first-machine validation
+Observed on macOS 26.5.2, Apple Silicon, with Python 3.12.13 and uv 0.11.31:
 
-Before implementation, run:
+- locked synchronization completed and a second locked synchronization changed no project or lock file;
+- the package and all five architectural namespaces imported;
+- wheel and source distributions built, the wheel contained `py.typed`, and an isolated wheel import returned `0.0.1`;
+- Ruff lint, Ruff formatting verification and strict mypy completed successfully;
+- 41 tests passed with 100 percent branch coverage against an enforced 85 percent minimum;
+- pytest-socket rejected socket construction and the suite passed offline with synchronization disabled;
+- the offline repository validator reported zero Markdown or governance diagnostics;
+- all local pre-commit hooks passed against every staged file.
 
-```bash
-bash scripts/bootstrap-speckit.sh
-specify version
-specify integration status
-uv sync --all-extras
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-```
+The exact final commands, exit states and negative probes are listed in the feature implementation notes rather than
+duplicated here.
 
-On Windows, use `scripts/bootstrap-speckit.ps1` and inspect any PowerShell error before continuing.
+Final Spec Kit convergence checked 26 requirements and success criteria, 18 user-story acceptance cases, nine plan
+decisions, ten constitutional articles and all 34 completed tasks. It found zero missing, partial, contradictory or
+unrequested implementation gaps, so no convergence tasks were appended.
+
+## Corrective environment verification
+
+On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden
+together with its `.pth` files; Python skipped those files, breaking the editable-package import and coverage hooks. The
+failure reproduced with uv 0.11.16 and 0.11.31, which ruled out a version-only explanation.
+
+The exact uv 0.11.31 pin now bounds the single enabled `centralized-project-envs` preview contract. uv stores the derived
+environment in its disposable cache and attempts to keep `.venv` as the standard discovery symlink. This workspace's file
+provider later recreates an empty `.venv` directory, so uv emits a non-fatal link warning and resolves its deterministic
+cached environment directly. A cleared environment, repeated locked synchronization, all mandatory commands and package
+import preserved visible underlying `.pth` files and passed. This is a measured correction for the observed workspace,
+not a general claim about macOS, Python or uv.
+
+## Negative-gate evidence
+
+Disposable probes confirmed that the baseline rejects:
+
+- missing and stale lock state;
+- representative lint and formatting defects;
+- an incompatible assignment under strict mypy;
+- an intentional failing test;
+- coverage below the configured threshold;
+- socket access during the unit suite.
+
+All disposable probe files were outside the repository or removed after the check.
+
+## External verification still required
+
+The repository has no configured GitHub remote. Therefore this local result does not claim that GitHub-hosted Linux or
+Windows jobs have executed, nor that a private GitHub Security Advisory channel is currently available. The committed
+workflow statically declares the Linux/macOS/Windows matrix and its least-privilege contract; actual matrix evidence and
+Security Advisory availability remain pre-publication operational checks.
+
+PowerShell bootstrap parser execution was not repeated locally because `pwsh` is not installed. The script remains part
+of the preserved bootstrap package; feature 001 does not modify its behavior.
+
+Ownership, employer-IP, public-name and trademark clearance also remain release-governance requirements. None of the
+local engineering gates is evidence that the product is production-ready; document ingestion and every product security
+boundary belong to later work packages.

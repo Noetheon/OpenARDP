@@ -1,1 +1,51 @@
-"""Provider-neutral ports implemented when concrete adapters require them."""
+"""Provider-neutral persistence ports and sanitized boundary failures."""
+
+from openardp.ports.catalog import (
+    Catalog,
+    CatalogError,
+    CatalogIncompatible,
+    CatalogTooNew,
+    DocumentConflict,
+    InvalidJobTransition,
+    InvalidObjectReference,
+    JobConflict,
+    JobNotFound,
+    LeaseConflict,
+    MigrationFailed,
+    VersionConflict,
+)
+from openardp.ports.object_store import (
+    MalformedObjectIdentity,
+    ObjectCorrupt,
+    ObjectDurabilityError,
+    ObjectNotFound,
+    ObjectPublicationError,
+    ObjectStore,
+    ObjectStoreError,
+    PersistenceError,
+    UnsafeStoreEntry,
+)
+
+__all__ = [
+    "Catalog",
+    "CatalogError",
+    "CatalogIncompatible",
+    "CatalogTooNew",
+    "DocumentConflict",
+    "InvalidJobTransition",
+    "InvalidObjectReference",
+    "JobConflict",
+    "JobNotFound",
+    "LeaseConflict",
+    "MalformedObjectIdentity",
+    "MigrationFailed",
+    "ObjectCorrupt",
+    "ObjectDurabilityError",
+    "ObjectNotFound",
+    "ObjectPublicationError",
+    "ObjectStore",
+    "ObjectStoreError",
+    "PersistenceError",
+    "UnsafeStoreEntry",
+    "VersionConflict",
+]

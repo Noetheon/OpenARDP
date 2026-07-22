@@ -58,6 +58,9 @@ Acceptance:
 
 ## Work package 2 — filesystem CAS and SQLite catalog
 
+**Status**: Implemented by `003-cas-sqlite-catalog`; final repository/CI convergence evidence is maintained in the feature
+implementation notes.
+
 Implement immutable object writes, atomic staging, document registration, version and job tables, migrations and garbage
 collection reachability analysis.
 
@@ -67,6 +70,11 @@ Acceptance:
 - interrupted commit exposes no partial version;
 - catalog recovery tests pass;
 - path traversal tests pass.
+
+Delivered boundaries include immutable streaming CAS publication, exact source-key/UUIDv7 registration, atomic
+source-version/reference facts, two checksummed SQLite revisions, SHA-256 lease fencing, append-only job events, bounded
+restart recovery and advisory read-only reachability. Parser/`READY` representation semantics, FTS and automatic deletion
+remain later work packages.
 
 ## Work package 3 — text vertical slice
 

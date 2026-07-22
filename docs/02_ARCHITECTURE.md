@@ -79,8 +79,15 @@ in derived artifacts, never in canonical source blocks.
 
 ### Catalog
 
-SQLite records identity, versions, jobs, block metadata, derivation dependencies, staleness and index state. Binary and
-large JSON artifacts live in the content-addressed store.
+The implemented F003 SQLite catalog records exact source-key identity, logical documents, immutable source-version facts,
+object references, checksummed schema history and recoverable job/event state. Later features add block metadata,
+derivation dependencies, staleness and index state through append-only migrations. Binary and large JSON artifacts live
+in the content-addressed store rather than ordinary catalog rows.
+
+Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
+an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
+F003 compatibility requirement. Open rejects newer, gapped, checksum-drifted, structurally drifted or foreign catalogs
+without attempting a repair.
 
 ### Content-addressed artifact store
 
@@ -91,6 +98,18 @@ objects/sha256/ab/cd/<remaining-hash>
 ```
 
 Objects are immutable. Metadata records media type, length and integrity. Duplicate assets across documents are stored once.
+
+F003 stages bytes below the same managed root, computes SHA-256 and length in one pass, synchronizes the staged file and
+publishes with `os.replace`. Reads validate the exact lowercase identity and every managed ancestor, reject links,
+junctions, hard-linked/non-regular leaves and verify the full digest. A catalog failure after publication may leave a
+complete unreferenced object; it cannot leave a partially visible version.
+
+### Persistence and reachability services
+
+`PersistenceService` orders the two local resources: publish and verify CAS objects first, then commit all catalog facts in
+one SQLite transaction. It never rolls back by deleting an object because another record may already reference identical
+bytes. `ReachabilityService` captures one catalog-root snapshot, inventories verified objects and reports reachable,
+candidate and inconsistent entries. It is advisory and has no delete port.
 
 ### Enrichment DAG
 
@@ -170,7 +189,13 @@ Graph webhooks/Event Grid → reconciliation queue → drive delta crawler
 → permission-aware ingestion → tenant-scoped storage/indexes → policy gateway → MCP/API
 ```
 
-## 4. Transaction boundary
+## 4. Transaction boundaries
+
+F003 implements a narrower source-fact boundary: document-version header, source-object metadata and all explicit object
+references become visible in one SQLite commit. This fact does **not** mean a parsed representation is `READY`. A complete
+object published before a failed catalog commit is a safe reachability candidate.
+
+The later end-to-end ingestion boundary remains:
 
 A version becomes `READY` only after:
 
@@ -191,9 +216,16 @@ Optional enrichment may remain `PENDING`. Search must expose artifact freshness.
 - make all handlers idempotent;
 - use optimistic version checks for catalog updates.
 
+F003 concretely enforces exact source-key uniqueness, composite immutable version identity and job revision compare-and-set
+fencing. Raw caller lease tokens are never stored; only SHA-256 token hashes are durable. Lease expiry equality counts as
+expired, mutating timestamps cannot move backward, retries are bounded and every state change appends a sanitized event.
+
 ## 6. Failure behavior
 
 - Parser failure creates a terminal or retryable job result but no partial version.
 - Derived enrichment failure does not invalidate canonical ingestion.
 - Stale artifacts are never returned as current unless the caller explicitly allows stale data.
 - Missing originals are reported; they are not silently replaced by summaries.
+- Failed object staging exposes no canonical leaf. A post-publication catalog failure leaves only a complete orphan.
+- Failed migration chains roll back every pending DDL statement and migration record.
+- Reachability inconsistencies are reported separately from complete unreferenced candidates and trigger no deletion.

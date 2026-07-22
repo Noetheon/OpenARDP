@@ -19,6 +19,15 @@ semantic versioning once the public package lifecycle begins.
 - RFC 8785 canonical JSON, strict raw-JSON inspection and domain-separated SHA-256 identities with independent golden
   vectors and fresh-process determinism coverage.
 - Accepted ADR 0006 governing canonicalization, identity projections and migration requirements.
+- Immutable SHA-256 filesystem CAS with streamed writes/reads, atomic publication, strict path validation, integrity
+  inventory and concurrent duplicate convergence.
+- Checksummed SQLite catalog revisions for stable logical documents, atomic source-version facts and durable fenced jobs,
+  using rollback journaling and explicit restart recovery.
+- Provider-neutral persistence ports and services for UUIDv7 registration, CAS-first version commits and deterministic
+  read-only reachability classification.
+- Synthetic offline integration/security coverage for publication faults, SQLite migration rollback, independent-reader
+  visibility, lease fencing, process restart, unsafe filesystem layouts and byte-for-byte non-mutating analysis.
+- Accepted ADR 0002 governing the MVP filesystem-CAS and SQLite durability boundary.
 
 ### Changed
 
@@ -30,6 +39,8 @@ semantic versioning once the public package lifecycle begins.
 - Replaced the provisional three-schema drafts with generated, byte-stable contracts for all five F002 roots.
 - Fixed repository text contracts to LF and made canonicalization fixture decoding explicitly UTF-8 so byte-level
   verification has the same meaning on Linux, macOS and Windows.
+- Selected SQLite `DELETE` journaling with `synchronous=EXTRA` for the observed affected SQLite runtime instead of WAL,
+  and made migration history/table drift a fail-closed compatibility error.
 
 ### Removed
 
@@ -44,6 +55,8 @@ semantic versioning once the public package lifecycle begins.
   to be enabled before a public release.
 - Document-originated content is fixed to the `data` role with instruction execution disabled; validation errors redact
   raw inputs, and unit/contract suites remain network-blocked.
+- Object access validates canonical identities and every managed ancestor before opening; source locators remain bound SQL
+  values, raw lease capabilities are hashed before persistence and ordinary errors/logs exclude untrusted metadata.
 
 ## Blueprint history
 

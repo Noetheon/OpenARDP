@@ -149,14 +149,14 @@ a development script outside the installed package.
    license and version consistent.
 5. Build wheel and source distributions, install the wheel into an isolated environment and smoke-test the public import.
 6. Re-run every gate and confirm `git diff --check` plus `git status --short` reveal only intended files.
-7. Record macOS results locally; the committed CI matrix is the authoritative Linux/Windows execution mechanism because
-   those operating systems are not emulated by this feature.
+7. Record macOS results locally, then retain the successful GitHub-hosted Ubuntu, macOS and Windows run URL and head SHA
+   as the authoritative cross-platform execution evidence.
 
 ## Trade-offs and Risks
 
 - Exact uv pinning improves reproducibility but requires an explicit maintenance change for tool upgrades.
-- Static repository tests can prove workflow configuration and pinning locally, but only GitHub-hosted runs prove runner
-  image behavior on all three operating-system families; this repository currently has no remote.
+- Static repository tests prove workflow configuration and pinning locally; GitHub Actions run `29926478593` supplies the
+  corresponding observed runner-image evidence for all three operating-system families.
 - Apache-2.0 consistency can be established locally; public release still requires ownership, employer-IP, naming and
   trademark clearance.
 - Offline local-link validation does not establish availability or correctness of external references.

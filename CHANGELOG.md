@@ -12,6 +12,7 @@ semantic versioning once the public package lifecycle begins.
 - Least-privilege Linux/macOS/Windows CI contract with immutable third-party Action revisions.
 - Offline repository validator for local Markdown evidence and governance consistency.
 - Apache-2.0 license, contribution process, security policy and feature-local implementation evidence.
+- Private `Noetheon/OpenARDP` GitHub remote with a successful first Ubuntu/macOS/Windows workflow run.
 
 ### Changed
 
@@ -29,6 +30,8 @@ semantic versioning once the public package lifecycle begins.
 
 - Unit tests block socket access.
 - CI uses read-only permissions, non-persistent checkout credentials and full-SHA Action pins.
+- Private-phase vulnerability reporting avoids public exploit details and requires GitHub private vulnerability reporting
+  to be enabled before a public release.
 
 ## Blueprint history
 

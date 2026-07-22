@@ -85,8 +85,8 @@ and the test command itself enforces branch coverage and the threshold.
 **Goal**: Pull requests and main-branch pushes declare the full quality matrix without mutable actions, write authority,
 persistent checkout credentials or lock mutation.
 
-**Independent Test**: Run repository-policy tests against the workflow and verify each action SHA against its reviewed
-release tag; external Linux/Windows execution remains explicitly pending until a remote exists.
+**Independent Test**: Run repository-policy tests against the workflow, verify each action SHA against its reviewed
+release tag and retain the successful GitHub-hosted Ubuntu, macOS and Windows run as external execution evidence.
 
 ### Tests for User Story 3
 

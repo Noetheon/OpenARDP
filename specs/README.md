@@ -26,7 +26,7 @@ refine those decisions but may not silently contradict them.
 | Feature | Scope | Status |
 |---|---|---|
 | `001-repository-baseline` | Reproducible Python/uv foundation and three-platform CI | Converged |
-| `002-domain-models-schemas` | Pure records, RFC 8785 identities and reviewed JSON Schemas | Locally converged; remote validation pending |
+| `002-domain-models-schemas` | Pure records, RFC 8785 identities and reviewed JSON Schemas | Converged |
 
 The active-feature locator is `.specify/feature.json`. A later work package must not be started by adding behavior to an
 earlier feature directory.

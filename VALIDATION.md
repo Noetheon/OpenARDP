@@ -52,6 +52,20 @@ checks, Ruff, formatting, strict mypy, the offline locked suite, build and stage
 schema hashes and Spec Kit evidence are maintained in the feature implementation notes. External Linux/macOS/Windows
 evidence must still be green before this section is treated as closed.
 
+## Feature 002 external verification completed
+
+[Pull request #2](https://github.com/Noetheon/OpenARDP/pull/2) merged F002 as commit
+[`81c1d3315c9082a4902c8ec898bfab118d530a3e`](https://github.com/Noetheon/OpenARDP/commit/81c1d3315c9082a4902c8ec898bfab118d530a3e).
+The final PR-head workflow [29932307711](https://github.com/Noetheon/OpenARDP/actions/runs/29932307711) and the
+post-merge `main` workflow [29932448176](https://github.com/Noetheon/OpenARDP/actions/runs/29932448176) both completed
+successfully on Ubuntu, macOS and Windows. Each job performed locked synchronization, lint, formatting, strict mypy,
+the 186-test network-blocked suite, distribution builds and tracked-file drift verification.
+
+The earlier PR run [29931948083](https://github.com/Noetheon/OpenARDP/actions/runs/29931948083) remains intentionally
+visible: it exposed Windows CRLF checkout and implicit CP1252 decoding assumptions. The repository now enforces LF for
+reviewed text contracts and explicit UTF-8 for the Unicode vector, and both later Windows jobs passed. This closes the
+cross-platform execution and final Spec Kit convergence boundary for feature 002.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

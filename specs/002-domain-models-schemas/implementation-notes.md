@@ -57,7 +57,7 @@ Two consecutive `uv run --locked python scripts/generate_schemas.py --check` exe
 - Final pre-implementation analysis mapped all 27 functional requirements and nine success criteria to 48 tasks, with zero critical, high or medium findings and zero unmapped requirements.
 - Both feature checklists are complete: 16/16 requirements-quality items and 30/30 domain-contract items.
 - The first convergence review found three subtle gaps: endpoint extensions entering relation identity, incomplete explicit invariant-branch coverage and a non-schema-visible content-role rule. Append-only tasks T049–T051 closed all three.
-- Final local convergence rechecked all 27 requirements, nine success criteria, 51 tasks, five models/schemas/fixtures, higher-level documentation and the F003+ scope boundary. It found zero unresolved or unrequested implementation gaps. T048 remains intentionally open until the live PR matrix and post-merge `main` run are recorded.
+- Final convergence rechecked all 27 requirements, nine success criteria, 52 completed tasks, five models/schemas/fixtures, higher-level documentation, the F003+ scope boundary and the live three-platform evidence. It found zero unresolved or unrequested implementation gaps.
 
 ## Local gate evidence
 
@@ -88,8 +88,12 @@ The [first PR matrix](https://github.com/Noetheon/OpenARDP/actions/runs/29931948
 ### Publication evidence fields
 
 - Pull request: [#2](https://github.com/Noetheon/OpenARDP/pull/2)
-- Pull-request matrix run: [29932152848](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848)
-- Linux job: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964385078) — passed in 27 seconds
-- macOS job: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964384956) — passed in 25 seconds
-- Windows job: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932152848/job/88964385203) — passed in 1 minute 8 seconds
-- Post-merge `main` run: pending merge
+- Final pull-request matrix run: [29932307711](https://github.com/Noetheon/OpenARDP/actions/runs/29932307711)
+- Linux job: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932307711/job/88964922411) — passed in 27 seconds
+- macOS job: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932307711/job/88964922404) — passed in 38 seconds
+- Windows job: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29932307711/job/88964922463) — passed in 1 minute 7 seconds
+- Squash merge: [`81c1d3315c9082a4902c8ec898bfab118d530a3e`](https://github.com/Noetheon/OpenARDP/commit/81c1d3315c9082a4902c8ec898bfab118d530a3e)
+- Post-merge `main` run: [29932448176](https://github.com/Noetheon/OpenARDP/actions/runs/29932448176)
+  - [Ubuntu](https://github.com/Noetheon/OpenARDP/actions/runs/29932448176/job/88965403053) — passed in 28 seconds
+  - [macOS](https://github.com/Noetheon/OpenARDP/actions/runs/29932448176/job/88965403189) — passed in 31 seconds
+  - [Windows](https://github.com/Noetheon/OpenARDP/actions/runs/29932448176/job/88965403256) — passed in 1 minute 6 seconds

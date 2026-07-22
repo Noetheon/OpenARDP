@@ -46,7 +46,7 @@ uv run --locked python scripts/generate_schemas.py --check
 ```
 
 These are pure contracts, not document-processing behavior. No parser, persistence, retrieval, context compiler, MCP or
-product CLI exists yet. Continue with feature 003 only after feature 002 converges and all checks pass.
+product CLI exists yet. Feature 002 is converged; feature 003 is the next bounded work package in the feature map.
 
 For contribution rules, security reporting and evidence, use [CONTRIBUTING.md](CONTRIBUTING.md),
 [SECURITY.md](SECURITY.md) and [VALIDATION.md](VALIDATION.md).

@@ -4,7 +4,7 @@
 
 **Branch**: `codex/f003-cas-sqlite-catalog`
 
-**Status**: Local convergence and first PR matrix complete; merge evidence pending
+**Status**: Complete; local convergence, final PR matrix and post-merge `main` matrix passed
 
 ## Acceptance criteria restated before implementation
 
@@ -116,18 +116,22 @@ public CAS tracebacks and every durable transition token hash has canonical SHA-
 - convergence left `tasks.md` byte-for-byte unchanged at SHA-256
   `915dc8248a78a0f7d96275d481c2ea6591fbdcdbd611cd84bd5da20602277936` before the final T062 status update.
 
-Result: the implementation satisfies the F003 specification, plan and task inventory. The first PR-head matrix confirms
-the same gates on all three supported CI operating systems.
+Result: the implementation satisfies the F003 specification, plan and task inventory. The final PR-head and post-merge
+`main` matrices confirm the same gates on all three supported CI operating systems.
 
 ## External validation evidence
 
 - Pull request: [#3](https://github.com/Noetheon/OpenARDP/pull/3)
-- First PR-head workflow: [29938430002](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002)
-- Linux: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873119) — passed in 35 seconds
-- macOS: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873073) — passed in 36 seconds
-- Windows: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873055) — passed in 1 minute 46 seconds
-- Merge commit: Pending
-- Post-merge `main` workflow: Pending
+- Final PR-head workflow: [29938693336](https://github.com/Noetheon/OpenARDP/actions/runs/29938693336)
+- Linux: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938693336/job/88986760601) — passed in 30 seconds
+- macOS: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938693336/job/88986760577) — passed in 40 seconds
+- Windows: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938693336/job/88986760678) — passed in 1 minute 11 seconds
+- Squash merge: [`65ff681984b844cc647b9c4221f435606be72a25`](https://github.com/Noetheon/OpenARDP/commit/65ff681984b844cc647b9c4221f435606be72a25)
+- Post-merge `main` workflow: [29938831432](https://github.com/Noetheon/OpenARDP/actions/runs/29938831432)
+  - [Ubuntu](https://github.com/Noetheon/OpenARDP/actions/runs/29938831432/job/88987236303) — passed in 31 seconds
+  - [macOS](https://github.com/Noetheon/OpenARDP/actions/runs/29938831432/job/88987236485) — passed in 37 seconds
+  - [Windows](https://github.com/Noetheon/OpenARDP/actions/runs/29938831432/job/88987236168) — passed in 1 minute 23 seconds
 
-F003 is not complete until local convergence, green PR-head cross-platform CI, merge and green post-merge `main` CI are
-all recorded.
+The earlier PR-head workflow [29938430002](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002) also passed
+on all three systems and remains part of the audit trail. F003 is complete: local convergence, final PR-head
+cross-platform CI, squash merge and post-merge `main` CI are all recorded and green.

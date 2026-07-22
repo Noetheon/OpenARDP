@@ -1,8 +1,9 @@
 # Validation status
 
 This file separates locally observed evidence from externally observed automation. Feature-specific acceptance evidence
-is recorded in the [feature 001 notes](specs/001-repository-baseline/implementation-notes.md) and
-[feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md).
+is recorded in the [feature 001 notes](specs/001-repository-baseline/implementation-notes.md),
+[feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md) and
+[feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -65,6 +66,19 @@ The earlier PR run [29931948083](https://github.com/Noetheon/OpenARDP/actions/ru
 visible: it exposed Windows CRLF checkout and implicit CP1252 decoding assumptions. The repository now enforces LF for
 reviewed text contracts and explicit UTF-8 for the Unicode vector, and both later Windows jobs passed. This closes the
 cross-platform execution and final Spec Kit convergence boundary for feature 002.
+
+## Feature 003 external verification completed
+
+[Pull request #3](https://github.com/Noetheon/OpenARDP/pull/3) merged F003 as commit
+[`65ff681984b844cc647b9c4221f435606be72a25`](https://github.com/Noetheon/OpenARDP/commit/65ff681984b844cc647b9c4221f435606be72a25).
+The final PR-head workflow [29938693336](https://github.com/Noetheon/OpenARDP/actions/runs/29938693336) and the
+post-merge `main` workflow [29938831432](https://github.com/Noetheon/OpenARDP/actions/runs/29938831432) both completed
+successfully on Ubuntu, macOS and Windows. They repeated the locked environment setup, Ruff, formatting, strict mypy,
+the 284-test network-blocked suite, distribution builds and tracked-file drift verification.
+
+This closes F003's local filesystem CAS, transactional SQLite catalog, durable job/recovery and read-only reachability
+boundary. It does not validate parsers, complete document representations, retrieval or automatic deletion; those
+remain later bounded work packages.
 
 ## Corrective environment verification
 

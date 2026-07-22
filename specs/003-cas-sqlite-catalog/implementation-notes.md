@@ -4,7 +4,7 @@
 
 **Branch**: `codex/f003-cas-sqlite-catalog`
 
-**Status**: Local implementation and quality gates complete; external PR/CI evidence pending
+**Status**: Local convergence and first PR matrix complete; merge evidence pending
 
 ## Acceptance criteria restated before implementation
 
@@ -116,16 +116,16 @@ public CAS tracebacks and every durable transition token hash has canonical SHA-
 - convergence left `tasks.md` byte-for-byte unchanged at SHA-256
   `915dc8248a78a0f7d96275d481c2ea6591fbdcdbd611cd84bd5da20602277936` before the final T062 status update.
 
-Result: local implementation satisfies the F003 specification, plan and task inventory. External cross-platform evidence
-remains the only pending completion boundary.
+Result: the implementation satisfies the F003 specification, plan and task inventory. The first PR-head matrix confirms
+the same gates on all three supported CI operating systems.
 
 ## External validation evidence
 
-- Pull request: Pending
-- PR-head workflow: Pending
-- Linux: Pending
-- macOS: Pending
-- Windows: Pending
+- Pull request: [#3](https://github.com/Noetheon/OpenARDP/pull/3)
+- First PR-head workflow: [29938430002](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002)
+- Linux: [Quality (ubuntu-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873119) — passed in 35 seconds
+- macOS: [Quality (macos-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873073) — passed in 36 seconds
+- Windows: [Quality (windows-latest)](https://github.com/Noetheon/OpenARDP/actions/runs/29938430002/job/88985873055) — passed in 1 minute 46 seconds
 - Merge commit: Pending
 - Post-merge `main` workflow: Pending
 

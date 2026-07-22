@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Implemented; local Spec Kit convergence passed, external PR/CI evidence pending
+**Status**: Implemented; local convergence and first three-platform PR matrix passed, merge pending
 
 **Input**: User description: "Implement F003 completely, deeply, sustainably and according to best practice. Persist immutable content objects, documents, versions and jobs safely on one machine so repeated ingestion can reuse exact content and interrupted work cannot expose partial state."
 

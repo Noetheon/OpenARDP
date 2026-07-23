@@ -121,7 +121,7 @@ state with a documented remedy. Idempotent per-scope transactions keep crashes s
 
 **Decision**: FTS5 availability is probed explicitly by creating and dropping a temporary `fts5` probe table on the
 catalog connection before migration 4 is applied and whenever the workspace opens; failure raises a sanitized
-`SearchIndexUnavailable` classification before any result is served. Migration 4 (`lexical-block-search`) appends the
+`SearchCapabilityUnavailable` classification before any result is served. Migration 4 (`lexical-block-search`) appends the
 virtual table, the mapping table and its indexes without touching revisions 1–3; `_SCHEMA_TABLES[4]` additionally
 expects the four contentless shadow tables (`_data`, `_idx`, `_docsize`, `_config`; no `_content` table exists for
 contentless), verified empirically against the locked runtime. The existing checksum chain, `trusted_schema=OFF`,

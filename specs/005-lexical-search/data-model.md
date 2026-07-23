@@ -88,7 +88,7 @@ Pure Pydantic v2 contracts; no I/O, mirroring the F004 domain style.
 - Per-scope sets: `ready_ordinals`, `indexed_ordinals`; derived `missing`, `orphaned` tuples and
   `is_covered` flag. Deterministic ordering everywhere.
 
-### `ReindexScopeReport` / `ReindexReport`
+### `ReindexScopeReport` / `ReindexReport` (the spec's "Backfill Report")
 
 - Per scope: `scope`, `outcome` (`current` | `rebuilt` | `failed`), `failure_code` (bounded, nullable),
   `entry_count`. Report is ordered by scope identity and contains no document text.

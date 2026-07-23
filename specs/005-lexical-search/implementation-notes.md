@@ -34,9 +34,22 @@
 | `uv run ruff check .` | pass |
 | `uv run ruff format --check .` | pass |
 | `uv run mypy src` | pass (strict) |
-| `uv run pytest` | pass, coverage ≥ 85% branch |
+| `uv run mypy src --platform win32` | pass (strict) |
+| `uv run pytest` | 407 tests pass, 86.45% branch coverage (required ≥ 85%) |
+| `uv run pre-commit run --all-files` | pass |
+| `uv run scripts/validate_repository.py` | pass |
+| `uv build` + isolated wheel import | pass (`0.0.1`) |
+| FTS5 shadow-table probe (SQLite 3.50.4) | `block_search_index_{config,data,docsize,idx}`; no `_content`; `bm25` and contentless delete verified under `trusted_schema=OFF` |
 | Schema revision | 4 (`lexical-block-search`) |
 | Runtime deps | unchanged (stdlib FTS5 only) |
+
+## Quickstart validation (offline, temporary workspace)
+
+- Scenario 1: term search returns hits from both ingested documents; identical results after source deletion.
+- Scenario 2: phrase adjacency, term AND, `--kind` filter and `--limit 1` with `truncated`/`available` behave per contract.
+- Scenario 3: superseded version excluded by default; `--all-versions` restores the old hit with its exact previous `version_id`.
+- Scenario 4: entries deleted to simulate a pre-F005 workspace → `search` fails closed exit 6 (`search_index_incomplete`); `reindex` reports `rebuilt` per scope; second run reports `current` (no-op); search serves verified hits; all CAS objects and representations byte-identical before/after.
+- Scenario 5: empty query exit 4, operator lookalikes literal exit 0, invalid `--kind` exit 4, missing workspace exit 6; hostile snippet text renders escaped and inert (`` in human mode).
 
 ## Module surface
 

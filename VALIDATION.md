@@ -119,6 +119,33 @@ intentionally visible: it exposed that Windows `DirEntry.stat` caches directory 
 staged-twin scan now requests complete identities explicitly, and both later Windows jobs passed. This closes the
 cross-platform execution and final Spec Kit convergence boundary for feature 004.
 
+## Feature 005 local evidence
+
+Feature `005-lexical-search` adds exact source-backed lexical retrieval through a checksummed catalog revision 4
+(contentless-delete FTS5 plus a STRICT mapping table) without adding embeddings, fuzzy matching, watchers, MCP, HTTP
+or any new runtime dependency. The locally observed complete gate on macOS/Python 3.12 passed 407 offline tests with
+86.45 percent branch-aware coverage against the enforced 85 percent threshold. Ruff, formatting and strict mypy
+(native and Windows platform), pre-commit, the offline repository validator and the distribution builds plus isolated
+wheel import also passed.
+
+Focused evidence covers the bounded term/phrase grammar with operator lookalikes as literal text, atomic READY+index
+commits with fault-injection rollback, fail-closed structural coverage (`SearchIndexIncomplete`), serve-time hash
+guards (`SearchIndexDrifted`), verified CAS snippets with bounded escaped rendering, deterministic bm25 ordering with
+a total tie-break, the explicit idempotent `reindex` backfill with byte-identical evidence, all filters including the
+stable page/slide contract, and both CLI verbs in human and JSON modes through the installed entry point. The complete
+Spec Kit lifecycle converged with zero findings; the feature 005 notes carry the full evidence table and the five
+quickstart scenarios.
+
+## Feature 005 external verification completed
+
+[Pull request #5](https://github.com/Noetheon/OpenARDP/pull/5) merged F005 as commit
+[`26947ad2ebdf4a2c90a2726838b870aa3fb564a8`](https://github.com/Noetheon/OpenARDP/commit/26947ad2ebdf4a2c90a2726838b870aa3fb564a8).
+The final PR-head workflow [30050801259](https://github.com/Noetheon/OpenARDP/actions/runs/30050801259) and the
+post-merge `main` workflow [30050939386](https://github.com/Noetheon/OpenARDP/actions/runs/30050939386) both completed
+successfully on Ubuntu, macOS and Windows. They repeated the locked environment setup, Ruff, formatting, strict mypy,
+the 407-test network-blocked suite, distribution builds and tracked-file drift verification. This closes the
+cross-platform execution and final Spec Kit convergence boundary for feature 005.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

@@ -68,6 +68,12 @@
   token streams byte-for-byte (rebuild is always available and safe).
 - Remote CI evidence for this branch is produced after push/PR (same F001–F004 pattern).
 
+## Remote verification
+
+- Pull request [#5](https://github.com/Noetheon/OpenARDP/pull/5), squash merge `26947ad2ebdf4a2c90a2726838b870aa3fb564a8`.
+- PR-head workflow [30050801259](https://github.com/Noetheon/OpenARDP/actions/runs/30050801259): Ubuntu, macOS and Windows all passed.
+- Post-merge `main` workflow [30050939386](https://github.com/Noetheon/OpenARDP/actions/runs/30050939386): Ubuntu, macOS and Windows all passed.
+
 ## Out of scope (unchanged)
 
 Embeddings, semantic/fuzzy search, OCR, watchers, MCP, HTTP, export, F006+ formats.

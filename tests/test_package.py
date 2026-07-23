@@ -26,7 +26,6 @@ FORBIDDEN_MODULES = (
     "openardp.core",
     "openardp.adapters.docling",
     "openardp.interfaces.mcp",
-    "openardp.services.search",
 )
 DOMAIN_MODULES = {
     "block",
@@ -38,6 +37,7 @@ DOMAIN_MODULES = {
     "relation",
     "storage",
     "ingestion",
+    "search",
 }
 PORT_MODULES = {"catalog", "object_store", "parser"}
 ADAPTER_MODULES = {
@@ -49,7 +49,7 @@ ADAPTER_MODULES = {
     "sqlite_migrations",
     "text_parser",
 }
-SERVICE_MODULES = {"document_query", "ingestion", "persistence", "reachability"}
+SERVICE_MODULES = {"document_query", "ingestion", "persistence", "reachability", "search"}
 INTERFACE_MODULES = {"cli"}
 
 
@@ -91,11 +91,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_004(
+def test_module_surface_is_bounded_to_feature_005(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F004 modules."""
+    """Expose exactly the reviewed F002-F005 modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

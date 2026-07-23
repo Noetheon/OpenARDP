@@ -1,4 +1,4 @@
-"""Installable stable CLI composition root for the F004 local text slice."""
+"""Installable stable CLI composition root for local text ingest and search."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ from openardp.adapters.local_workspace import (
     WorkspaceError,
 )
 from openardp.domain.common import SCHEMA_VERSION
+from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.ports.catalog import (
     AmbiguousBlock,
     BlockNotFound,
@@ -37,13 +38,26 @@ from openardp.ports.catalog import (
     RepresentationIntegrityError,
     RepresentationLeaseConflict,
     RepresentationNotFound,
+    SearchCapabilityUnavailable,
+    SearchIndexDrifted,
+    SearchIndexIncomplete,
 )
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, UnsupportedTextMedia
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
+from openardp.services.search import SearchService
 
-_COMMANDS = {"init", "ingest", "list", "status", "outline", "get"}
+_COMMANDS = {
+    "init",
+    "ingest",
+    "list",
+    "status",
+    "outline",
+    "get",
+    "search",
+    "reindex",
+}
 
 
 class _UsageError(ValueError):
@@ -88,6 +102,25 @@ def _parser() -> _ArgumentParser:
     get = subparsers.add_parser("get", help="retrieve one exact current block")
     get.add_argument("block_id")
     _common_options(get)
+
+    search = subparsers.add_parser("search", help="exact lexical search over prepared evidence")
+    search.add_argument("query")
+    search.add_argument("--document")
+    search.add_argument("--version")
+    search.add_argument("--all-versions", action="store_true")
+    search.add_argument("--kind")
+    search.add_argument("--trust")
+    search.add_argument("--page", type=int)
+    search.add_argument("--slide", type=int)
+    search.add_argument("--limit", type=int)
+    _common_options(search)
+
+    reindex = subparsers.add_parser(
+        "reindex",
+        help="rebuild lexical index rows from verified READY evidence",
+    )
+    reindex.add_argument("--document")
+    _common_options(reindex)
     return parser
 
 
@@ -100,7 +133,9 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-def _services(workspace: LocalWorkspace) -> tuple[IngestionService, DocumentQueryService]:
+def _services(
+    workspace: LocalWorkspace,
+) -> tuple[IngestionService, DocumentQueryService, SearchService]:
     parser = IsolatedParserAdapter()
     ingestion = IngestionService(
         workspace.object_store,
@@ -114,7 +149,12 @@ def _services(workspace: LocalWorkspace) -> tuple[IngestionService, DocumentQuer
         source_factory=LocalSource,
         representation_verifier=ingestion.verify_ready_representation,
     )
-    return ingestion, query
+    search = SearchService(
+        workspace.object_store,
+        workspace.catalog,
+        source_factory=LocalSource,
+    )
+    return ingestion, query, search
 
 
 def _execute(arguments: argparse.Namespace) -> object:
@@ -128,7 +168,7 @@ def _execute(arguments: argparse.Namespace) -> object:
         }
 
     workspace = LocalWorkspace.open(store)
-    ingestion, query = _services(workspace)
+    ingestion, query, search = _services(workspace)
     if command == "ingest":
         return ingestion.ingest(
             Path(arguments.path),
@@ -146,6 +186,22 @@ def _execute(arguments: argparse.Namespace) -> object:
         )
     if command == "get":
         return query.get(_parse_uuid(str(arguments.block_id)))
+    if command == "search":
+        return search.search(
+            str(arguments.query),
+            document=str(arguments.document) if arguments.document is not None else None,
+            version_id=str(arguments.version) if arguments.version is not None else None,
+            include_history=bool(arguments.all_versions),
+            kind=str(arguments.kind) if arguments.kind is not None else None,
+            trust=str(arguments.trust) if arguments.trust is not None else None,
+            page=int(arguments.page) if arguments.page is not None else None,
+            slide=int(arguments.slide) if arguments.slide is not None else None,
+            limit=int(arguments.limit) if arguments.limit is not None else None,
+        )
+    if command == "reindex":
+        return search.reindex(
+            document=str(arguments.document) if arguments.document is not None else None,
+        )
     raise _UsageError("invalid command usage")
 
 
@@ -219,6 +275,23 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
         for item in converted:
             assert isinstance(item, dict)
             print(f"{'  ' * int(item['depth'])}{item['kind']}\t{_safe_text(str(item['label']))}")
+    elif command == "search":
+        assert isinstance(data, SearchOutcome)
+        for hit in data.hits:
+            print(
+                f"{hit.scope.document_id}\t{hit.block_id}\t{hit.kind.value}\t"
+                f"{hit.line_start}-{hit.line_end}\t{_safe_text(hit.snippet)}"
+            )
+        print(f"returned={data.returned} available={data.available} truncated={data.truncated}")
+    elif command == "reindex":
+        assert isinstance(converted, dict)
+        scopes = converted["scopes"]
+        assert isinstance(scopes, list)
+        for item in scopes:
+            assert isinstance(item, dict)
+            scope = item["scope"]
+            assert isinstance(scope, dict)
+            print(f"{scope['document_id']}\t{item['outcome']}\tentries={item['entry_count']}")
     else:
         print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
 
@@ -239,7 +312,14 @@ def _classification(error: Exception) -> tuple[int, str, str]:
         return 3, "not_found", "requested evidence was not found"
     if isinstance(
         error,
-        (InvalidSourcePath, SourceTooLarge, UnsupportedTextMedia, ParserError, ValueError),
+        (
+            InvalidSourcePath,
+            SourceTooLarge,
+            UnsupportedTextMedia,
+            ParserError,
+            SearchQueryRejected,
+            ValueError,
+        ),
     ):
         return 4, "rejected_input", "input was rejected"
     if isinstance(
@@ -259,6 +339,9 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             CatalogIncompatible,
             CatalogTooNew,
             RepresentationIntegrityError,
+            SearchCapabilityUnavailable,
+            SearchIndexIncomplete,
+            SearchIndexDrifted,
             ObjectStoreError,
             CatalogError,
         ),

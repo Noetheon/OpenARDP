@@ -4,7 +4,8 @@ This file separates locally observed evidence from externally observed automatio
 is recorded in the [feature 001 notes](specs/001-repository-baseline/implementation-notes.md),
 [feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md) and
 [feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md) and
-[feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md).
+[feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md) and
+[feature 005 notes](specs/005-lexical-search/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 

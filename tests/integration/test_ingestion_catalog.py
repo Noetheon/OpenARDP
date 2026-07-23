@@ -181,7 +181,7 @@ def _ready_commit(
 
 def _catalog(path: Path) -> SQLiteCatalog:
     catalog = SQLiteCatalog(path)
-    assert catalog.initialize(now=NOW) == 3
+    assert catalog.initialize(now=NOW) == 4
     catalog.register_document(
         SourceKey(connector="local", locator="/synthetic/source.txt"),
         document_id=DOCUMENT_ID,
@@ -221,15 +221,15 @@ def _claim(
 
 
 def test_migration_three_upgrades_real_prior_catalogs_and_has_exact_tables(tmp_path: Path) -> None:
-    """Append migration 3 without changing the released first two migrations."""
+    """Append migrations 3-4 without changing the released first two migrations."""
     path = tmp_path / "catalog.sqlite3"
     prior_checksums = (MIGRATION_1.checksum, MIGRATION_2.checksum)
     old = SQLiteCatalog(path, migrations=(MIGRATION_1, MIGRATION_2))
     assert old.initialize(now=NOW) == 2
 
     current = SQLiteCatalog(path)
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 3
-    assert current.initialize(now=NOW + timedelta(seconds=2)) == 3
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == 4
+    assert current.initialize(now=NOW + timedelta(seconds=2)) == 4
     assert (MIGRATION_1.checksum, MIGRATION_2.checksum) == prior_checksums
     with sqlite3.connect(path) as connection:
         tables = {
@@ -243,6 +243,12 @@ def test_migration_three_upgrades_real_prior_catalogs_and_has_exact_tables(tmp_p
         "representation_blocks",
         "document_heads",
         "ingestion_events",
+        "block_search_entries",
+        "block_search_index",
+        "block_search_index_config",
+        "block_search_index_data",
+        "block_search_index_docsize",
+        "block_search_index_idx",
     }.issubset(tables)
 
 

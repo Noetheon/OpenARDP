@@ -146,6 +146,55 @@ def test_all_six_json_commands_are_stable_and_body_minimizing(
     assert "\\u001b" in raw
 
 
+def test_search_and_reindex_json_commands(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Expose search and reindex through the stable JSON envelope without full bodies."""
+    workspace = tmp_path / "store"
+    source = tmp_path / "searchable.txt"
+    source.write_text("alpha token for retrieval\n", encoding="utf-8")
+    assert main(["init", "--store", str(workspace)]) == 0
+    assert main(["ingest", str(source), "--store", str(workspace)]) == 0
+    capsys.readouterr()
+
+    code, searched, _ = _invoke_json(
+        capsys,
+        ["search", "alpha", "--store", str(workspace)],
+    )
+    assert code == 0
+    assert searched["ok"] is True
+    assert searched["command"] == "search"
+    data = searched["data"]
+    assert isinstance(data, dict)
+    assert int(data["returned"]) >= 1
+    hits = data["hits"]
+    assert isinstance(hits, list)
+    assert hits
+    first = hits[0]
+    assert isinstance(first, dict)
+    assert "snippet" in first
+    assert "block_id" in first
+    assert "text" not in first
+    assert "body" not in first
+
+    code, reindexed, _ = _invoke_json(capsys, ["reindex", "--store", str(workspace)])
+    assert code == 0
+    assert reindexed["ok"] is True
+    report = reindexed["data"]
+    assert isinstance(report, dict)
+    scopes = report["scopes"]
+    assert isinstance(scopes, list)
+    assert scopes
+
+    code, rejected, _ = _invoke_json(
+        capsys,
+        ["search", "", "--store", str(workspace)],
+    )
+    assert code == 4
+    assert rejected["ok"] is False
+
+
 def test_json_usage_and_not_found_failures_are_single_sanitized_envelopes(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

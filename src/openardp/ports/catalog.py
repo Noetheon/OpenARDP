@@ -21,6 +21,12 @@ from openardp.domain.ingestion import (
     RepresentationLease,
     RepresentationScope,
 )
+from openardp.domain.search import (
+    IndexCoverage,
+    SearchFilters,
+    SearchIndexEntry,
+    SearchMatchPage,
+)
 from openardp.domain.storage import (
     DocumentVersion,
     Job,
@@ -114,6 +120,18 @@ class BlockNotFound(CatalogError):
 
 class AmbiguousBlock(CatalogError):
     """Raised when a block handle does not identify one current block."""
+
+
+class SearchCapabilityUnavailable(CatalogError):
+    """Raised when the runtime cannot provide the mandated FTS5 capability."""
+
+
+class SearchIndexIncomplete(CatalogError):
+    """Raised when in-scope READY representations lack complete index coverage."""
+
+
+class SearchIndexDrifted(CatalogError):
+    """Raised when index rows disagree with verified catalog or CAS evidence."""
 
 
 @runtime_checkable
@@ -325,4 +343,47 @@ class Catalog(Protocol):
 
     def reference_snapshot(self, *, observed_at: datetime) -> ReferenceSnapshot:
         """Return sorted version and job object roots from one read transaction."""
+        ...
+
+    def search_block_entries(
+        self,
+        *,
+        match: str,
+        filters: SearchFilters,
+    ) -> SearchMatchPage:
+        """Execute coverage-checked FTS match and return one total-ordered page."""
+        ...
+
+    def index_coverage(
+        self,
+        *,
+        scopes: tuple[RepresentationScope, ...] | None = None,
+    ) -> tuple[IndexCoverage, ...]:
+        """Return deterministic structural coverage for READY scopes."""
+        ...
+
+    def replace_scope_index(
+        self,
+        scope: RepresentationScope,
+        entries: tuple[SearchIndexEntry, ...],
+        texts: tuple[str, ...],
+        *,
+        now: datetime,
+    ) -> int:
+        """Atomically replace one READY scope's index rows with verified entries."""
+        ...
+
+    def list_ready_scopes(
+        self,
+        *,
+        document_id: UUID | None = None,
+    ) -> tuple[RepresentationScope, ...]:
+        """Return READY representation scopes in deterministic identity order."""
+        ...
+
+    def list_scope_index_entries(
+        self,
+        scope: RepresentationScope,
+    ) -> tuple[SearchIndexEntry, ...]:
+        """Return stored index mapping rows for one READY scope in ordinal order."""
         ...

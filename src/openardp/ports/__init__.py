@@ -21,6 +21,9 @@ from openardp.ports.catalog import (
     RepresentationIntegrityError,
     RepresentationLeaseConflict,
     RepresentationNotFound,
+    SearchCapabilityUnavailable,
+    SearchIndexDrifted,
+    SearchIndexIncomplete,
     VersionConflict,
 )
 from openardp.ports.object_store import (
@@ -80,6 +83,9 @@ __all__ = [
     "RepresentationIntegrityError",
     "RepresentationLeaseConflict",
     "RepresentationNotFound",
+    "SearchCapabilityUnavailable",
+    "SearchIndexDrifted",
+    "SearchIndexIncomplete",
     "TextDecodingError",
     "TextResourceLimitExceeded",
     "UnsafeStoreEntry",

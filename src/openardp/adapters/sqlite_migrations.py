@@ -351,7 +351,61 @@ MIGRATION_3 = Migration(
     ),
 )
 
-MIGRATIONS = (MIGRATION_1, MIGRATION_2, MIGRATION_3)
+MIGRATION_4 = Migration(
+    version=4,
+    name="lexical-block-search",
+    statements=(
+        """
+        CREATE VIRTUAL TABLE block_search_index USING fts5(
+            block_text,
+            content='',
+            contentless_delete=1,
+            tokenize='unicode61 remove_diacritics 0'
+        )
+        """,
+        """
+        CREATE TABLE block_search_entries (
+            entry_id INTEGER PRIMARY KEY,
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL CHECK (
+                length(version_id) = 71
+                AND substr(version_id, 1, 7) = 'sha256:'
+                AND substr(version_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            representation_id TEXT NOT NULL CHECK (
+                length(representation_id) = 71
+                AND substr(representation_id, 1, 7) = 'sha256:'
+                AND substr(representation_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            ordinal INTEGER NOT NULL CHECK (ordinal BETWEEN 0 AND 99999),
+            block_id TEXT NOT NULL CHECK (length(block_id) = 36),
+            kind TEXT NOT NULL CHECK (length(kind) BETWEEN 1 AND 64),
+            trust_zone TEXT NOT NULL CHECK (length(trust_zone) BETWEEN 1 AND 64),
+            page INTEGER NULL CHECK (page IS NULL OR page >= 0),
+            slide INTEGER NULL CHECK (slide IS NULL OR slide >= 0),
+            line_start INTEGER NOT NULL CHECK (line_start >= 1),
+            line_end INTEGER NOT NULL CHECK (line_end >= line_start),
+            text_hash TEXT NOT NULL CHECK (
+                length(text_hash) = 71
+                AND substr(text_hash, 1, 7) = 'sha256:'
+                AND substr(text_hash, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            indexed_at TEXT NOT NULL CHECK (length(indexed_at) = 27),
+            UNIQUE (document_id, version_id, representation_id, ordinal),
+            UNIQUE (document_id, version_id, representation_id, block_id),
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES document_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE INDEX block_search_entries_block_id_idx ON block_search_entries(block_id)",
+        "CREATE INDEX block_search_entries_scope_idx "
+        "ON block_search_entries(document_id, version_id, representation_id)",
+    ),
+)
+
+MIGRATIONS = (MIGRATION_1, MIGRATION_2, MIGRATION_3, MIGRATION_4)
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
 __all__ = [
@@ -360,5 +414,6 @@ __all__ = [
     "MIGRATION_1",
     "MIGRATION_2",
     "MIGRATION_3",
+    "MIGRATION_4",
     "Migration",
 ]

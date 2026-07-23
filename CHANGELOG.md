@@ -7,6 +7,11 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Lexical search over prepared evidence: checksummed catalog revision 4 with contentless-delete FTS5, STRICT mapping
+  table, atomic READY+index commits, coverage fail-closed checks and explicit idempotent `reindex`.
+- Bounded term/phrase query grammar, deterministic bm25 ranking with total tie-break, verified CAS snippets and
+  document/version/history/kind/trust/page/slide/limit filters.
+- Installable CLI verbs `search` and `reindex` using the shared workspace, envelope and exit-classification contract.
 - GitHub Spec Kit 0.13.3 integration for Codex with the reviewed OpenARDP Constitution.
 - Python 3.12/uv repository baseline with a committed lock, strict local gates and commit-time checks.
 - Least-privilege Linux/macOS/Windows CI contract with immutable third-party Action revisions.

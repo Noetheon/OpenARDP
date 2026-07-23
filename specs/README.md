@@ -28,7 +28,8 @@ refine those decisions but may not silently contradict them.
 | `001-repository-baseline` | Reproducible Python/uv foundation and three-platform CI | Converged |
 | `002-domain-models-schemas` | Pure records, RFC 8785 identities and reviewed JSON Schemas | Converged |
 | `003-cas-sqlite-catalog` | Immutable filesystem CAS, transactional catalog, durable jobs and reachability | Converged |
-| `004-text-ingestion-slice` | Safe TXT/Markdown ingestion, verified cache and progressive local CLI navigation | Locally converged; external CI pending |
+| `004-text-ingestion-slice` | Safe TXT/Markdown ingestion, verified cache and progressive local CLI navigation | Converged |
+| `005-lexical-search` | Exact source-backed FTS5 retrieval, coverage/reindex and `search`/`reindex` CLI | Locally implemented; external CI pending |
 
 The active-feature locator is `.specify/feature.json`. A later work package must not be started by adding behavior to an
 earlier feature directory.

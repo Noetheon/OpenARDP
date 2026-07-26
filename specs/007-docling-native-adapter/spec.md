@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-26
 
-**Status**: Locally converged; remote verification pending
+**Status**: Converged, merged and remotely verified
 
 **Input**: Ingest local PDF, DOCX, and PPTX through a bounded Docling worker,
 preserve the complete provider-native representation immutably, and emit the

@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-26
 
-**Status**: Converged locally; remote verification pending
+**Status**: Converged, merged and remotely verified
 
 **Input**: Define the smallest experimental provider-neutral native-representation,
 evidence-reference, evidence-projection, and trust contracts before any rich-parser

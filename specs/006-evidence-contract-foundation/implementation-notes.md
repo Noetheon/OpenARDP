@@ -152,7 +152,16 @@ and schemas remain valid.
 
 ## Remote verification
 
-- Feature commit: pending.
-- Pull request: pending.
-- PR-head Linux/macOS/Windows workflow: pending.
-- Post-merge `main` Linux/macOS/Windows workflow: pending.
+- Feature commit: `2d746bea859aa399f23d3e88c55540205c8784cc`.
+- Pull request [#8](https://github.com/Noetheon/OpenARDP/pull/8) merged on
+  2026-07-26 as `0162bd839c0cd67c66201efcbfd9610ab5899d5c`.
+- PR-head workflow
+  [30203968571](https://github.com/Noetheon/OpenARDP/actions/runs/30203968571)
+  passed all locked gates on macOS (47 s), Ubuntu (1 min 4 s), and Windows
+  (2 min 5 s).
+- Post-merge `main` workflow
+  [30204051975](https://github.com/Noetheon/OpenARDP/actions/runs/30204051975)
+  passed all locked gates on macOS (45 s), Ubuntu (1 min 6 s), and Windows
+  (2 min 3 s).
+- Both workflows ran the 476-test network-blocked suite, distribution builds, and
+  tracked-file drift verification.

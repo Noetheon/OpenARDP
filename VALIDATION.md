@@ -174,7 +174,7 @@ distribution builds and tracked-file drift verification.
 This closes the v3.1 strategic realignment and contract boundary without changing runtime behavior, public-schema
 semantics, dependencies, the lockfile, persisted identities or commands.
 
-## Feature 006 local evidence
+## Feature 006 verified evidence
 
 Feature `006-evidence-contract-foundation` adds four independently versioned
 experimental roots without a rich parser, catalog migration, new dependency, network
@@ -191,9 +191,14 @@ one coherent cross-record set, and six exact RFC 8785 canonical/digest vectors.
 
 A path-scoped diff against F005A commit
 `39e7f8313bdb433f3057c3ad5ebf1b141e1ee2c4` is empty for the five existing schemas,
-their canonicalization vectors, `pyproject.toml`, and `uv.lock`. Linux/macOS/Windows
-PR-head and post-merge evidence remains required before this feature is externally
-closed.
+their canonicalization vectors, `pyproject.toml`, and `uv.lock`. PR
+[#8](https://github.com/Noetheon/OpenARDP/pull/8) merged feature commit
+`2d746bea859aa399f23d3e88c55540205c8784cc` as
+`0162bd839c0cd67c66201efcbfd9610ab5899d5c`. PR-head workflow
+[30203968571](https://github.com/Noetheon/OpenARDP/actions/runs/30203968571) and
+post-merge `main` workflow
+[30204051975](https://github.com/Noetheon/OpenARDP/actions/runs/30204051975) both
+passed the complete locked gate on Linux, macOS, and Windows.
 
 ## Corrective environment verification
 

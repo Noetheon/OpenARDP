@@ -318,7 +318,15 @@ immutable and may remain unreachable until F013 recovery/retention tooling.
 
 ## Remote verification
 
-- Feature commit: pending.
-- Pull request: pending.
-- PR-head Linux/macOS/Windows workflow: pending.
-- Post-merge `main` Linux/macOS/Windows workflow: pending.
+- Local feature commit:
+  `ee4ba2511975fa5fb3d2e3dc022ba82b5cb82249`.
+- Pull request:
+  [#10](https://github.com/Noetheon/OpenARDP/pull/10), merged 2026-07-26.
+- Squash commit on `main`:
+  `1a080d37efcc2f74307bb01a6656db09659e9138`.
+- PR-head Linux/macOS/Windows workflow:
+  [30208533025](https://github.com/Noetheon/OpenARDP/actions/runs/30208533025),
+  all three quality jobs passed against the exact feature commit.
+- Post-merge `main` Linux/macOS/Windows workflow:
+  [30208840651](https://github.com/Noetheon/OpenARDP/actions/runs/30208840651),
+  all three quality jobs passed against the exact squash commit.

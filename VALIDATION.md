@@ -217,8 +217,12 @@ the F006 conformance corpus, repository validation, `git diff --check`, source/w
 builds, and core/rich isolated-wheel probes passed. Byte comparison to the frozen base
 found no change in the nine public schema JSON files, either identity-vector file, or
 the F006 conformance corpus. Exact commands and packaging/quickstart evidence are in the
-feature notes. Linux/macOS/Windows PR-head and post-merge evidence remains pending until
-the feature is published; this section must not be read as remote verification.
+feature notes. Pull request [#10](https://github.com/Noetheon/OpenARDP/pull/10) merged
+as `1a080d37efcc2f74307bb01a6656db09659e9138`. PR-head workflow
+[30208533025](https://github.com/Noetheon/OpenARDP/actions/runs/30208533025) and
+post-merge `main` workflow
+[30208840651](https://github.com/Noetheon/OpenARDP/actions/runs/30208840651) both
+passed the complete locked gate on Linux, macOS, and Windows.
 
 ## Corrective environment verification
 

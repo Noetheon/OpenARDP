@@ -1,5 +1,8 @@
 # Context compiler, CLI and MCP contracts
 
+**Status:** Planned Feature 008/009 contract guidance. The currently delivered CLI verbs are documented in the
+[README](../README.md); no MCP server exists through Feature 005A.
+
 ## 1. Context compiler objective
 
 Construct the smallest evidence bundle that can support the requested task under a budget and policy. It is not simply a
@@ -55,7 +58,10 @@ See `schemas/context-bundle.schema.json`. The bundle contains:
 - selection trace;
 - warnings and missing evidence.
 
-## 6. CLI contract
+## 6. Target CLI surface
+
+The following is a roadmap sketch, not a current command contract. Feature-specific specs may refine or reject later
+verbs. In particular, export/import/verify remain an experiment:
 
 ```text
 openardp init [--store PATH]
@@ -67,9 +73,9 @@ openardp outline DOCUMENT_ID [--version VERSION]
 openardp search QUERY [--document ID] [--kind KIND] [--limit N]
 openardp get BLOCK_ID [--representation exact|summary|visual]
 openardp context QUERY --document ID [--budget N] [--mode MODE]
-openardp export DOCUMENT_ID --output FILE.ardp.zip
-openardp import FILE.ardp.zip
-openardp verify FILE.ardp.zip
+openardp export DOCUMENT_ID --output FILE
+openardp import FILE
+openardp verify FILE
 openardp gc --dry-run
 openardp doctor
 openardp mcp [--transport stdio|streamable-http]

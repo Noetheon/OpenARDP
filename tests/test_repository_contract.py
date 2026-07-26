@@ -44,6 +44,34 @@ EXPECTED_ACTIONS = {
         "v9.0.0",
     ),
 }
+F005A_FEATURE_SEQUENCE = (
+    "005A-strategic-realignment",
+    "006-evidence-contract-foundation",
+    "007-docling-native-adapter",
+    "008-context-compiler-receipts",
+    "009-read-only-mcp",
+    "010-reconciliation-derivation-dag",
+    "011-visual-evidence-escalation",
+    "012-local-watcher-and-jobs",
+    "013-retention-recovery-migrations",
+    "014-export-interchange-experiment",
+    "015-benchmark-security-release-gate",
+    "016-alternate-parser-conformance-spike",
+    "017-microsoft-graph-design-spike",
+)
+HISTORICAL_FEATURE_PROMPTS = (
+    "001-repository-baseline.md",
+    "002-domain-models-schemas.md",
+    "003-cas-sqlite-catalog.md",
+    "004-text-ingestion-slice.md",
+    "005-lexical-search.md",
+)
+F005A_ADRS = (
+    "0007-implementation-first.md",
+    "0008-preserve-provider-native-representations.md",
+    "0009-indexes-are-non-authoritative.md",
+    "0010-contracts-before-adapters.md",
+)
 
 
 def _project_configuration(repository_root: Path) -> dict[str, Any]:
@@ -228,3 +256,138 @@ def test_ci_uses_locked_uncached_authoritative_gates(repository_root: Path) -> N
     )
     for step in required_steps:
         assert step in content
+
+
+def test_f005a_constitution_is_ratified_and_canonical(repository_root: Path) -> None:
+    """Keep one complete binding constitution after the strategic realignment."""
+    constitution = (repository_root / ".specify/memory/constitution.md").read_text(encoding="utf-8")
+    source = (repository_root / "spec-kit/CONSTITUTION_SOURCE.md").read_text(encoding="utf-8")
+
+    assert constitution == source
+    assert "**Current version:** 2.0.0" in constitution
+    assert "**Last amended:** 2026-07-26" in constitution
+    required_boundaries = (
+        "implementation-first",
+        "complete provider-native",
+        "second complete provider-neutral document representation",
+        "Search indexes",
+        "verified",
+        "Linux, macOS and Windows",
+        "external-use evidence",
+    )
+    for boundary in required_boundaries:
+        assert boundary.casefold() in constitution.casefold()
+
+
+def test_f005a_adoption_sources_point_to_canonical_governance(
+    repository_root: Path,
+) -> None:
+    """Prevent versioned blueprint sources from becoming parallel authorities."""
+    sources = {
+        "CONSTITUTION_V3_SOURCE.md": "CONSTITUTION_SOURCE.md",
+        "FEATURE_MAP_V3.md": "FEATURE_MAP.md",
+        "OPERATING_PROCEDURE_V3.md": "OPERATING_PROCEDURE.md",
+    }
+    for source_name, canonical_name in sources.items():
+        content = (repository_root / "spec-kit" / source_name).read_text(encoding="utf-8")
+        assert "adoption source" in content.casefold()
+        assert canonical_name in content
+        assert "not authoritative" in content.casefold()
+
+
+def test_f005a_feature_map_and_prompts_have_one_exact_sequence(
+    repository_root: Path,
+) -> None:
+    """Require one dependency-ordered continuation map and prompt inventory."""
+    feature_map = (repository_root / "spec-kit/FEATURE_MAP.md").read_text(encoding="utf-8")
+    positions = [feature_map.index(feature) for feature in F005A_FEATURE_SEQUENCE]
+    assert positions == sorted(positions)
+    assert (
+        feature_map.count("A feature begins only after its predecessor converges and merges") == 1
+    )
+
+    prompt_directory = repository_root / "spec-kit/feature-prompts"
+    actual_prompts = {path.name for path in prompt_directory.glob("*.md")}
+    expected_prompts = set(HISTORICAL_FEATURE_PROMPTS) | {
+        f"{feature}.md" for feature in F005A_FEATURE_SEQUENCE
+    }
+    assert actual_prompts == expected_prompts
+
+    for feature in F005A_FEATURE_SEQUENCE:
+        prompt = (prompt_directory / f"{feature}.md").read_text(encoding="utf-8")
+        assert feature.split("-", maxsplit=1)[0].casefold() in prompt.casefold()
+
+
+def test_f005a_adrs_preserve_decision_history(repository_root: Path) -> None:
+    """Require accepted strategic ADRs and explicit earlier-decision treatment."""
+    adr_directory = repository_root / "docs/adr"
+    for filename in F005A_ADRS:
+        content = (adr_directory / filename).read_text(encoding="utf-8")
+        assert "Status: Accepted" in content
+        assert "2026-07-26" in content
+
+    parser_adr = (adr_directory / "0001-use-docling-as-default-parser.md").read_text(
+        encoding="utf-8"
+    )
+    package_adr = (adr_directory / "0005-portable-zip-runtime-cas.md").read_text(encoding="utf-8")
+    assert "partly superseded" in parser_adr.casefold()
+    assert "0008-preserve-provider-native-representations.md" in parser_adr
+    assert "Status: Deferred" in package_adr
+    assert "014-export-interchange-experiment" in package_adr
+
+
+def test_f005a_contract_guidance_is_experimental_and_parseable(
+    repository_root: Path,
+) -> None:
+    """Keep F005A examples informative without creating a stable public schema."""
+    contracts = (repository_root / "contracts/README.md").read_text(encoding="utf-8")
+    conformance = (repository_root / "conformance/README.md").read_text(encoding="utf-8")
+    example_path = repository_root / "contracts/example-selection-receipt.json"
+    example = json.loads(example_path.read_text(encoding="utf-8"))
+
+    assert "experimental" in contracts.casefold()
+    assert "design guidance" in contracts.casefold()
+    assert "Feature 006" in contracts
+    assert "Feature 016" in conformance
+    assert "not a public schema" in contracts.casefold()
+    assert isinstance(example, dict)
+    assert example
+    assert example_path not in set((repository_root / "schemas").glob("*.schema.json"))
+
+
+def test_f005a_entry_points_use_claims_discipline(repository_root: Path) -> None:
+    """Reject stale search status and unqualified standards positioning."""
+    entry_paths = (
+        repository_root / "README.md",
+        repository_root / "START_HERE.md",
+        repository_root / "docs/00_EXECUTIVE_BRIEF.md",
+        repository_root / "docs/01_PRODUCT_REQUIREMENTS.md",
+        repository_root / "docs/08_ROADMAP_AND_GOVERNANCE.md",
+    )
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in entry_paths)
+    lowered = combined.casefold()
+
+    assert "implementation-first" in lowered
+    assert "experimental interoperability" in lowered
+    assert "lexical search" in lowered
+    stale_search = re.compile(r"(?:no|without|does not (?:have|include|provide)) lexical search")
+    standards_claim = re.compile(
+        r"openardp is (?:an?|the) (?:open |universal |official )?"
+        r"(?:document )?(?:standard|protocol)"
+    )
+    assert stale_search.search(lowered) is None
+    assert standards_claim.search(lowered) is None
+
+
+def test_f005a_overlay_is_curated_without_platform_metadata(
+    repository_root: Path,
+) -> None:
+    """Exclude the external blueprint package and operating-system metadata."""
+    assert not (repository_root / "openardp_codex_blueprint_v3_1").exists()
+    excluded = {
+        path.relative_to(repository_root).as_posix()
+        for path in repository_root.rglob("*")
+        if ".git" not in path.parts
+        and (path.name == ".DS_Store" or "openardp_codex_blueprint_v3_1" in path.parts)
+    }
+    assert excluded == set()

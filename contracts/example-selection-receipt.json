@@ -1,0 +1,27 @@
+{
+  "contract_version": "0.1.0-experimental",
+  "stability": "experimental",
+  "task_digest": "sha256:example",
+  "budget": {
+    "unit": "tokens",
+    "limit": 4000,
+    "used": 1730
+  },
+  "selected_evidence": [
+    {
+      "evidence_id": "ev-example",
+      "source_version_id": "sv-example",
+      "reason": "lexical_match",
+      "trust": "SOURCE_DATA_UNTRUSTED"
+    }
+  ],
+  "omitted_evidence": [
+    {
+      "evidence_id": "ev-other",
+      "reason": "budget"
+    }
+  ],
+  "rejected": [],
+  "visual_escalations": [],
+  "policy_digest": "sha256:policy-example"
+}

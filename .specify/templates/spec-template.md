@@ -98,6 +98,18 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### Non-Goals and Compatibility Impact
+
+<!--
+  ACTION REQUIRED: State what this feature deliberately does not deliver and classify
+  its compatibility impact (none, additive, migration required, or breaking).
+  Identify affected contract, application, workspace, provider-profile and export-profile
+  versions independently. Remove version axes that are demonstrably irrelevant.
+-->
+
+- **Non-goal**: [Explicitly excluded adjacent behavior]
+- **Compatibility impact**: [None/additive/migration/breaking, with affected surface]
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]

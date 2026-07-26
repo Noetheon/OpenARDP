@@ -5,7 +5,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 002 notes](specs/002-domain-models-schemas/implementation-notes.md) and
 [feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md) and
 [feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md) and
-[feature 005 notes](specs/005-lexical-search/implementation-notes.md).
+[feature 005 notes](specs/005-lexical-search/implementation-notes.md) and
+[feature 005A notes](specs/005A-strategic-realignment/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -145,6 +146,20 @@ post-merge `main` workflow [30050939386](https://github.com/Noetheon/OpenARDP/ac
 successfully on Ubuntu, macOS and Windows. They repeated the locked environment setup, Ruff, formatting, strict mypy,
 the 407-test network-blocked suite, distribution builds and tracked-file drift verification. This closes the
 cross-platform execution and final Spec Kit convergence boundary for feature 005.
+
+## Feature 005A local evidence
+
+Feature `005A-strategic-realignment` changes documentation, governance, decision records, feature prompts, repository
+validation and experimental examples only. The path-scoped diff against the merged F005 base is empty for `src/`,
+`schemas/`, `pyproject.toml` and `uv.lock`.
+
+The local locked gate passes 415 offline tests with 86.45 percent branch-aware coverage. Ruff, formatting, strict mypy on
+native and Windows targets, staged pre-commit hooks, the repository validator, source/wheel builds, an isolated offline
+wheel import, JSON validation, relative links, migration accounting and the Feature 005A quickstart all pass.
+
+Constitution 2.0.0 is byte-identical to its canonical source. Repository-contract tests enforce the exact 005A–017 prompt
+sequence, ADR supersession/deferral, experimental contract maturity, claim discipline, overlay completeness and exclusion
+of the external blueprint package. Pull-request and post-merge cross-platform evidence remain pending until publication.
 
 ## Corrective environment verification
 

@@ -1,5 +1,8 @@
 # Incremental processing and cache invalidation
 
+**Status:** Canonical incremental-processing guidance. Feature 005 delivers identical-version reuse and index rebuild;
+Feature 010 owns cross-version reconciliation and the derivation DAG.
+
 ## 1. Honest guarantee levels
 
 ### Level 0 — identical-version reuse (MVP mandatory)
@@ -12,7 +15,8 @@ automatic reparse.
 
 ### Level 1 — block-level downstream reuse (MVP mandatory)
 
-A changed file may be parsed again, but unchanged normalized blocks reuse summaries, captions, embeddings and index entries.
+A changed file may be parsed again, but conservatively matched evidence may reuse summaries, captions, embeddings and
+other derivations when exact inputs and generation profiles remain valid.
 
 F004 derives stable source-backed block handles but does not yet reconcile or transfer downstream artifacts across changed
 versions. That policy remains a later feature and therefore this level is architectural, not yet delivered.
@@ -34,18 +38,18 @@ file event
 → lookup version/profile
 → skip OR enqueue ingestion
 → parse in staging worker
-→ normalize
-→ reconcile blocks with prior version
+→ preserve native artifact + build thin evidence projection
+→ reconcile evidence with prior version
 → compute change set
 → commit canonical version
 → invalidate/reuse derived artifacts
 → update indexes
 ```
 
-The diagram is the target watcher/enrichment pipeline. F004 has no watcher: an explicit `ingest` snapshots one regular
+The diagram is the target watcher/enrichment pipeline. Features 004–005 have no watcher: an explicit `ingest` snapshots one regular
 source descriptor, parses the verified CAS object in a spawned worker, commits one complete representation, and advances a
 document head by source-observation time. Reverting A → B → A reuses historical A and advances the head without rewriting
-its first source-version facts.
+its first source-version facts. Feature 005 also publishes and verifies lexical index coverage transactionally.
 
 ## 3. Debounce and stable snapshot
 
@@ -96,7 +100,7 @@ summary and ancestors, but not unrelated images.
 
 ## 7. Microsoft 365 synchronization
 
-Enterprise connector design:
+Feature 017’s mock-only enterprise connector design:
 
 1. Graph change notification wakes the connector.
 2. Connector executes the saved Drive delta link.

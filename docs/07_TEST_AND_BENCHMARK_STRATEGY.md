@@ -1,5 +1,8 @@
 # Test and benchmark strategy
 
+**Status:** Canonical test policy plus planned benchmark protocol. Test counts are historical snapshots, not quality
+claims.
+
 ## 1. Test pyramid
 
 ### Unit tests
@@ -24,7 +27,7 @@ OpenARDP digests. Twenty fresh processes vary insertion order and `PYTHONHASHSEE
 - artifact store atomicity;
 - catalog migrations;
 - MCP JSON schemas;
-- portable package import/export compatibility.
+- conditional export/import compatibility and archive safety if Feature 014 selects a package.
 
 The current F002 contract suite validates all five golden records through both Pydantic and Draft 2020-12, performs
 semantic round-trips, distinguishes malformed/uninstalled/unsupported-major versions, checks the schemas themselves and
@@ -111,29 +114,39 @@ spawn timeout/crash cleanup and socket denial; workspace marker compatibility; s
 immutability; migration-3 fencing and six transaction fault points; sequential/concurrent cache reuse; changed/reverted
 versions; artifact corruption; progressive structural-only reads; source removal; and all six CLI commands.
 
-The complete repository suite currently contains 384 offline tests and exceeds the enforced 85 percent branch-aware
-coverage threshold. This is local implementation evidence; cross-platform pull-request and post-merge workflows remain
-required before F004 is externally closed.
+F004’s final local suite contained 389 offline tests with 87.20 percent branch-aware coverage. Its cross-platform
+pull-request and post-merge workflows subsequently passed.
 
-## 6. Benchmark conditions
+## 6. F005 offline lexical-search verification
+
+F005 adds deterministic grammar, atomic READY-plus-index commits, fail-closed index coverage, verified CAS snippets,
+stable ranking/filter semantics, explicit idempotent reindex and human/JSON CLI coverage. Its final local suite contained
+407 offline tests with 86.45 percent branch-aware coverage; both pull-request and post-merge Ubuntu/macOS/Windows workflows
+passed.
+
+## 7. Benchmark conditions
 
 ### A — raw file workflow
 
 Agent/parser receives the original on every task.
 
-### B — conversion-only cache
+### B — persisted provider-native reuse
 
-Cached Markdown/JSON but no structured evidence policy.
+Persisted `DoclingDocument` or equivalent native representation reused directly.
 
-### C — conventional text RAG
+### C — persisted provider-native retrieval
 
-Chunked text + retrieval.
+Persisted native representation plus provider-native chunking/retrieval.
 
-### D — OpenARDP
+### D — OpenARDP retrieval
 
-Normalized blocks + versioning + provenance + progressive context + optional visual escalation.
+Thin evidence projection + versioning + provenance + verified retrieval.
 
-## 7. Workloads
+### E — OpenARDP compiler
+
+Bounded progressive context with selection receipts and optional derivations.
+
+## 8. Workloads
 
 - document summary;
 - exact fact lookup;
@@ -144,7 +157,7 @@ Normalized blocks + versioning + provenance + progressive context + optional vis
 - repeated tasks on unchanged content;
 - indirect prompt-injection document.
 
-## 7. Metrics
+## 9. Metrics
 
 ### Efficiency
 
@@ -172,7 +185,7 @@ Normalized blocks + versioning + provenance + progressive context + optional vis
 - malicious content appearing as trusted instruction;
 - isolation/resource-limit enforcement.
 
-## 8. Release gates
+## 10. Release gates
 
 MVP release requires:
 

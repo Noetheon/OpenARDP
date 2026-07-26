@@ -1,6 +1,7 @@
 # ADR 0001: Use Docling as the default rich parser
 
-Status: Proposed
+Status: Proposed; partly superseded by
+[ADR 0008](0008-preserve-provider-native-representations.md)
 
 ## Context
 
@@ -9,8 +10,9 @@ rich document representation, multiple formats, local execution and an active op
 
 ## Decision
 
-Use Docling behind a parser interface as the default rich parser. Preserve native output and map to OpenARDP IR. Maintain
-MarkItDown and MinerU evaluation adapters/spikes.
+Use Docling behind a parser interface as the default rich parser. Preserve native output. The earlier decision to map
+that output to a complete OpenARDP IR is superseded by ADR 0008: OpenARDP retains the complete provider-native artifact
+and creates only a thin provider-neutral evidence projection. Maintain alternate-parser evaluation adapters or spikes.
 
 ## Consequences
 
@@ -18,3 +20,4 @@ MarkItDown and MinerU evaluation adapters/spikes.
 - Must manage heavy dependencies, model licenses and parser resource behavior.
 - Parser subprocess isolation is required.
 - OpenARDP contracts cannot directly expose unstable Docling internals.
+- There is no guarantee of complete semantic equivalence across parser providers.

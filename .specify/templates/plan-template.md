@@ -36,6 +36,12 @@
 
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
+**Contract/Version Impact**: [contract, application, workspace, provider-profile and
+export-profile effects; state N/A only with rationale]
+
+**Trust/Operational Impact**: [authority, untrusted-input, network, privacy, cancellation,
+restart, recovery, resource-limit and supply-chain effects relevant to this feature]
+
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*

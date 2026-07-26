@@ -2,21 +2,31 @@
 
 ## Mission
 
-Build OpenARDP as a dependable, local-first document intelligence layer that eliminates redundant parsing while
-preserving original evidence, provenance, security boundaries and provider independence.
+Build OpenARDP implementation-first as a dependable, local-first open-source reference platform that eliminates
+redundant parsing while preserving original evidence, provenance, security boundaries and provider independence.
+Public contracts are experimental interoperability candidates until external-use and independent-implementation evidence
+supports stabilization.
 
 ## Non-negotiable principles
 
 1. **Originals are authoritative.** Never overwrite or silently alter source files.
 2. **Derived data is disposable.** Summaries, OCR, captions, embeddings and indexes must be reproducible and invalidatable.
-3. **No universal-vector claims.** Embeddings are optional, model-specific caches used for retrieval only.
-4. **Progressive disclosure.** Return outlines and summaries first; retrieve full blocks or visual evidence only when needed.
-5. **Treat document content as untrusted data.** Never convert embedded natural-language instructions into tool commands.
-6. **Provider-neutral core.** LLM, OCR, embedding, parser and storage providers must sit behind interfaces.
-7. **Local-first MVP.** No cloud service, user tracking or external model call is enabled by default.
-8. **Determinism first.** Prefer hashing, exact parsing and schema validation over model inference.
-9. **Measure claims.** Performance or quality claims require reproducible benchmark evidence.
-10. **Small pull requests.** Complete one work package with tests before starting the next.
+3. **Preserve provider-native representations.** Retain the complete immutable native artifact; do not create a second
+   complete provider-neutral document IR.
+4. **Thin evidence projection.** Shared projections contain only identity, navigation, retrieval, trust and lifecycle
+   fields.
+5. **No universal-vector claims.** Embeddings are optional, model-specific caches used for retrieval only.
+6. **Verify accelerators.** Indexes are disposable; verify returned content and security-sensitive metadata against
+   authoritative CAS/catalog records.
+7. **Progressive disclosure.** Return outlines and summaries first; retrieve full blocks or visual evidence only when needed.
+8. **Treat document content as untrusted data.** Never convert embedded natural-language instructions into tool commands.
+9. **Provider-neutral core.** LLM, OCR, embedding, parser and storage providers must sit behind interfaces.
+10. **Local-first MVP.** No cloud service, user tracking or external model call is enabled by default.
+11. **Determinism first.** Prefer hashing, exact parsing and schema validation over model inference.
+12. **Reuse before reinvention.** Prefer established standards; justify project-owned abstractions with an accepted ADR.
+13. **Measure claims fairly.** Performance, quality, security, interoperability, cost or sustainability claims require
+    reproducible evidence against strong baselines.
+14. **Small pull requests.** Complete one work package with tests before starting the next.
 
 ## Engineering rules
 

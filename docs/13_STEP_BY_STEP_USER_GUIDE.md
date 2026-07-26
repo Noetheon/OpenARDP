@@ -1,87 +1,35 @@
-# Step-by-step guide: from ZIP to the first Codex implementation
+# Step-by-step contributor guide
 
-This guide assumes the user has not yet sent the project to Codex.
+**Status:** Current-repository workflow. Initial ZIP extraction and bootstrap are historical; do not rerun them during a
+normal clone.
 
-## Stage 1 — Extract the correct package
+## 1. Clone and inspect
 
-Use the Spec-Kit-integrated package, not the older blueprint, for a new implementation. Extract it into a dedicated folder.
-Do not combine it with another active code repository yet.
+Read `README.md`, `START_HERE.md`, `AGENTS.md`, the constitution, accepted ADRs, feature map and active feature artifacts.
+Confirm the working tree and branch before changing files.
 
-## Stage 2 — Create the initial Git history
-
-From the project root:
-
-```bash
-git init
-git add .
-git commit -m "chore: add OpenARDP architecture and Spec Kit blueprint"
-```
-
-This first commit is the untouched, reviewable source baseline.
-
-## Stage 3 — Verify prerequisites
-
-Required:
-
-- Git;
-- Python 3.12 for the OpenARDP project;
-- `uv`;
-- Codex CLI or another Codex environment that can use repository skills.
-
-Check:
+## 2. Reproduce the baseline
 
 ```bash
-git --version
-uv --version
-python3 --version
+uv sync --all-extras --locked
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest
 ```
 
-## Stage 4 — Bootstrap GitHub Spec Kit
+Record the exact base commit, tool versions and result. Do not alter the lockfile unless the active feature explicitly
+owns a reviewed dependency change.
 
-### macOS/Linux
+## 3. Select exactly one feature
 
-```bash
-bash scripts/bootstrap-speckit.sh
-```
+Use the next entry in [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) only after its predecessor converges, merges
+and has green post-merge CI. Use the matching prompt in `spec-kit/feature-prompts/`.
 
-### Windows PowerShell
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-./scripts/bootstrap-speckit.ps1
-```
-
-The bootstrap pins the Spec Kit version, initializes the Codex skills and restores the OpenARDP constitution.
-
-## Stage 5 — Review and commit generated files
-
-```bash
-git status
-git diff -- . ':!uv.lock'
-git add .
-git commit -m "chore: initialize Spec Kit for Codex"
-```
-
-Check `spec-kit/AFTER_BOOTSTRAP_CHECKLIST.md` before continuing.
-
-## Stage 6 — Open Codex from the repository root
-
-Codex must see:
-
-- `AGENTS.md`;
-- `.specify/memory/constitution.md`;
-- `.agents/skills/`;
-- `docs/`;
-- `spec-kit/`;
-- `schemas/` and existing tests.
-
-Paste `spec-kit/FIRST_CODEX_SESSION.md`.
-
-## Stage 7 — Prepare feature 001, but do not rush into coding
-
-Codex should use `spec-kit/feature-prompts/001-repository-baseline.md` with `$speckit-specify`, then run:
+## 4. Complete Spec Kit planning
 
 ```text
+$speckit-specify
 $speckit-clarify
 $speckit-plan
 $speckit-checklist
@@ -89,44 +37,28 @@ $speckit-tasks
 $speckit-analyze
 ```
 
-Review the readiness report. Correct critical contradictions in the source artifact before implementation.
+Correct contradictions in the highest-level originating artifact. Do not start implementation while a critical/high
+finding remains.
 
-## Stage 8 — Implement feature 001
+## 5. Implement test-first
 
-Only after the specification artifacts are clean:
+Use `$speckit-implement` for the active phase. Add failing deterministic offline tests before changed behavior or
+contracts where practical. Preserve original source bytes, provider-native artifacts, evidence provenance, local-first
+defaults and provider boundaries.
 
-```text
-$speckit-implement
-```
+## 6. Validate and converge
 
-For a large task list, tell Codex to implement only the next phase or a bounded task group. Require the checks in
-`AGENTS.md` after each coherent slice.
+Run the full locked gate, repository validator, build and feature quickstart. Then run `$speckit-converge`. Append missing
+tasks and implement them until no critical/high finding remains.
 
-Then run:
+## 7. Commit and publish one work package
 
-```text
-$speckit-converge
-```
+Review the complete diff, preserved runtime/contract surfaces, residual risks and rollback instructions. Commit only the
+feature, create one pull request, wait for Ubuntu/macOS/Windows CI, merge only when clean, and confirm post-merge `main`
+CI before starting the successor.
 
-Repeat implement/converge until the feature is complete.
+## Current boundary
 
-## Stage 9 — Commit and review
-
-```bash
-git status
-git diff
-git add .
-git commit -m "build: establish OpenARDP repository baseline"
-```
-
-Do not start feature 002 until feature 001 has converged and all checks pass.
-
-## Stage 10 — Continue feature by feature
-
-Use `spec-kit/FEATURE_MAP.md` and the matching prompt in `spec-kit/feature-prompts/`. Each feature follows the same full
-quality loop.
-
-## What not to send Codex
-
-Do not send only the old master prompt and ask for the complete system in one pass. Do not ask it to invent missing
-architecture. Do not let it combine several work packages merely because they share files.
+Feature 005 implements TXT/Markdown preparation and verified lexical search. Feature 005A realigns governance without
+runtime change. Feature 006 defines evidence contracts; Feature 007 is the first Docling adapter. Do not reuse the
+pre-v3.1 numbering.

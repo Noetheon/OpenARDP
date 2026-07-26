@@ -1,8 +1,10 @@
 # Start here
 
-OpenARDP is built implementation-first, one bounded Spec Kit feature at a time. The repository is complete through the
-Feature 005 lexical-search runtime and the Feature 005A strategic/governance boundary. Feature 006 is the next runtime
-contract work package; do not skip directly to the Docling adapter.
+OpenARDP is built implementation-first, one bounded Spec Kit feature at a time. The
+repository is complete through the Feature 005 lexical-search runtime, Feature 005A
+strategic/governance boundary, and Feature 006 experimental evidence contracts. Feature
+007 is the next work package; it must implement Docling against the F006 roots rather
+than inventing a parallel public model.
 
 ## 1. Read the authoritative rules
 
@@ -66,9 +68,11 @@ The current implementation does not yet provide PDF/DOCX/PPTX parsing, context c
 retention/garbage collection, stable export or Microsoft Graph access. The [005A–017 sequence](spec-kit/FEATURE_MAP.md)
 owns these outcomes individually.
 
-Public contracts remain experimental interoperability candidates. The examples under [`contracts/`](contracts/README.md)
-are design guidance, not stable public schemas. Feature 006 defines the first minimal provider-neutral evidence/native
-contract foundation; Feature 007 implements Docling while preserving complete provider-native output.
+Public contracts remain experimental interoperability candidates. Feature 006 publishes
+the first four provider-neutral evidence/native/trust roots; later examples under
+[`contracts/`](contracts/README.md) remain design guidance unless their own feature
+promotes them to reviewed schemas. Feature 007 implements Docling while preserving
+complete provider-native output.
 
 ## 6. Find focused evidence
 
@@ -77,6 +81,7 @@ contract foundation; Feature 007 implements Docling while preserving complete pr
 - [F004 quickstart](specs/004-text-ingestion-slice/quickstart.md)
 - [F005 quickstart](specs/005-lexical-search/quickstart.md)
 - [F005A validation](specs/005A-strategic-realignment/quickstart.md)
+- [F006 validation](specs/006-evidence-contract-foundation/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

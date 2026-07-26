@@ -1,6 +1,10 @@
 # OpenARDP interchange schemas
 
-This directory contains the reviewed JSON Schema Draft 2020-12 contracts for OpenARDP release `0.1.0`. The Pydantic models under `src/openardp/domain/` are the executable authoring source; these committed schemas are the provider-neutral interchange source that other implementations can consume without importing Python.
+This directory contains two independently governed JSON Schema Draft 2020-12
+families. The original F002 roots remain schema release `0.1.0`; F006 adds experimental
+evidence contract `0.1.0`. The Pydantic models under `src/openardp/domain/` are the
+executable authoring source; committed schemas are the provider-neutral interchange
+source that other implementations can consume without importing Python.
 
 ## Public roots and traceability
 
@@ -13,6 +17,19 @@ This directory contains the reviewed JSON Schema Draft 2020-12 contracts for Ope
 | Context Bundle | `ContextBundle` | `context-bundle.schema.json` | `tests/fixtures/domain/context-bundle.json` | `schema_version` |
 
 Each row is exercised by a positive schema/model round-trip, unknown-field rejection, all three version-failure categories and the record-specific negative tests under `tests/domain/` and `tests/contract/`.
+
+### Experimental evidence roots
+
+| Record | Python model | Schema | Golden fixture | Version field |
+|---|---|---|---|---|
+| Native Representation | `NativeRepresentation` | `native-representation.schema.json` | `conformance/evidence/v0.1.0/valid/native-representation.json` | `contract_version` |
+| Evidence Reference | `EvidenceReference` | `evidence-reference.schema.json` | `conformance/evidence/v0.1.0/valid/evidence-reference-text.json` | `contract_version` |
+| Evidence Projection | `EvidenceProjection` | `evidence-projection.schema.json` | `conformance/evidence/v0.1.0/valid/evidence-projection.json` | `contract_version` |
+| Trust Classification | `TrustClassification` | `trust-classification.schema.json` | `conformance/evidence/v0.1.0/valid/trust-classification.json` | `contract_version` |
+
+These roots declare `stability=experimental`, use URI-namespaced extensions, and accept
+exactly installed contract release `0.1.0`. Their version does not change the application,
+workspace, provider-profile, export-profile, or F002 schema release.
 
 ## Compatibility policy
 
@@ -41,6 +58,12 @@ JSON Schema deliberately expresses only portable structural constraints. Cross-f
 | Every evidence scope is pinned in the same context bundle | Record model |
 | Parent block exists in the same representation | Aggregate/service in a later feature |
 | Required relation graph properties hold across records | Aggregate/service in F010 |
+
+F006 additionally enforces declared native/reference/projection identities, fixed-point
+page and table geometry, bounded opaque pointers, projection/reference scope, trust
+anti-escalation, and cross-record source/native binding. The exact layer matrix and
+identity allowlists are in
+[`specs/006-evidence-contract-foundation/contracts/evidence-contracts.md`](../specs/006-evidence-contract-foundation/contracts/evidence-contracts.md).
 
 Schema acceptance alone is therefore not proof of semantic validity. Python consumers must use `openardp.domain.validate_json`; independent implementations must reproduce the record-semantic checks documented in `specs/002-domain-models-schemas/contracts/domain-contracts.md`.
 

@@ -91,6 +91,119 @@ def representation_id(
     return _identity_sha256("openardp:representation", payload)
 
 
+def native_representation_id(
+    *,
+    source_version_id: str,
+    native_artifact_id: str,
+    native_artifact_media_type: str,
+    provider_name: str,
+    provider_version: str,
+    provider_profile: str,
+    provider_profile_version: str,
+    provider_config_hash: str,
+) -> str:
+    """Hash one exact source, native artifact, and provider recipe."""
+    payload: dict[str, JsonValue] = {
+        "source_version_id": _require_sha256_id(
+            source_version_id,
+            field="source_version_id",
+        ),
+        "native_artifact_id": _require_sha256_id(
+            native_artifact_id,
+            field="native_artifact_id",
+        ),
+        "native_artifact_media_type": native_artifact_media_type,
+        "provider": {
+            "name": provider_name,
+            "version": provider_version,
+            "profile": provider_profile,
+            "profile_version": provider_profile_version,
+            "config_hash": _require_sha256_id(
+                provider_config_hash,
+                field="provider_config_hash",
+            ),
+        },
+    }
+    return _identity_sha256("openardp:native-representation", payload)
+
+
+def evidence_reference_id(
+    *,
+    source_version_id: str,
+    native_representation_id: str,
+    anchor: dict[str, JsonValue],
+) -> str:
+    """Hash one source/native-bound provider-neutral evidence anchor."""
+    ensure_json_value(anchor, path="$.anchor")
+    payload: dict[str, JsonValue] = {
+        "source_version_id": _require_sha256_id(
+            source_version_id,
+            field="source_version_id",
+        ),
+        "native_representation_id": _require_sha256_id(
+            native_representation_id,
+            field="native_representation_id",
+        ),
+        "anchor": anchor,
+    }
+    return _identity_sha256("openardp:evidence-reference", payload)
+
+
+def evidence_projection_id(
+    *,
+    source_version_id: str,
+    native_representation_id: str,
+    evidence_reference_id: str,
+    retrieval_artifact_id: str,
+    retrieval_media_type: str,
+    parent_projection_id: str | None,
+    ordinal: int,
+    generator_name: str,
+    generator_version: str,
+    generator_config_hash: str,
+) -> str:
+    """Hash the allowlisted identity, navigation, retrieval, and recipe fields."""
+    payload: dict[str, JsonValue] = {
+        "source_version_id": _require_sha256_id(
+            source_version_id,
+            field="source_version_id",
+        ),
+        "native_representation_id": _require_sha256_id(
+            native_representation_id,
+            field="native_representation_id",
+        ),
+        "evidence_reference_id": _require_sha256_id(
+            evidence_reference_id,
+            field="evidence_reference_id",
+        ),
+        "retrieval": {
+            "artifact_id": _require_sha256_id(
+                retrieval_artifact_id,
+                field="retrieval_artifact_id",
+            ),
+            "media_type": retrieval_media_type,
+        },
+        "parent_projection_id": (
+            _require_sha256_id(
+                parent_projection_id,
+                field="parent_projection_id",
+            )
+            if parent_projection_id is not None
+            else None
+        ),
+        "ordinal": ordinal,
+        "generator": {
+            "name": generator_name,
+            "version": generator_version,
+            "config_hash": _require_sha256_id(
+                generator_config_hash,
+                field="generator_config_hash",
+            ),
+        },
+    }
+    return _identity_sha256("openardp:evidence-projection", payload)
+
+
 def block_content_hash(
     *,
     kind: str,

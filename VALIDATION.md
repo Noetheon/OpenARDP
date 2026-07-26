@@ -6,7 +6,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 003 notes](specs/003-cas-sqlite-catalog/implementation-notes.md) and
 [feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md) and
 [feature 005 notes](specs/005-lexical-search/implementation-notes.md) and
-[feature 005A notes](specs/005A-strategic-realignment/implementation-notes.md).
+[feature 005A notes](specs/005A-strategic-realignment/implementation-notes.md) and
+[feature 006 notes](specs/006-evidence-contract-foundation/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -172,6 +173,27 @@ distribution builds and tracked-file drift verification.
 
 This closes the v3.1 strategic realignment and contract boundary without changing runtime behavior, public-schema
 semantics, dependencies, the lockfile, persisted identities or commands.
+
+## Feature 006 local evidence
+
+Feature `006-evidence-contract-foundation` adds four independently versioned
+experimental roots without a rich parser, catalog migration, new dependency, network
+behavior, or change to the five F002/F005 schemas. The roots cover retained native
+artifacts, source-bound evidence references, thin retrieval projections, and
+anti-escalation trust classifications.
+
+The local macOS/Python 3.12 locked gate passes 476 offline tests with 86.71 percent
+branch-aware coverage. Ruff, formatting, strict mypy on native and Windows targets,
+deterministic generation of all nine schemas, the adapter-independent conformance
+validator, repository validation, source/wheel builds, and an isolated offline wheel
+import pass. The public corpus contains seven valid fixtures, eight invalid fixtures,
+one coherent cross-record set, and six exact RFC 8785 canonical/digest vectors.
+
+A path-scoped diff against F005A commit
+`39e7f8313bdb433f3057c3ad5ebf1b141e1ee2c4` is empty for the five existing schemas,
+their canonicalization vectors, `pyproject.toml`, and `uv.lock`. Linux/macOS/Windows
+PR-head and post-merge evidence remains required before this feature is externally
+closed.
 
 ## Corrective environment verification
 

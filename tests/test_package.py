@@ -32,6 +32,7 @@ DOMAIN_MODULES = {
     "common",
     "context",
     "derivation",
+    "evidence",
     "identity",
     "manifest",
     "relation",
@@ -91,11 +92,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_005(
+def test_module_surface_is_bounded_to_feature_006(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F005 modules."""
+    """Expose exactly the reviewed F002-F006 modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

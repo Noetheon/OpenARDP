@@ -26,12 +26,15 @@ against authoritative content-addressed objects and catalog facts.
 ## Implemented status
 
 The repository has completed the bounded runtime work through
-[`005-lexical-search`](specs/005-lexical-search/spec.md) and the documentation/governance realignment in
-[`005A-strategic-realignment`](specs/005A-strategic-realignment/spec.md):
+[`005-lexical-search`](specs/005-lexical-search/spec.md), the documentation/governance
+realignment in [`005A-strategic-realignment`](specs/005A-strategic-realignment/spec.md),
+and the experimental contract foundation in
+[`006-evidence-contract-foundation`](specs/006-evidence-contract-foundation/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
-- strict Pydantic v2 domain models and five JSON Schema 2020-12 interchange contracts;
+- strict Pydantic v2 domain models, five F002 JSON Schema roots, and four independently
+  versioned experimental evidence contract roots;
 - RFC 8785 canonical JSON and versioned SHA-256 identity projections;
 - immutable streaming filesystem CAS with verified reads and atomic same-filesystem publication;
 - checksummed transactional SQLite migrations, exact source/version facts and fenced job transitions;
@@ -120,8 +123,9 @@ specify → clarify → plan → checklist → tasks → analyze → implement �
 ```
 
 Critical/high analysis findings block implementation; critical/high convergence findings block merge. One bounded
-feature is completed and merged before its dependent successor begins. Feature 006 defines the minimal evidence contracts
-before Feature 007 implements the Docling adapter.
+feature is completed and merged before its dependent successor begins. Feature 006
+defines the minimal evidence contracts; Feature 007 implements the Docling adapter only
+after F006 has converged and merged.
 
 ## Read next
 

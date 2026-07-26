@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/trust-classification-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Data-only trust state that rejects evidence authority promotion.",
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "effective_zone": {
+      "$ref": "#/$defs/TrustZone"
+    },
+    "extensions": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "instruction_execution_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Instruction Execution Allowed",
+      "type": "boolean"
+    },
+    "integrity": {
+      "$ref": "#/$defs/IntegrityState"
+    },
+    "origin_zone": {
+      "$ref": "#/$defs/TrustZone"
+    },
+    "role": {
+      "const": "data",
+      "title": "Role",
+      "type": "string"
+    },
+    "sensitivity": {
+      "$ref": "#/$defs/Sensitivity"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    }
+  },
+  "required": [
+    "origin_zone",
+    "effective_zone",
+    "role",
+    "integrity",
+    "sensitivity"
+  ],
+  "title": "OpenARDP Trust Classification",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

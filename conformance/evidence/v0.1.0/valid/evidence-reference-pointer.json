@@ -1,0 +1,17 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "evidence_reference_id": "sha256:f9d141e14fc9f3daaa05c26f4b19d54ed7a3f71adb0130e90a393f9505d93d6d",
+  "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+  "anchor": {
+    "anchor_type": "provider_pointer",
+    "target": {
+      "provider_profile": "portable",
+      "provider_profile_version": "0.4.0",
+      "pointer_format": "synthetic-node-id",
+      "pointer": "pictures/3"
+    }
+  }
+}

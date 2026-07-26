@@ -129,9 +129,27 @@ OCR may be necessary to expose scanned content, but it remains a derived asserti
 - `SourceSnapshot`, `ParsedTextDocument`, `IngestionResult`, `SourceStatus` and `OutlineItem`: bounded internal use-case
   records; document-originated text remains explicitly untrusted data.
 
-These runtime records are internal Python/catalog contracts. They do not change the F002 public JSON Schema release and
-do not claim that a portable package or rich-document representation exists. Feature 005 separately implements a
-non-authoritative lexical index.
+These runtime records are internal Python/catalog contracts. They do not change the F002
+public JSON Schema release and do not claim that a portable package or rich-document
+representation exists. Feature 005 separately implements a non-authoritative lexical
+index. Feature 006 adds an independent experimental `0.1.0` evidence family for retained
+native artifacts, source-bound references, thin projections, and anti-escalation trust;
+it does not alter the five F002 roots.
+
+### Feature 006 evidence contracts
+
+- `NativeRepresentation` records exact source/native artifact identities and a versioned
+  provider recipe.
+- `EvidenceReference` binds text, fixed-point page, table-cell, or opaque provider
+  anchors to that exact source/native pair.
+- `EvidenceProjection` adds only navigation, a content-addressed retrieval handle, trust,
+  and immutable projection provenance.
+- F006 `TrustClassification` records origin/effective zones, forces role `data` and
+  instruction execution false, and rejects trust promotion.
+
+The exact identity projections, semantic enforcement layers, fixtures, and migration
+boundary are documented in the
+[F006 contract](../specs/006-evidence-contract-foundation/contracts/evidence-contracts.md).
 
 ### Document manifest
 

@@ -1,0 +1,539 @@
+{
+  "$defs": {
+    "EvidenceReference": {
+      "additionalProperties": false,
+      "description": "One source/native-bound provider-neutral evidence anchor.",
+      "properties": {
+        "anchor": {
+          "discriminator": {
+            "mapping": {
+              "page_region": "#/$defs/PageRegionAnchor",
+              "provider_pointer": "#/$defs/OpaqueProviderPointerAnchor",
+              "table_cell": "#/$defs/TableCellAnchor",
+              "text_span": "#/$defs/TextSpanAnchor"
+            },
+            "propertyName": "anchor_type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextSpanAnchor"
+            },
+            {
+              "$ref": "#/$defs/PageRegionAnchor"
+            },
+            {
+              "$ref": "#/$defs/TableCellAnchor"
+            },
+            {
+              "$ref": "#/$defs/OpaqueProviderPointerAnchor"
+            }
+          ],
+          "title": "Anchor"
+        },
+        "contract_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "evidence_reference_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Evidence Reference Id",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "native_representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Native Representation Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "stability": {
+          "const": "experimental",
+          "default": "experimental",
+          "title": "Stability",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_reference_id",
+        "source_version_id",
+        "native_representation_id",
+        "anchor"
+      ],
+      "title": "EvidenceReference",
+      "type": "object"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "OpaqueProviderPointerAnchor": {
+      "additionalProperties": false,
+      "description": "Provider-specific target that the neutral core never interprets.",
+      "properties": {
+        "anchor_type": {
+          "const": "provider_pointer",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "target"
+      ],
+      "title": "OpaqueProviderPointerAnchor",
+      "type": "object"
+    },
+    "PageRegionAnchor": {
+      "additionalProperties": false,
+      "description": "Exact fixed-point normalized rectangle on a one-based page.",
+      "properties": {
+        "anchor_type": {
+          "const": "page_region",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "normalized_ppm_top_left",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Height",
+          "type": "integer"
+        },
+        "page_number": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Page Number",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Width",
+          "type": "integer"
+        },
+        "x": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "page_number",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "PageRegionAnchor",
+      "type": "object"
+    },
+    "ProjectionProvenance": {
+      "additionalProperties": false,
+      "description": "Projection recipe and immutable creation time.",
+      "properties": {
+        "created_at": {
+          "format": "date-time",
+          "pattern": "T.+(?:Z|\\+00:00)$",
+          "title": "Created At",
+          "type": "string"
+        },
+        "generator_config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Generator Config Hash",
+          "type": "string"
+        },
+        "generator_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Generator Name",
+          "type": "string"
+        },
+        "generator_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Generator Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "generator_name",
+        "generator_version",
+        "generator_config_hash",
+        "created_at"
+      ],
+      "title": "ProjectionProvenance",
+      "type": "object"
+    },
+    "ProviderPointer": {
+      "additionalProperties": false,
+      "description": "Opaque pointer whose meaning is scoped to one provider profile.",
+      "properties": {
+        "pointer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Pointer",
+          "type": "string"
+        },
+        "pointer_format": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Pointer Format",
+          "type": "string"
+        },
+        "provider_profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Profile",
+          "type": "string"
+        },
+        "provider_profile_version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Provider Profile Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_profile",
+        "provider_profile_version",
+        "pointer_format",
+        "pointer"
+      ],
+      "title": "ProviderPointer",
+      "type": "object"
+    },
+    "RetrievalHandle": {
+      "additionalProperties": false,
+      "description": "Content-addressed retrieval material without an access path.",
+      "properties": {
+        "artifact_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "byte_length": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "media_type": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$",
+          "title": "Media Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "media_type",
+        "byte_length"
+      ],
+      "title": "RetrievalHandle",
+      "type": "object"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "TableCellAnchor": {
+      "additionalProperties": false,
+      "description": "Zero-based table cell scoped to an opaque native table pointer.",
+      "properties": {
+        "anchor_type": {
+          "const": "table_cell",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "column_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Column Index",
+          "type": "integer"
+        },
+        "column_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Column Span",
+          "type": "integer"
+        },
+        "row_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Row Index",
+          "type": "integer"
+        },
+        "row_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Row Span",
+          "type": "integer"
+        },
+        "table": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "table",
+        "row_index",
+        "column_index"
+      ],
+      "title": "TableCellAnchor",
+      "type": "object"
+    },
+    "TextSpanAnchor": {
+      "additionalProperties": false,
+      "description": "Half-open code-point offsets in a provider-profile text view.",
+      "properties": {
+        "anchor_type": {
+          "const": "text_span",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "unicode_code_points",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "end": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "text_length": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Length"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "start",
+        "end"
+      ],
+      "title": "TextSpanAnchor",
+      "type": "object"
+    },
+    "TrustClassification": {
+      "additionalProperties": false,
+      "description": "Data-only trust state that rejects evidence authority promotion.",
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "effective_zone": {
+          "$ref": "#/$defs/TrustZone"
+        },
+        "extensions": {
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "origin_zone": {
+          "$ref": "#/$defs/TrustZone"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "stability": {
+          "const": "experimental",
+          "default": "experimental",
+          "title": "Stability",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin_zone",
+        "effective_zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "TrustClassification",
+      "type": "object"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/evidence-projection-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Thin identity, navigation, retrieval, trust, and lifecycle projection.",
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "evidence_projection_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Evidence Projection Id",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "native_representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Native Representation Id",
+      "type": "string"
+    },
+    "ordinal": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "parent_projection_id": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Projection Id"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ProjectionProvenance"
+    },
+    "reference": {
+      "$ref": "#/$defs/EvidenceReference"
+    },
+    "retrieval": {
+      "$ref": "#/$defs/RetrievalHandle"
+    },
+    "source_version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Version Id",
+      "type": "string"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    },
+    "trust": {
+      "$ref": "#/$defs/TrustClassification"
+    }
+  },
+  "required": [
+    "evidence_projection_id",
+    "source_version_id",
+    "native_representation_id",
+    "reference",
+    "retrieval",
+    "ordinal",
+    "trust",
+    "provenance"
+  ],
+  "title": "OpenARDP Evidence Projection",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

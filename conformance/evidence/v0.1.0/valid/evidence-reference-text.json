@@ -1,0 +1,15 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "evidence_reference_id": "sha256:795c2d7373b6847fcea398809a9fef9a9030fcaa77808a927eea7a8d4e42f076",
+  "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+  "anchor": {
+    "anchor_type": "text_span",
+    "coordinate_system": "unicode_code_points",
+    "start": 5,
+    "end": 12,
+    "text_length": 20
+  }
+}

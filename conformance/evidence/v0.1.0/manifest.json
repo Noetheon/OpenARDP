@@ -1,0 +1,31 @@
+{
+  "contract_version": "0.1.0",
+  "valid": [
+    {"model": "native_representation", "path": "valid/native-representation.json"},
+    {"model": "evidence_reference", "path": "valid/evidence-reference-text.json"},
+    {"model": "evidence_reference", "path": "valid/evidence-reference-page.json"},
+    {"model": "evidence_reference", "path": "valid/evidence-reference-table.json"},
+    {"model": "evidence_reference", "path": "valid/evidence-reference-pointer.json"},
+    {"model": "evidence_projection", "path": "valid/evidence-projection.json"},
+    {"model": "trust_classification", "path": "valid/trust-classification.json"}
+  ],
+  "invalid": [
+    {"model": "trust_classification", "path": "invalid/unsupported-major-trust.json", "error_contains": "unsupported contract major"},
+    {"model": "trust_classification", "path": "invalid/unnamespaced-extension.json", "error_contains": "absolute URI"},
+    {"model": "trust_classification", "path": "invalid/trust-escalation.json", "error_contains": "trust promotion"},
+    {"model": "evidence_reference", "path": "invalid/page-out-of-bounds.json", "error_contains": "page bounds"},
+    {"model": "evidence_reference", "path": "invalid/malformed-pointer.json", "error_contains": "control characters"},
+    {"model": "native_representation", "path": "invalid/native-identity-drift.json", "error_contains": "native_representation_id"},
+    {"model": "evidence_projection", "path": "invalid/stale-projection-source.json", "error_contains": "reference source"},
+    {"model": "trust_classification", "path": "invalid/unknown-direct-field.json", "error_contains": "Extra inputs"}
+  ],
+  "record_sets": [
+    {
+      "native": "valid/native-representation.json",
+      "references": ["valid/evidence-reference-text.json"],
+      "projections": ["valid/evidence-projection.json"],
+      "expected_source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "canonicalization_vectors": "canonicalization-vectors.json"
+}

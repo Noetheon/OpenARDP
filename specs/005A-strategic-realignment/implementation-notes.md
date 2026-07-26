@@ -145,5 +145,12 @@ Revert the isolated F005A commit or merge commit. No runtime data migration, dep
 
 ## Remote verification
 
-Pending feature commit, pull request, Ubuntu/macOS/Windows PR-head CI, merge, and post-merge `main` CI. These placeholders
-must be replaced with exact links and SHAs before external closeout.
+- Feature commit: `30c46208ead7c70955044fba16c6e79b4fbfb924`.
+- Pull request [#6](https://github.com/Noetheon/OpenARDP/pull/6) merged on 2026-07-26 as
+  `75defaba24a64ab79772683d643378305e8d776f`.
+- PR-head workflow [30201594632](https://github.com/Noetheon/OpenARDP/actions/runs/30201594632) passed all locked gates on
+  Ubuntu (57 s), macOS (37 s) and Windows (1 min 48 s).
+- Post-merge `main` workflow
+  [30201693013](https://github.com/Noetheon/OpenARDP/actions/runs/30201693013) passed all locked gates on Ubuntu (52 s),
+  macOS (1 min 7 s) and Windows (2 min).
+- Both workflows ran the 415-test network-blocked suite, distribution builds and tracked-file drift verification.

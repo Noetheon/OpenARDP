@@ -159,7 +159,19 @@ wheel import, JSON validation, relative links, migration accounting and the Feat
 
 Constitution 2.0.0 is byte-identical to its canonical source. Repository-contract tests enforce the exact 005A–017 prompt
 sequence, ADR supersession/deferral, experimental contract maturity, claim discipline, overlay completeness and exclusion
-of the external blueprint package. Pull-request and post-merge cross-platform evidence remain pending until publication.
+of the external blueprint package.
+
+## Feature 005A external verification completed
+
+[Pull request #6](https://github.com/Noetheon/OpenARDP/pull/6) merged F005A as commit
+[`75defaba24a64ab79772683d643378305e8d776f`](https://github.com/Noetheon/OpenARDP/commit/75defaba24a64ab79772683d643378305e8d776f).
+The PR-head workflow [30201594632](https://github.com/Noetheon/OpenARDP/actions/runs/30201594632) and post-merge `main`
+workflow [30201693013](https://github.com/Noetheon/OpenARDP/actions/runs/30201693013) both passed on Ubuntu, macOS and
+Windows. Every job performed locked synchronization, lint, formatting, strict mypy, the 415-test network-blocked suite,
+distribution builds and tracked-file drift verification.
+
+This closes the v3.1 strategic realignment and contract boundary without changing runtime behavior, public-schema
+semantics, dependencies, the lockfile, persisted identities or commands.
 
 ## Corrective environment verification
 

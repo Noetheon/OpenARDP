@@ -52,6 +52,11 @@ def source_version_id(source_bytes: bytes) -> str:
     return "sha256:" + hashlib.sha256(source_bytes).hexdigest()
 
 
+def model_bundle_id(manifest: dict[str, JsonValue]) -> str:
+    """Hash one reviewed path-independent model-bundle manifest."""
+    return _identity_sha256("openardp:model-bundle", manifest)
+
+
 def _require_sha256_id(value: str, *, field: str) -> str:
     if _SHA256_ID.fullmatch(value) is None:
         raise ValueError(f"{field} must be sha256: followed by 64 lowercase hexadecimal characters")

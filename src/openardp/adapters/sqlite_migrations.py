@@ -405,7 +405,104 @@ MIGRATION_4 = Migration(
     ),
 )
 
-MIGRATIONS = (MIGRATION_1, MIGRATION_2, MIGRATION_3, MIGRATION_4)
+MIGRATION_5 = Migration(
+    version=5,
+    name="rich-representation-attempts",
+    statements=(
+        """
+        CREATE TABLE rich_parse_attempts (
+            attempt_id TEXT PRIMARY KEY CHECK (length(attempt_id) = 36),
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL CHECK (
+                length(version_id) = 71
+                AND substr(version_id, 1, 7) = 'sha256:'
+                AND substr(version_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            representation_id TEXT NOT NULL CHECK (
+                length(representation_id) = 71
+                AND substr(representation_id, 1, 7) = 'sha256:'
+                AND substr(representation_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            outcome TEXT NOT NULL CHECK (outcome IN ('CANONICAL', 'CONVERGED', 'DIVERGED')),
+            descriptor_object_id TEXT NOT NULL,
+            provider_native_object_id TEXT NOT NULL,
+            native_record_object_id TEXT NOT NULL,
+            evidence_bundle_object_id TEXT NOT NULL,
+            projection_count INTEGER NOT NULL CHECK (
+                projection_count BETWEEN 0 AND 1000000
+            ),
+            attempt_json TEXT NOT NULL CHECK (length(attempt_json) >= 2),
+            bundle_json TEXT NOT NULL CHECK (length(bundle_json) >= 2),
+            event_sequence INTEGER NOT NULL CHECK (event_sequence >= 1),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES document_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT,
+            FOREIGN KEY (descriptor_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (provider_native_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (native_record_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (evidence_bundle_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (document_id, event_sequence)
+                REFERENCES ingestion_events(document_id, sequence) ON DELETE RESTRICT,
+            UNIQUE (document_id, event_sequence)
+        ) STRICT
+        """,
+        """
+        CREATE TABLE rich_attempt_evidence (
+            attempt_id TEXT NOT NULL,
+            ordinal INTEGER NOT NULL CHECK (ordinal BETWEEN 0 AND 1000000),
+            reference_object_id TEXT NOT NULL,
+            projection_object_id TEXT NOT NULL,
+            retrieval_object_id TEXT NOT NULL,
+            PRIMARY KEY (attempt_id, ordinal),
+            FOREIGN KEY (attempt_id)
+                REFERENCES rich_parse_attempts(attempt_id) ON DELETE RESTRICT,
+            FOREIGN KEY (reference_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (projection_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (retrieval_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        CREATE TABLE rich_accepted_representations (
+            document_id TEXT NOT NULL,
+            version_id TEXT NOT NULL,
+            representation_id TEXT NOT NULL,
+            accepted_attempt_id TEXT NOT NULL UNIQUE,
+            PRIMARY KEY (document_id, version_id, representation_id),
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES document_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT,
+            FOREIGN KEY (accepted_attempt_id)
+                REFERENCES rich_parse_attempts(attempt_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE INDEX rich_parse_attempts_scope_idx ON rich_parse_attempts("
+        "document_id, version_id, representation_id, created_at, attempt_id)",
+        "CREATE INDEX rich_parse_attempts_descriptor_idx "
+        "ON rich_parse_attempts(descriptor_object_id)",
+        "CREATE INDEX rich_parse_attempts_native_idx "
+        "ON rich_parse_attempts(provider_native_object_id)",
+        "CREATE INDEX rich_parse_attempts_bundle_idx "
+        "ON rich_parse_attempts(evidence_bundle_object_id)",
+        "CREATE INDEX rich_attempt_evidence_reference_idx "
+        "ON rich_attempt_evidence(reference_object_id)",
+        "CREATE INDEX rich_attempt_evidence_projection_idx "
+        "ON rich_attempt_evidence(projection_object_id)",
+        "CREATE INDEX rich_attempt_evidence_retrieval_idx "
+        "ON rich_attempt_evidence(retrieval_object_id)",
+    ),
+)
+
+MIGRATIONS = (MIGRATION_1, MIGRATION_2, MIGRATION_3, MIGRATION_4, MIGRATION_5)
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
 __all__ = [
@@ -415,5 +512,6 @@ __all__ = [
     "MIGRATION_2",
     "MIGRATION_3",
     "MIGRATION_4",
+    "MIGRATION_5",
     "Migration",
 ]

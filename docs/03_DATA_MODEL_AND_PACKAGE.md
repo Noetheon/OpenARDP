@@ -151,6 +151,26 @@ The exact identity projections, semantic enforcement layers, fixtures, and migra
 boundary are documented in the
 [F006 contract](../specs/006-evidence-contract-foundation/contracts/evidence-contracts.md).
 
+### Feature 007 rich runtime records
+
+Feature 007 keeps complete Docling JSON in CAS and adds internal, provider-neutral
+records without changing any public F002/F006 schema:
+
+- `NativeArtifactDescriptor` binds the source, F006 native record, complete native
+  object, exact component versions, provider/export profiles and optional local
+  model-bundle identity.
+- `RichEvidenceBundle` binds ordered F006 references/projections to their canonical
+  record objects and exact retrieval objects.
+- `RichParseAttempt` is append-only and classified `CANONICAL`, `CONVERGED` or
+  `DIVERGED`; only the first canonical attempt is accepted for a READY scope.
+- `RichRepresentationArtifacts` joins the accepted attempt to the existing zero-block
+  base representation in one catalog snapshot.
+
+Checksummed workspace migration 5 adds accepted-attempt, parse-attempt and per-attempt
+evidence rows. All rich CAS objects, including divergent attempts, remain reachability
+roots. A changed source, provider profile, semantic limit or model-bundle identity
+creates a separate representation identity.
+
 ### Document manifest
 
 See `schemas/manifest.schema.json`.

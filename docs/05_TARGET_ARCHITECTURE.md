@@ -1,4 +1,4 @@
-# Target architecture after Feature 005
+# Target architecture after Feature 007
 
 **Status:** Planned architecture governed by accepted ADRs and the
 [feature map](../spec-kit/FEATURE_MAP.md). Only behavior listed in the [README](../README.md) is currently delivered.
@@ -36,4 +36,18 @@ Source snapshot + digest
 
 ## Docling boundary
 
-OpenARDP stores Docling output as a native artifact and maintains pointers into it. It may normalize minimal evidence fields needed for cross-provider retrieval, but must not reproduce all Docling semantics in project-owned models.
+Feature 007 delivers an exact optional `docling==2.114.0` adapter. Source paths never
+enter the worker: verified bytes cross bounded IPC into a spawned process after offline
+environment, resource limits and socket denial are active. DOCX/PPTX use local
+declarative backends; PDF requires a reviewed local model bundle before provider
+execution.
+
+OpenARDP stores complete canonical Docling JSON as an immutable native artifact and
+maintains versioned opaque pointers into it. Only fixed, reviewed evidence fields are
+projected into F006 records. Docling's unsafe unsigned `origin.binary_hash` is
+losslessly represented as a decimal string; every other non-I-JSON value fails closed.
+The isolation boundary is defense-in-depth, not a portable strong sandbox.
+
+Catalog revision 5 atomically joins the base READY representation, canonical rich
+attempt, complete evidence inventory, head and event. Forced reparses append
+converged/diverged attempts and never silently replace accepted evidence.

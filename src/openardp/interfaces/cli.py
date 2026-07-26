@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import stat
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -13,6 +15,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
 from openardp.adapters.local_source import (
     InvalidSourcePath,
@@ -25,6 +28,8 @@ from openardp.adapters.local_workspace import (
     WorkspaceError,
 )
 from openardp.domain.common import SCHEMA_VERSION
+from openardp.domain.ingestion import RichMediaType
+from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.ports.catalog import (
     AmbiguousBlock,
@@ -46,6 +51,8 @@ from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, UnsupportedTextMedia
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
+from openardp.services.rich_evidence import RichEvidenceService
+from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
 
 _COMMANDS = {
@@ -57,6 +64,8 @@ _COMMANDS = {
     "get",
     "search",
     "reindex",
+    "evidence",
+    "get-evidence",
 }
 
 
@@ -81,10 +90,12 @@ def _parser() -> _ArgumentParser:
     init = subparsers.add_parser("init", help="initialize an explicit local workspace")
     _common_options(init)
 
-    ingest = subparsers.add_parser("ingest", help="ingest one TXT or Markdown source")
+    ingest = subparsers.add_parser("ingest", help="ingest one supported local document")
     ingest.add_argument("path", type=Path)
-    ingest.add_argument("--profile", default="default")
+    ingest.add_argument("--profile")
     ingest.add_argument("--force", action="store_true")
+    ingest.add_argument("--docling-model-root", type=Path)
+    ingest.add_argument("--docling-model-manifest", type=Path)
     _common_options(ingest)
 
     list_parser = subparsers.add_parser("list", help="list body-free document summaries")
@@ -121,6 +132,22 @@ def _parser() -> _ArgumentParser:
     )
     reindex.add_argument("--document")
     _common_options(reindex)
+
+    evidence = subparsers.add_parser(
+        "evidence",
+        help="list body-free accepted rich evidence",
+    )
+    evidence.add_argument("document_id")
+    evidence.add_argument("--version")
+    _common_options(evidence)
+
+    get_evidence = subparsers.add_parser(
+        "get-evidence",
+        help="retrieve one exact accepted rich evidence body",
+    )
+    get_evidence.add_argument("projection_id")
+    get_evidence.add_argument("--document")
+    _common_options(get_evidence)
     return parser
 
 
@@ -157,6 +184,76 @@ def _services(
     return ingestion, query, search
 
 
+def _rich_services(
+    workspace: LocalWorkspace,
+    *,
+    model_root: Path | None = None,
+    model_manifest_path: Path | None = None,
+) -> tuple[RichIngestionService, RichEvidenceService]:
+    if (model_root is None) != (model_manifest_path is None):
+        raise ValueError("model root and manifest must be provided together")
+    manifest = (
+        _load_model_manifest(model_manifest_path) if model_manifest_path is not None else None
+    )
+    parser = IsolatedDoclingAdapter(
+        model_root=model_root,
+        model_manifest=manifest,
+    )
+    ingestion = RichIngestionService(
+        workspace.object_store,
+        workspace.catalog,
+        parser,
+        source_factory=LocalSource,
+    )
+    evidence = RichEvidenceService(
+        workspace.object_store,
+        workspace.catalog,
+        representation_verifier=ingestion.verify_ready_representation,
+    )
+    return ingestion, evidence
+
+
+def _load_model_manifest(path: Path) -> ModelBundleManifest:
+    selected = path.expanduser().absolute()
+    descriptor: int | None = None
+    try:
+        metadata = selected.lstat()
+        if selected.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError
+        if metadata.st_size > 8_388_608:
+            raise ValueError
+        flags = os.O_RDONLY
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_BINARY"):
+            flags |= os.O_BINARY
+        descriptor = os.open(selected, flags)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or (metadata.st_dev, metadata.st_ino) != (
+            opened.st_dev,
+            opened.st_ino,
+        ):
+            raise ValueError
+        chunks: list[bytes] = []
+        observed = 0
+        while chunk := os.read(descriptor, 1_048_576):
+            observed += len(chunk)
+            if observed > 8_388_608:
+                raise ValueError
+            chunks.append(chunk)
+        if observed != metadata.st_size:
+            raise ValueError
+        payload = b"".join(chunks)
+        return ModelBundleManifest.model_validate_json(payload)
+    except (OSError, ValueError):
+        raise ValueError("local model manifest is invalid") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def _execute(arguments: argparse.Namespace) -> object:
     command = str(arguments.command)
     store = Path(arguments.store)
@@ -168,13 +265,40 @@ def _execute(arguments: argparse.Namespace) -> object:
         }
 
     workspace = LocalWorkspace.open(store)
-    ingestion, query, search = _services(workspace)
     if command == "ingest":
+        source = Path(arguments.path)
+        media_type = LocalSource(source).media_type
+        if isinstance(media_type, RichMediaType):
+            rich_ingestion, _evidence = _rich_services(
+                workspace,
+                model_root=(
+                    Path(arguments.docling_model_root)
+                    if arguments.docling_model_root is not None
+                    else None
+                ),
+                model_manifest_path=(
+                    Path(arguments.docling_model_manifest)
+                    if arguments.docling_model_manifest is not None
+                    else None
+                ),
+            )
+            return rich_ingestion.ingest(
+                source,
+                profile=(
+                    str(arguments.profile)
+                    if arguments.profile is not None
+                    else rich_ingestion.recipe.parser.profile
+                ),
+                force=bool(arguments.force),
+            )
+        ingestion, _query, _search = _services(workspace)
         return ingestion.ingest(
-            Path(arguments.path),
-            profile=str(arguments.profile),
+            source,
+            profile=str(arguments.profile) if arguments.profile is not None else "default",
             force=bool(arguments.force),
         )
+
+    _ingestion, query, search = _services(workspace)
     if command == "list":
         return query.list_documents()
     if command == "status":
@@ -201,6 +325,20 @@ def _execute(arguments: argparse.Namespace) -> object:
     if command == "reindex":
         return search.reindex(
             document=str(arguments.document) if arguments.document is not None else None,
+        )
+    if command == "evidence":
+        _rich_ingestion, evidence = _rich_services(workspace)
+        return evidence.list(
+            _parse_uuid(str(arguments.document_id)),
+            version_id=str(arguments.version) if arguments.version is not None else None,
+        )
+    if command == "get-evidence":
+        _rich_ingestion, evidence = _rich_services(workspace)
+        return evidence.get(
+            str(arguments.projection_id),
+            document_id=(
+                _parse_uuid(str(arguments.document)) if arguments.document is not None else None
+            ),
         )
     raise _UsageError("invalid command usage")
 
@@ -255,11 +393,18 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
         assert isinstance(converted, dict)
         scope = converted["scope"]
         assert isinstance(scope, dict)
-        print(
-            "Ingested "
-            f"{scope['document_id']} "
-            f"({converted['disposition']}, {converted['block_count']} blocks)"
-        )
+        if "evidence_count" in converted:
+            print(
+                "Ingested "
+                f"{scope['document_id']} "
+                f"({converted['disposition']}, {converted['evidence_count']} evidence items)"
+            )
+        else:
+            print(
+                "Ingested "
+                f"{scope['document_id']} "
+                f"({converted['disposition']}, {converted['block_count']} blocks)"
+            )
     elif command == "list":
         assert isinstance(converted, list)
         for item in converted:
@@ -292,6 +437,21 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
             scope = item["scope"]
             assert isinstance(scope, dict)
             print(f"{scope['document_id']}\t{item['outcome']}\tentries={item['entry_count']}")
+    elif command == "evidence":
+        assert isinstance(converted, list)
+        for item in converted:
+            assert isinstance(item, dict)
+            retrieval = item["retrieval"]
+            assert isinstance(retrieval, dict)
+            print(
+                f"{item['evidence_projection_id']}\t"
+                f"{retrieval['media_type']}\t{retrieval['byte_length']} bytes"
+            )
+    elif command == "get-evidence":
+        assert isinstance(converted, dict)
+        projection = converted["projection"]
+        assert isinstance(projection, dict)
+        print(f"{projection['evidence_projection_id']}\t{_safe_text(str(converted['body']))}")
     else:
         print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
 

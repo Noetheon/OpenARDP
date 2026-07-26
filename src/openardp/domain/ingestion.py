@@ -40,11 +40,22 @@ class TextMediaType(StrEnum):
     MARKDOWN = "text/markdown"
 
 
+class RichMediaType(StrEnum):
+    """Closed rich media allowlist supported by the F007 adapter."""
+
+    PDF = "application/pdf"
+    DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+
+SourceMediaType = TextMediaType | RichMediaType
+
+
 class SourceSnapshot(DomainModel):
     """Exact immutable object and metadata from one stable local-source read."""
 
     source_key: SourceKey
-    media_type: TextMediaType
+    media_type: SourceMediaType
     object: StoredObject
     modified_at: UtcDatetime
     observed_at: UtcDatetime
@@ -60,7 +71,7 @@ class SourceInspection(DomainModel):
     """Non-publishing exact digest and metadata from one stable source read."""
 
     source_key: SourceKey
-    media_type: TextMediaType
+    media_type: SourceMediaType
     version_id: Sha256Id
     byte_length: int = Field(ge=0, le=MAX_SOURCE_BYTES)
     modified_at: UtcDatetime

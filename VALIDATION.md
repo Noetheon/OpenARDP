@@ -7,7 +7,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 004 notes](specs/004-text-ingestion-slice/implementation-notes.md) and
 [feature 005 notes](specs/005-lexical-search/implementation-notes.md) and
 [feature 005A notes](specs/005A-strategic-realignment/implementation-notes.md) and
-[feature 006 notes](specs/006-evidence-contract-foundation/implementation-notes.md).
+[feature 006 notes](specs/006-evidence-contract-foundation/implementation-notes.md) and
+[feature 007 notes](specs/007-docling-native-adapter/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -199,6 +200,25 @@ their canonicalization vectors, `pyproject.toml`, and `uv.lock`. PR
 post-merge `main` workflow
 [30204051975](https://github.com/Noetheon/OpenARDP/actions/runs/30204051975) both
 passed the complete locked gate on Linux, macOS, and Windows.
+
+## Feature 007 local evidence
+
+Feature `007-docling-native-adapter` adds one exact optional provider dependency and
+checksummed SQLite migration 5 without changing the nine public F002/F006 schemas or
+their identity vectors. Locally observed macOS/Python 3.12 evidence covers actual
+Docling 2.114.0 DOCX/PPTX conversions, deterministic fixtures, the PDF missing-assets
+gate, bounded worker termination, network denial, complete native/F006 construction,
+atomic rich persistence, ten-repeat verified cache reuse, forced convergence/divergence,
+all rich object tamper classes and provider-free CLI inspection.
+
+The closing local gate passed 566 tests at 85.36% branch coverage. Ruff, formatting,
+strict native and Windows-target mypy over 38 source files, all nine generated schemas,
+the F006 conformance corpus, repository validation, `git diff --check`, source/wheel
+builds, and core/rich isolated-wheel probes passed. Byte comparison to the frozen base
+found no change in the nine public schema JSON files, either identity-vector file, or
+the F006 conformance corpus. Exact commands and packaging/quickstart evidence are in the
+feature notes. Linux/macOS/Windows PR-head and post-merge evidence remains pending until
+the feature is published; this section must not be read as remote verification.
 
 ## Corrective environment verification
 

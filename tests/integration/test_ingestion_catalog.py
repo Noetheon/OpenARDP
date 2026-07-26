@@ -181,7 +181,7 @@ def _ready_commit(
 
 def _catalog(path: Path) -> SQLiteCatalog:
     catalog = SQLiteCatalog(path)
-    assert catalog.initialize(now=NOW) == 4
+    assert catalog.initialize(now=NOW) == 5
     catalog.register_document(
         SourceKey(connector="local", locator="/synthetic/source.txt"),
         document_id=DOCUMENT_ID,
@@ -228,8 +228,8 @@ def test_migration_three_upgrades_real_prior_catalogs_and_has_exact_tables(tmp_p
     assert old.initialize(now=NOW) == 2
 
     current = SQLiteCatalog(path)
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 4
-    assert current.initialize(now=NOW + timedelta(seconds=2)) == 4
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == 5
+    assert current.initialize(now=NOW + timedelta(seconds=2)) == 5
     assert (MIGRATION_1.checksum, MIGRATION_2.checksum) == prior_checksums
     with sqlite3.connect(path) as connection:
         tables = {

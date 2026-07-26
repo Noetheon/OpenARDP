@@ -60,5 +60,6 @@ CI before starting the successor.
 ## Current boundary
 
 Feature 005 implements TXT/Markdown preparation and verified lexical search. Feature 005A realigns governance without
-runtime change. Feature 006 defines evidence contracts; Feature 007 is the first Docling adapter. Do not reuse the
-pre-v3.1 numbering.
+runtime change. Feature 006 defines evidence contracts; Feature 007 implements the first
+bounded Docling-native adapter. Feature 008 is the next dependency-ordered work package.
+Do not reuse the pre-v3.1 numbering.

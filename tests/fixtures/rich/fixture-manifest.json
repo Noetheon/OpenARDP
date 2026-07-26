@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-07-26T12:00:00Z",
+  "generator": "tests/fixtures/rich/generate_fixtures.py",
+  "generator_version": "1",
+  "records": [
+    {
+      "byte_length": 36814,
+      "license": "CC0-1.0",
+      "name": "synthetic.docx",
+      "sha256": "dbd04208ecefe67cf7e8b668c509554cab1eae421f334cc563fb535419e54cd3"
+    },
+    {
+      "byte_length": 612,
+      "license": "CC0-1.0",
+      "name": "synthetic.pdf",
+      "sha256": "1c95c7b0f6c4a427559488b8f4825a424b6055bb201096ec28473ad4442a50e2"
+    },
+    {
+      "byte_length": 29362,
+      "license": "CC0-1.0",
+      "name": "synthetic.pptx",
+      "sha256": "0d76359ae389a2e417139405a583fb8d46cb2ea51a0515cb71c05cfc773dcd83"
+    }
+  ]
+}

@@ -51,3 +51,23 @@ Ingestion adapters may only emit the first two. Promotion to trusted policy or e
 - Cancellation, disk exhaustion and partial-output cleanup fail closed.
 - Dependency and release integrity are covered by the supply-chain policy.
 - Native parser artifacts are untrusted structured data and must never be deserialized as executable objects.
+
+## Delivered Feature 007 controls
+
+- only PDF, DOCX and PPTX media are accepted by the rich adapter;
+- all provider versions and the optional dependency are exact and lockfile-reviewed;
+- model manifests require traversal-free POSIX-relative regular files with declared
+  license, length and SHA-256; validation is streamed and rejects symlinks/substitution;
+- socket construction is denied before provider import and common model clients are
+  forced offline;
+- source, page, CPU/time, address-space where portable, file-descriptor, native-output,
+  projection and retrieval limits fail closed;
+- parent cleanup closes IPC, terminates/kills when necessary and reaps the spawned child;
+- IPC carries only strict JSON results or allowlisted body-free error categories;
+- native/reference/projection/retrieval/bundle objects are digest-verified before cache
+  reuse or retrieval;
+- pointer resolution accepts only the retained native object, matching provider
+  profile/version and bounded local RFC 6901 syntax.
+
+These controls reduce exposure but do not prove that Python process isolation,
+platform resource limits or the third-party parser are a universally secure sandbox.

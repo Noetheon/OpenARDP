@@ -65,6 +65,11 @@ anti-escalation, and cross-record source/native binding. The exact layer matrix 
 identity allowlists are in
 [`specs/006-evidence-contract-foundation/contracts/evidence-contracts.md`](../specs/006-evidence-contract-foundation/contracts/evidence-contracts.md).
 
+Feature 007 consumes these roots unchanged. Its Docling descriptor, rich evidence
+bundle, parse-attempt and catalog records are internal runtime contracts, not additional
+public interchange schemas. The nine generated schema files and both existing identity
+vector families must therefore remain byte-identical across F007.
+
 Schema acceptance alone is therefore not proof of semantic validity. Python consumers must use `openardp.domain.validate_json`; independent implementations must reproduce the record-semantic checks documented in `specs/002-domain-models-schemas/contracts/domain-contracts.md`.
 
 ## Deterministic regeneration

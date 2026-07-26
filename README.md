@@ -29,7 +29,9 @@ The repository has completed the bounded runtime work through
 [`005-lexical-search`](specs/005-lexical-search/spec.md), the documentation/governance
 realignment in [`005A-strategic-realignment`](specs/005A-strategic-realignment/spec.md),
 and the experimental contract foundation in
-[`006-evidence-contract-foundation`](specs/006-evidence-contract-foundation/spec.md):
+[`006-evidence-contract-foundation`](specs/006-evidence-contract-foundation/spec.md), plus
+the bounded provider adapter in
+[`007-docling-native-adapter`](specs/007-docling-native-adapter/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -45,10 +47,17 @@ and the experimental contract foundation in
 - body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation;
 - exact term/phrase lexical search with deterministic filters, verified bounded snippets and fail-closed index coverage;
 - idempotent `reindex` from verified READY evidence.
+- an exact optional `docling==2.114.0` extra for offline, spawned DOCX/PPTX conversion
+  and explicitly provisioned PDF conversion;
+- complete immutable Docling JSON, strict F006 thin evidence and checksummed catalog
+  revision 5 with accepted plus append-only converged/diverged attempts;
+- fully verified rich cache reuse and provider-free `evidence`/`get-evidence`
+  inspection.
 
-The built-in parser intentionally supports only strict UTF-8 text and a documented Markdown subset. There is no
-rich-document parser, context compiler, MCP server, watcher, model provider, cloud connector, automatic garbage
-collection or stable custom export format yet. Those remain separate work packages in the
+The core installation still supports strict UTF-8 text without Docling. Rich parsing is
+an explicit optional extra and remains local/offline by default. There is no context
+compiler, MCP server, watcher, cloud connector, automatic garbage collection or stable
+custom export format yet. Those remain separate work packages in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Quickstart
@@ -75,11 +84,18 @@ openardp outline <document-uuid> --store .openardp
 openardp get <block-uuid> --store .openardp
 openardp search '"exact phrase" evidence' --store .openardp
 openardp reindex --store .openardp
+openardp ingest ./document.docx --store .openardp
+openardp evidence <document-uuid> --store .openardp
+openardp get-evidence <projection-sha256> --document <document-uuid> --store .openardp
 ```
 
-Add `--json` to any command for a versioned machine-readable stdout envelope. Only `get` returns a full block body.
-Search returns bounded verified snippets. Every command except `init` requires an explicitly initialized compatible
-workspace; commands do not search parent directories or create state implicitly.
+PDF additionally requires `--docling-model-root` and
+`--docling-model-manifest` pointing to reviewed local assets; URLs are not accepted.
+Add `--json` to any command for a versioned machine-readable stdout envelope. Only
+`get` and the explicitly selected `get-evidence` return bodies. Search returns bounded
+verified snippets. Every command except `init` requires an explicitly initialized
+compatible workspace; commands do not search parent directories or create state
+implicitly.
 
 ## Validation and build
 

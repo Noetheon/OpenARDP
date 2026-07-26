@@ -113,14 +113,16 @@ def test_only_reviewed_agent_skills_are_tracked(repository_root: Path) -> None:
 
 
 def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root: Path) -> None:
-    """Keep F004 on the standard library plus reviewed F002 dependencies."""
+    """Keep the core small and expose rich parsing only through the exact reviewed extra."""
     project = _project_configuration(repository_root)["project"]
     assert project["requires-python"] == ">=3.12,<3.13"
     assert project.get("dependencies", []) == [
         "pydantic>=2.12.5,<2.13",
         "rfc8785>=0.1.4,<0.2",
     ]
-    assert project.get("optional-dependencies", {}) == {}
+    assert project.get("optional-dependencies", {}) == {
+        "docling": ["docling==2.114.0"],
+    }
     assert project["scripts"] == {"openardp": "openardp.interfaces.cli:main"}
     assert project["license"] == "Apache-2.0"
 

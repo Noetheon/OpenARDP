@@ -32,6 +32,7 @@ refine those decisions but may not silently contradict them.
 | `005-lexical-search` | Exact source-backed FTS5 retrieval, coverage/reindex and `search`/`reindex` CLI | Converged and merged |
 | `005A-strategic-realignment` | Implementation-first governance, contract boundary and v3.1 roadmap with no runtime change | Converged, merged and remotely verified |
 | `006-evidence-contract-foundation` | Experimental native/evidence/trust roots, anchor fixtures and adapter-independent validation | Converged, merged and remotely verified |
+| `007-docling-native-adapter` | Offline bounded Docling PDF/DOCX/PPTX native artifacts and F006 thin evidence | Locally converged; remote verification pending |
 
 The active-feature locator is `.specify/feature.json`. A later work package must not be started by adding behavior to an
 earlier feature directory.

@@ -1,0 +1,270 @@
+"""Spawned-process and strict IPC tests for the F007 rich adapter."""
+
+from __future__ import annotations
+
+import multiprocessing
+import os
+import socket
+import time
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+
+from openardp.adapters.isolated_docling import (
+    IsolatedDoclingAdapter,
+    _decode_worker_result,
+    _error_from_code,
+    _parser_error_code,
+)
+from openardp.domain.rich_ingestion import (
+    ComponentVersion,
+    RichMediaType,
+    RichParseOutput,
+    RichParserLimits,
+)
+from openardp.ports.parser import (
+    InvalidRichParserOutput,
+    ParserError,
+    ParserProcessCrashed,
+    ParserTimedOut,
+    RichParserCancelled,
+    RichParserDependencyUnavailable,
+    RichParserMalformedDocument,
+    RichParserModelAssetsInvalid,
+    RichParserModelAssetsRequired,
+    RichParserNetworkDenied,
+    RichParserPartialConversion,
+    RichParserResourceLimitExceeded,
+    UnsupportedRichMedia,
+)
+
+FIXTURES = Path(__file__).parents[1] / "fixtures" / "rich"
+
+
+def _network_probe(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    try:
+        socket.socket()
+    except RuntimeError:
+        result_sender.send(("error", "network_denied"))  # type: ignore[attr-defined]
+        return
+    result_sender.send(("error", "worker_failed"))  # type: ignore[attr-defined]
+
+
+def _malformed_result(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    result_sender.send(("ok", '{"secret-body":true}'))  # type: ignore[attr-defined]
+
+
+def _valid_result(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    while True:
+        message = input_receiver.recv()  # type: ignore[attr-defined]
+        if message[0] == "end":
+            break
+    result = RichParseOutput(
+        media_type=RichMediaType.DOCX,
+        native_document={"schema_name": "DoclingDocument"},
+        candidates=(),
+        component_versions=(ComponentVersion(name="docling", version="2.114.0"),),
+    )
+    result_sender.send(("ok", result.model_dump_json()))  # type: ignore[attr-defined]
+
+
+def _hanging_worker(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    time.sleep(5)
+
+
+def _crashing_worker(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    os._exit(19)
+
+
+def _closed_result_worker(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    result_sender.close()  # type: ignore[attr-defined]
+
+
+def _secret_error_worker(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    raise RuntimeError("/private/secret.docx secret-body provider traceback")
+
+
+def _instant_valid_result(
+    input_receiver: object,
+    result_sender: object,
+    config: object,
+) -> None:
+    result = RichParseOutput(
+        media_type=RichMediaType.DOCX,
+        native_document={"schema_name": "DoclingDocument"},
+        candidates=(),
+        component_versions=(ComponentVersion(name="docling", version="2.114.0"),),
+    )
+    result_sender.send(("ok", result.model_dump_json()))  # type: ignore[attr-defined]
+
+
+def _failing_chunks() -> Iterator[bytes]:
+    yield b"first"
+    raise RuntimeError("/private/secret.docx secret-body")
+
+
+def test_spawned_adapter_converts_bytes_and_reaps_its_child() -> None:
+    """Use spawn, return strict output and leave no parser process behind."""
+    before = {process.pid for process in multiprocessing.active_children()}
+    adapter = IsolatedDoclingAdapter(
+        limits=RichParserLimits(timeout_seconds=30.0),
+        _worker_behavior=_valid_result,
+    )
+    output = adapter.parse(
+        ((FIXTURES / "synthetic.docx").read_bytes(),),
+        media_type=RichMediaType.DOCX.value,
+    )
+    after = {process.pid for process in multiprocessing.active_children()}
+
+    assert output.native_document == {"schema_name": "DoclingDocument"}
+    assert adapter.recipe.provider.version == "2.114.0"
+    assert after == before
+
+
+def test_isolated_adapter_denies_network_before_selected_worker_behavior() -> None:
+    """Prove socket denial is active before provider-side behavior executes."""
+    adapter = IsolatedDoclingAdapter(_worker_behavior=_network_probe)
+    with pytest.raises(RichParserNetworkDenied, match="network denied"):
+        adapter.parse((), media_type=RichMediaType.DOCX.value)
+
+
+def test_isolated_adapter_rejects_media_and_malformed_body_without_reflection() -> None:
+    """Keep unsupported and malformed worker results typed and body-free."""
+    adapter = IsolatedDoclingAdapter()
+    with pytest.raises(UnsupportedRichMedia, match="unsupported rich media"):
+        adapter.parse((), media_type="text/html")
+
+    malformed = IsolatedDoclingAdapter(_worker_behavior=_malformed_result)
+    with pytest.raises(InvalidRichParserOutput, match="output invalid") as error:
+        malformed.parse((), media_type=RichMediaType.DOCX.value)
+    assert "secret-body" not in str(error.value)
+
+
+def test_isolated_adapter_times_out_crashes_and_enforces_source_limit() -> None:
+    """Terminate hostile workers and classify bounded source overflow without bodies."""
+    before = {process.pid for process in multiprocessing.active_children()}
+    started = time.monotonic()
+    timeout = IsolatedDoclingAdapter(
+        limits=RichParserLimits(timeout_seconds=0.05),
+        _worker_behavior=_hanging_worker,
+    )
+    with pytest.raises(ParserTimedOut, match="timed out"):
+        timeout.parse((), media_type=RichMediaType.DOCX.value)
+    assert time.monotonic() - started < 5.0
+
+    crash = IsolatedDoclingAdapter(_worker_behavior=_crashing_worker)
+    with pytest.raises(ParserProcessCrashed, match="crashed"):
+        crash.parse((), media_type=RichMediaType.DOCX.value)
+
+    bounded = IsolatedDoclingAdapter(
+        limits=RichParserLimits(max_source_bytes=1),
+    )
+    with pytest.raises(RichParserResourceLimitExceeded, match="limit"):
+        bounded.parse((b"secret-body",), media_type=RichMediaType.DOCX.value)
+    assert {process.pid for process in multiprocessing.active_children()} == before
+
+
+def test_ipc_close_input_failure_cancellation_and_worker_details_are_sanitized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Classify every parent/child interruption and retain no secret diagnostic text."""
+    before = {process.pid for process in multiprocessing.active_children()}
+    closed = IsolatedDoclingAdapter(_worker_behavior=_closed_result_worker)
+    with pytest.raises(ParserProcessCrashed, match="crashed"):
+        closed.parse((), media_type=RichMediaType.DOCX.value)
+
+    secret = IsolatedDoclingAdapter(_worker_behavior=_secret_error_worker)
+    with pytest.raises(ParserProcessCrashed, match="crashed") as secret_error:
+        secret.parse((), media_type=RichMediaType.DOCX.value)
+    assert "secret" not in str(secret_error.value)
+    assert "private" not in str(secret_error.value)
+
+    input_failure = IsolatedDoclingAdapter(_worker_behavior=_instant_valid_result)
+    with pytest.raises(ParserProcessCrashed, match="input stream failed") as input_error:
+        input_failure.parse(
+            _failing_chunks(),
+            media_type=RichMediaType.DOCX.value,
+        )
+    assert "secret" not in str(input_error.value)
+
+    cancelled = IsolatedDoclingAdapter(_worker_behavior=_instant_valid_result)
+    monkeypatch.setattr(
+        "openardp.adapters.isolated_docling._decode_worker_result",
+        lambda _message: (_ for _ in ()).throw(KeyboardInterrupt),
+    )
+    with pytest.raises(RichParserCancelled, match="cancelled"):
+        cancelled.parse((), media_type=RichMediaType.DOCX.value)
+    assert {process.pid for process in multiprocessing.active_children()} == before
+
+
+@pytest.mark.parametrize(
+    ("code", "error_type"),
+    (
+        ("unsupported_media", UnsupportedRichMedia),
+        ("dependency_unavailable", RichParserDependencyUnavailable),
+        ("model_assets_required", RichParserModelAssetsRequired),
+        ("model_assets_invalid", RichParserModelAssetsInvalid),
+        ("malformed_document", RichParserMalformedDocument),
+        ("partial_conversion", RichParserPartialConversion),
+        ("network_denied", RichParserNetworkDenied),
+        ("resource_limit", RichParserResourceLimitExceeded),
+        ("cancelled", RichParserCancelled),
+        ("invalid_output", InvalidRichParserOutput),
+        ("worker_failed", ParserProcessCrashed),
+    ),
+)
+def test_worker_error_codes_are_closed_and_sanitized(
+    code: str,
+    error_type: type[ParserError],
+) -> None:
+    """Round-trip every allowlisted worker category without provider exception text."""
+    error = _error_from_code(code)
+    assert isinstance(error, error_type)
+    assert _parser_error_code(error) == code
+    with pytest.raises(error_type):
+        _decode_worker_result(("error", code))
+
+
+@pytest.mark.parametrize(
+    "message",
+    (
+        None,
+        ("ok",),
+        ("unknown", "{}"),
+        ("ok", 1),
+        ("error", "unknown_code"),
+    ),
+)
+def test_worker_decoder_rejects_every_unreviewed_shape(message: object) -> None:
+    """Fail closed on malformed tuples, types, result kinds and error codes."""
+    with pytest.raises(InvalidRichParserOutput, match="output invalid"):
+        _decode_worker_result(message)

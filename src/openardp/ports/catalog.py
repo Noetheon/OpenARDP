@@ -21,6 +21,14 @@ from openardp.domain.ingestion import (
     RepresentationLease,
     RepresentationScope,
 )
+from openardp.domain.rich_ingestion import (
+    ReadyRichRepresentationCommit,
+    RichAttemptAppendResult,
+    RichAttemptCommit,
+    RichParseAttempt,
+    RichRepresentationArtifacts,
+    RichRepresentationCommitResult,
+)
 from openardp.domain.search import (
     IndexCoverage,
     SearchFilters,
@@ -386,4 +394,49 @@ class Catalog(Protocol):
         scope: RepresentationScope,
     ) -> tuple[SearchIndexEntry, ...]:
         """Return stored index mapping rows for one READY scope in ordinal order."""
+        ...
+
+
+@runtime_checkable
+class RichCatalog(Catalog, Protocol):
+    """Additive atomic persistence boundary for F007 rich representations."""
+
+    def commit_ready_rich_representation(
+        self,
+        commit: ReadyRichRepresentationCommit,
+        *,
+        owner_id: str,
+        lease_token: str,
+        expected_revision: int,
+        disposition: IngestionDisposition,
+    ) -> RichRepresentationCommitResult:
+        """Atomically publish the first canonical rich attempt and READY aggregate."""
+        ...
+
+    def append_rich_attempt(
+        self,
+        commit: RichAttemptCommit,
+        *,
+        source_observed_at: datetime,
+        occurred_at: datetime,
+    ) -> RichAttemptAppendResult:
+        """Atomically retain one converged/diverged attempt without replacing accepted data."""
+        ...
+
+    def load_rich_representation(
+        self,
+        scope: RepresentationScope,
+    ) -> RichRepresentationArtifacts | None:
+        """Return one accepted rich aggregate from a single catalog snapshot."""
+        ...
+
+    def get_rich_attempt(self, attempt_id: UUID) -> RichParseAttempt | None:
+        """Return one append-only rich attempt or no result."""
+        ...
+
+    def list_rich_attempts(
+        self,
+        scope: RepresentationScope,
+    ) -> tuple[RichParseAttempt, ...]:
+        """Return rich attempts in deterministic creation and identifier order."""
         ...

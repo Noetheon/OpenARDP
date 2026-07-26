@@ -31,3 +31,20 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - releases produce wheel/sdist checks, SBOM, checksums and build provenance where feasible;
 - generated fixtures and schemas have deterministic regeneration checks;
 - vulnerability scans inform review but do not replace threat analysis.
+
+## Feature 007 operating profile
+
+- Core installs remain provider-free; rich parsing requires the exact optional
+  `docling==2.114.0` extra.
+- DOCX/PPTX require no first-use download. PDF is disabled until a local root and strict
+  model manifest are supplied together; no URL-based asset configuration exists.
+- The reviewed runtime records exact Docling, core, IBM-model, parse, slim and Torch
+  component versions. Model-file licenses remain operator-reviewed manifest facts.
+- Workspace migration 5 is additive and checksummed. Before opening a production
+  revision-4 workspace, create a backup. Older software requires restoring that backup;
+  live in-place downgrade is unsupported.
+- CAS objects written before a failed catalog transaction remain immutable but may be
+  unreachable until Feature 013 retention/recovery tooling.
+- Default CLI/error output omits bodies, native JSON, provider tracebacks and absolute
+  source/model paths. `get-evidence` returns a body only after an explicit projection
+  request.

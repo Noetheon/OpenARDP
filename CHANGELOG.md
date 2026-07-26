@@ -7,6 +7,14 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Exact optional `docling==2.114.0` rich adapter with spawned offline conversion,
+  complete native JSON retention, deterministic F006 thin evidence and reviewed local
+  PDF model-bundle validation.
+- Checksummed catalog revision 5 with atomic accepted rich representations, append-only
+  canonical/converged/diverged attempts, complete evidence reachability and fully
+  verified cache reuse.
+- Provider-free rich evidence/native inspection plus `evidence` and `get-evidence` CLI
+  commands in stable JSON and human-readable modes.
 - Experimental evidence contract family `0.1.0`: four strict JSON Schema 2020-12 roots
   for retained native artifacts, source-bound evidence anchors, thin retrieval
   projections, and anti-escalation trust classifications.
@@ -64,6 +72,8 @@ semantic versioning once the public package lifecycle begins.
 
 ### Changed
 
+- Routed PDF/DOCX/PPTX through the optional rich adapter while preserving the existing
+  text ingestion and lexical-search contracts.
 - Reconciled entry points with the completed Feature 005 search behavior and classified future capabilities explicitly.
 - Replaced the planned complete OpenARDP rich-document IR with immutable provider-native artifacts plus thin
   provider-neutral evidence projections.
@@ -87,10 +97,13 @@ semantic versioning once the public package lifecycle begins.
 
 - Superseded pre-v3.1 future feature prompts that conflicted with the adopted 005A–017 dependency order.
 - Premature chunking and CLI scaffold behavior that belongs to later bounded features.
-- Placeholder runtime dependencies and extras for Docling, MCP, watchers and other later work packages.
+- Placeholder runtime dependencies and extras for MCP, watchers and other later work packages.
 
 ### Security
 
+- Rich parsing denies network before provider import, bounds source/page/process/output
+  resources, streams model verification, sanitizes IPC failures and reaps child
+  processes on timeout, crash, cancellation and malformed output.
 - Evidence contract roots reject stale source/native scope, malformed geometry and
   pointers, trust promotion, unknown direct fields, unsafe JSON, and instruction
   authority; fixture paths are confined to the declared conformance tree.

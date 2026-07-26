@@ -14,18 +14,46 @@ import pytest
 
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
 from openardp.domain.ingestion import ParsedTextDocument, ParserRecipe, TextMediaType
-from openardp.ports.catalog import Catalog
+from openardp.ports.catalog import Catalog, RichCatalog
 from openardp.ports.parser import (
     InvalidParserOutput,
+    InvalidRichParserOutput,
     ParserAdapter,
     ParserError,
     ParserProcessCrashed,
     ParserTimedOut,
+    RichParserAdapter,
+    RichParserCancelled,
+    RichParserDependencyUnavailable,
+    RichParserModelAssetsInvalid,
+    RichParserModelAssetsRequired,
+    RichParserNetworkDenied,
+    RichParserPartialConversion,
+    RichParserResourceLimitExceeded,
     TextDecodingError,
     TextResourceLimitExceeded,
     UnsafeTextContent,
+    UnsupportedRichMedia,
     UnsupportedTextMedia,
 )
+
+
+def test_rich_parser_port_and_errors_remain_provider_neutral() -> None:
+    """Expose no Docling class or import from the provider-neutral port module."""
+    expected_errors = (
+        RichParserDependencyUnavailable("rich parser dependency unavailable"),
+        UnsupportedRichMedia("unsupported rich media"),
+        RichParserModelAssetsRequired("rich parser model assets required"),
+        RichParserModelAssetsInvalid("rich parser model assets invalid"),
+        RichParserPartialConversion("rich parser partial conversion"),
+        RichParserNetworkDenied("rich parser network denied"),
+        RichParserResourceLimitExceeded("rich parser resource limit exceeded"),
+        RichParserCancelled("rich parser cancelled"),
+        InvalidRichParserOutput("rich parser output invalid"),
+    )
+    assert all(isinstance(error, ParserError) for error in expected_errors)
+    assert all("docling" not in type(error).__module__ for error in expected_errors)
+    assert RichParserAdapter.__module__ == "openardp.ports.parser"
 
 
 def _hanging_worker(
@@ -147,6 +175,18 @@ def test_catalog_protocol_exposes_complete_f004_boundary() -> None:
         "list_ingestion_events",
     }
     assert all(hasattr(Catalog, name) for name in expected)
+
+
+def test_catalog_protocol_extends_the_existing_boundary_for_rich_commits() -> None:
+    """Keep canonical and later rich attempts behind one atomic catalog port."""
+    expected = {
+        "commit_ready_rich_representation",
+        "append_rich_attempt",
+        "load_rich_representation",
+        "get_rich_attempt",
+        "list_rich_attempts",
+    }
+    assert all(hasattr(RichCatalog, name) for name in expected)
 
 
 def test_isolated_parser_uses_spawned_ipc_and_matches_pure_contract() -> None:

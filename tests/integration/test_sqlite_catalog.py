@@ -62,7 +62,7 @@ def _source_commit(
 
 def _initialized_catalog(path: Path) -> SQLiteCatalog:
     catalog = SQLiteCatalog(path)
-    assert catalog.initialize(now=NOW) == 4
+    assert catalog.initialize(now=NOW) == 5
     return catalog
 
 
@@ -288,7 +288,7 @@ def test_real_revision_one_catalog_upgrades_transactionally_to_current(tmp_path:
 
     current = SQLiteCatalog(path)
 
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 4
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == 5
     assert (
         current.register_document(
             SourceKey(connector="local", locator="one"), document_id=DOC_B, now=NOW
@@ -300,7 +300,32 @@ def test_real_revision_one_catalog_upgrades_transactionally_to_current(tmp_path:
             row[0]
             for row in connection.execute("SELECT version FROM schema_migrations ORDER BY version")
         )
-    assert versions == (1, 2, 3, 4)
+    assert versions == (1, 2, 3, 4, 5)
+
+
+def test_real_revision_four_catalog_upgrades_to_rich_revision_five(
+    tmp_path: Path,
+) -> None:
+    """Upgrade the immediately prior released shape without changing its checksums."""
+    path = tmp_path / "catalog.sqlite3"
+    prior = MIGRATIONS[:4]
+    prior_checksums = tuple(migration.checksum for migration in prior)
+    old = SQLiteCatalog(path, migrations=prior)
+    assert old.initialize(now=NOW) == 4
+
+    current = SQLiteCatalog(path)
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == 5
+    assert tuple(migration.checksum for migration in MIGRATIONS[:4]) == prior_checksums
+    with sqlite3.connect(path) as connection:
+        tables = {
+            str(row[0])
+            for row in connection.execute("SELECT name FROM sqlite_schema WHERE type = 'table'")
+        }
+    assert {
+        "rich_parse_attempts",
+        "rich_attempt_evidence",
+        "rich_accepted_representations",
+    } <= tables
 
 
 def test_failed_pending_migration_leaves_revision_one_unchanged(tmp_path: Path) -> None:
@@ -348,7 +373,7 @@ def test_too_new_catalog_is_rejected_without_mutation(tmp_path: Path) -> None:
         connection.execute(
             "INSERT INTO schema_migrations("
             "version, name, checksum, applied_at) VALUES (?, ?, ?, ?)",
-            (5, "future", "sha256:" + "f" * 64, "2026-07-22T12:30:00.000000Z"),
+            (6, "future", "sha256:" + "f" * 64, "2026-07-22T12:30:00.000000Z"),
         )
         connection.commit()
     before = _schema_dump(path)
@@ -823,11 +848,11 @@ def test_reference_snapshot_includes_versions_and_terminal_jobs(tmp_path: Path) 
     snapshot = catalog.reference_snapshot(observed_at=NOW)
 
     assert snapshot.object_ids == tuple(sorted((SHA_A, SHA_B)))
-    assert snapshot.catalog_schema_version == 4
+    assert snapshot.catalog_schema_version == 5
 
 
 def test_current_migration_definitions_are_contiguous_and_checksummed() -> None:
     """Freeze released migration ordering and content identity."""
-    assert tuple(migration.version for migration in MIGRATIONS) == (1, 2, 3, 4)
+    assert tuple(migration.version for migration in MIGRATIONS) == (1, 2, 3, 4, 5)
     assert all(migration.checksum.startswith("sha256:") for migration in MIGRATIONS)
-    assert len({migration.checksum for migration in MIGRATIONS}) == 4
+    assert len({migration.checksum for migration in MIGRATIONS}) == 5

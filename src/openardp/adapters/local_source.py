@@ -11,7 +11,9 @@ from pathlib import Path
 
 from openardp.domain.ingestion import (
     MAX_SOURCE_BYTES,
+    RichMediaType,
     SourceInspection,
+    SourceMediaType,
     SourceSnapshot,
     TextMediaType,
 )
@@ -20,10 +22,13 @@ from openardp.ports.object_store import ObjectPublicationError, ObjectStore
 from openardp.ports.parser import UnsupportedTextMedia
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
-_MEDIA_BY_SUFFIX = {
+_MEDIA_BY_SUFFIX: dict[str, SourceMediaType] = {
     ".md": TextMediaType.MARKDOWN,
     ".markdown": TextMediaType.MARKDOWN,
     ".txt": TextMediaType.PLAIN,
+    ".pdf": RichMediaType.PDF,
+    ".docx": RichMediaType.DOCX,
+    ".pptx": RichMediaType.PPTX,
 }
 
 
@@ -80,8 +85,8 @@ class LocalSource:
         return SourceKey(connector="local", locator=str(self._path))
 
     @property
-    def media_type(self) -> TextMediaType:
-        """Classify the case-insensitive suffix under the reviewed F004 contract."""
+    def media_type(self) -> SourceMediaType:
+        """Classify a case-insensitive suffix under the reviewed local allowlist."""
         try:
             return _MEDIA_BY_SUFFIX[self._path.suffix.casefold()]
         except KeyError as error:

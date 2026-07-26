@@ -2,9 +2,8 @@
 
 OpenARDP is built implementation-first, one bounded Spec Kit feature at a time. The
 repository is complete through the Feature 005 lexical-search runtime, Feature 005A
-strategic/governance boundary, and Feature 006 experimental evidence contracts. Feature
-007 is the next work package; it must implement Docling against the F006 roots rather
-than inventing a parallel public model.
+strategic/governance boundary, Feature 006 experimental evidence contracts and Feature
+007's bounded Docling-native adapter.
 
 ## 1. Read the authoritative rules
 
@@ -51,6 +50,9 @@ openardp outline <document-uuid> --store .openardp --json
 openardp get <block-uuid> --store .openardp --json
 openardp search '"exact phrase" evidence' --store .openardp --json
 openardp reindex --store .openardp --json
+openardp ingest ./document.docx --store .openardp --json
+openardp evidence <document-uuid> --store .openardp --json
+openardp get-evidence <projection-sha256> --document <document-uuid> --store .openardp --json
 ```
 
 Feature 002 provides the domain models, public schemas and deterministic identities. Feature 003 provides the filesystem
@@ -64,9 +66,11 @@ identity.
 
 ## 5. Respect the current boundary
 
-The current implementation does not yet provide PDF/DOCX/PPTX parsing, context compilation, MCP, local watching,
-retention/garbage collection, stable export or Microsoft Graph access. The [005A–017 sequence](spec-kit/FEATURE_MAP.md)
-owns these outcomes individually.
+The optional Docling extra now provides bounded DOCX/PPTX parsing and PDF parsing only
+with reviewed local assets. The current implementation does not yet provide context
+compilation, MCP, local watching, retention/garbage collection, stable export or
+Microsoft Graph access. The [005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
+outcomes individually.
 
 Public contracts remain experimental interoperability candidates. Feature 006 publishes
 the first four provider-neutral evidence/native/trust roots; later examples under
@@ -82,6 +86,7 @@ complete provider-native output.
 - [F005 quickstart](specs/005-lexical-search/quickstart.md)
 - [F005A validation](specs/005A-strategic-realignment/quickstart.md)
 - [F006 validation](specs/006-evidence-contract-foundation/quickstart.md)
+- [F007 quickstart](specs/007-docling-native-adapter/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

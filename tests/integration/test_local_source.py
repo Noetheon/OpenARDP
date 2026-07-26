@@ -55,8 +55,38 @@ def test_inspection_hashes_without_publishing(tmp_path: Path) -> None:
 
 def test_media_classification_precedes_source_read(tmp_path: Path) -> None:
     """Reject unsupported suffixes without reflecting their contents."""
-    source = tmp_path / "secret.pdf"
+    source = tmp_path / "secret.html"
     source.write_bytes(b"secret-body")
     with pytest.raises(UnsupportedTextMedia, match="unsupported text media") as error:
         LocalSource(source).inspect(observed_at=NOW)
     assert "secret-body" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("name", "media_type"),
+    (
+        ("paper.PDF", "application/pdf"),
+        (
+            "document.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+        (
+            "slides.PPTX",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ),
+    ),
+)
+def test_rich_media_snapshot_preserves_exact_bytes(
+    tmp_path: Path,
+    name: str,
+    media_type: str,
+) -> None:
+    """Classify F007 source media additively without changing snapshot identity."""
+    source = tmp_path / name
+    source.write_bytes(b"synthetic-rich-bytes")
+    store = FilesystemObjectStore(tmp_path / "cas")
+
+    snapshot = LocalSource(source).snapshot_to(store, observed_at=NOW)
+
+    assert snapshot.media_type.value == media_type
+    assert b"".join(store.iter_chunks(snapshot.object.object_id)) == b"synthetic-rich-bytes"

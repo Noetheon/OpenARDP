@@ -1,13 +1,17 @@
 # Prior art and build decisions
 
+**Status:** Architecture summary. The living register and claims policy is
+[`04_PRIOR_ART_AND_DD.md`](04_PRIOR_ART_AND_DD.md); accepted decisions live in [`adr/`](adr/).
+
 ## Docling
 
 Use as the default rich parser candidate. It supports many formats, structured/lossless output, layout, tables, images,
 OCR, chart understanding, local execution, API service and MCP integration. Docling MCP already provides conversion and
 caching. OpenARDP should therefore integrate rather than duplicate it.
 
-Gap relative to OpenARDP scope: a general durable package contract, logical/version/block identity, dependency-aware derived
-cache invalidation, evidence policies, portable export and enterprise source reconciliation are not the same as conversion.
+Gap relative to the OpenARDP hypothesis: durable source/version/native/evidence identity, dependency-aware derived-cache
+invalidation, evidence policies and enterprise source reconciliation are not the same as conversion. These are claims to
+test, not presumed novelty.
 
 ## MinerU and MinerU Document Explorer
 
@@ -15,8 +19,9 @@ MinerU targets high-quality complex document parsing and provides rich output. M
 PDF/DOCX/PPTX indexing, BM25/vector/reranking and MCP deep-reading tools. It is the closest current overlap and must be
 benchmarked before investing heavily.
 
-OpenARDP differentiator should not be “MCP document search.” It must prove stronger reproducibility, versioned provenance,
-portable packages, incremental derivation reuse, explicit source/derived trust and enterprise synchronization.
+OpenARDP’s differentiator cannot merely be “MCP document search.” It must test stronger reproducibility, versioned
+provenance, incremental derivation reuse, explicit source/derived trust and bounded context evidence. Export remains an
+experiment, not a presumed differentiator.
 
 Review MinerU's custom core license and every model license before redistribution or enterprise use.
 
@@ -48,7 +53,7 @@ delta reconciliation, not assume save-event semantics.
 | Capability | Build | Reuse |
 |---|---|---|
 | PDF/Office parsing | adapter only | Docling default; alternatives benchmarked |
-| Durable IR/package | yes | align with JSON Schema/RO-Crate/PROV |
+| Native artifacts + thin evidence | yes, minimal projection | preserve provider output; align with JSON Schema/Web Annotation/PROV |
 | Content-addressed store | yes, small | standard SHA-256/filesystem patterns |
 | Lexical search | integration | SQLite FTS5 |
 | Vector search | provider adapter | optional existing engine |
@@ -56,4 +61,5 @@ delta reconciliation, not assume save-event semantics.
 | Context compiler | yes | project differentiator |
 | Incremental derivation DAG | yes | project differentiator |
 | OneDrive/SharePoint source sync | adapter | Microsoft Graph |
+| Export/interchange | experiment | evaluate RO-Crate/OCFL/BagIt before a custom format |
 | Office rendering/editing | not MVP | evaluate Open XML/Pandoc/Quarto later |

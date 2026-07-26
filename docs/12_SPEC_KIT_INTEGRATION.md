@@ -61,11 +61,11 @@ managed memory/template files.
 Generated Codex skills live in `.agents/skills/`. Feature artifacts live in `specs/`. Project architecture continues to
 live in `docs/` rather than being copied into every feature folder.
 
-## Deliberate non-use of custom templates in the first integration
+## Project-local template propagation
 
-The first integration keeps Spec Kit's core templates and enforces OpenARDP-specific requirements through the constitution,
-feature prompts and `AGENTS.md`. This minimizes coupling to internal template placeholders and makes upgrades easier.
-Project-local template overrides may be added later through a reviewed ADR if repeated omissions are observed.
+Feature 005A updates the checked-in Spec Kit templates because repeated omissions were observed around non-goals,
+independent contract/version axes, trust/operational impact and mandatory tests. The constitution Sync Impact Report
+records these dependencies. Future Spec Kit upgrades must preserve or intentionally migrate the project-local additions.
 
 ## Upgrade policy
 

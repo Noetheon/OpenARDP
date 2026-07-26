@@ -1,47 +1,48 @@
-# Spec Kit feature map
+# OpenARDP feature map
 
-OpenARDP is implemented as bounded Spec Kit features. Do not ask Codex to implement the entire platform in one feature.
+**Status:** Authoritative continuation order
+**Adopted:** 2026-07-26 through Feature 005A
+**Governance:** [Constitution 2.0.0](CONSTITUTION_SOURCE.md) and
+[operating procedure](OPERATING_PROCEDURE.md)
 
-| Order | Feature directory | Work package | Primary independently demonstrable outcome |
-|---:|---|---:|---|
-| 1 | `001-repository-baseline` | 0 | The repository installs and all quality gates pass. |
-| 2 | `002-domain-models-schemas` | 1 | Canonical models validate and hash deterministically. |
-| 3 | `003-cas-sqlite-catalog` | 2 | Objects and versions persist atomically and safely. |
-| 4 | `004-text-ingestion-slice` | 3 | TXT/MD is parsed once and reused on unchanged ingest. |
-| 5 | `005-lexical-search` | 4 | Exact source-backed retrieval works through SQLite FTS5. |
-| 6 | `006-docling-adapter` | 5 | PDF/DOCX/PPTX are normalized through an isolated adapter. |
-| 7 | `007-context-compiler` | 6 | A bounded evidence bundle is compiled for a task. |
-| 8 | `008-read-only-mcp` | 7 | Codex can query prepared documents without arbitrary file access. |
-| 9 | `009-local-watcher` | 8 | Saving a watched file automatically schedules one stable ingest. |
-| 10 | `010-reconciliation-derivation-dag` | 9 | Unchanged blocks and derivatives survive a small edit safely. |
-| 11 | `011-visual-evidence` | 10 | Exact source assets/crops and optional derived OCR/captions are available. |
-| 12 | `012-portable-ardp-package` | 11 | A package can be exported, verified and safely imported. |
-| 13 | `013-benchmark-security-gate` | 12 | Claims are supported by reproducible quality, cost and security evidence. |
-| 14 | `014-microsoft-graph-spike` | 13 | A least-privilege connector design is validated with mocks only. |
+## Delivered foundation
 
-## Required flow for each feature
+| Order | Feature | Status | Demonstrable outcome |
+|---:|---|---|---|
+| 1 | `001-repository-baseline` | Merged | Reproducible package, governance, locked gates and three-platform CI. |
+| 2 | `002-domain-models-schemas` | Merged | Deterministic domain identities and JSON Schema 2020-12 contracts. |
+| 3 | `003-cas-sqlite-catalog` | Merged | Atomic filesystem CAS and SQLite catalog with migration/integrity boundaries. |
+| 4 | `004-text-ingestion-slice` | Merged | Deterministic local TXT/Markdown ingestion and prepared-evidence inspection. |
+| 5 | `005-lexical-search` | Merged | Verified deterministic lexical retrieval over non-authoritative indexes. |
 
-```text
-$speckit-specify
-$speckit-clarify
-$speckit-plan
-$speckit-checklist
-$speckit-tasks
-$speckit-analyze
-$speckit-implement
-$speckit-converge
-```
+Historical requirements and validation evidence remain under [`specs/`](../specs/README.md).
 
-For the smallest repository-only feature, clarification may conclude that no open ambiguity remains, but the command should
-still be run and recorded.
+## Authoritative continuation after Feature 005
 
-## Feature completion gate
+| Order | Feature | Independently demonstrable outcome |
+|---:|---|---|
+| 5A | `005A-strategic-realignment` | Vision, prior art, contracts, ADRs and claims align without runtime change. |
+| 6 | `006-evidence-contract-foundation` | Minimal provider-neutral native/evidence/trust contracts and conformance fixtures exist before rich-parser implementation. |
+| 7 | `007-docling-native-adapter` | PDF/DOCX/PPTX produce immutable Docling-native artifacts and contract-conformant thin projections. |
+| 8 | `008-context-compiler-receipts` | Deterministic bounded context and auditable selection receipts. |
+| 9 | `009-read-only-mcp` | Least-privilege read-only access without arbitrary filesystem reach. |
+| 10 | `010-reconciliation-derivation-dag` | Safe reuse across edits and exact derivative invalidation. |
+| 11 | `011-visual-evidence-escalation` | Exact page/image/table evidence and bounded visual escalation. |
+| 12 | `012-local-watcher-and-jobs` | Stable, deduplicated, cancellable local ingestion jobs. |
+| 13 | `013-retention-recovery-migrations` | Safe retention, garbage-collection dry-run/quarantine, backup/restore and workspace migration. |
+| 14 | `014-export-interchange-experiment` | Evidence-based decision on existing packaging profiles versus custom export. |
+| 15 | `015-benchmark-security-release-gate` | Fair baselines, security evidence and a v0.1 go/no-go decision. |
+| 16 | `016-alternate-parser-conformance-spike` | A second minimal parser or consumer proves or falsifies provider-neutral contracts. |
+| 17 | `017-microsoft-graph-design-spike` | Mock-only least-privilege enterprise connector design. |
 
-A feature is complete only when:
+## Dependency rule
 
-1. every mandatory acceptance scenario has an automated or documented validation;
-2. `speckit.analyze` has no unresolved critical issue;
-3. implementation checks pass;
-4. `speckit.converge` reports convergence;
-5. relevant docs, ADRs and schemas are updated;
-6. a commit or pull request contains only the bounded feature scope.
+A feature begins only after its predecessor converges and merges. Feature 006 defines the minimum contracts required by
+Feature 007. Later features may add fields only through documented contract evolution and migration rules.
+
+## Scope rule
+
+- One feature maps to one branch and one pull request.
+- Complete only the active feature and selected task phase.
+- Do not implement later-feature runtime behavior as “preparation”.
+- Historical merged specifications stay in place even when future prompts are replaced.

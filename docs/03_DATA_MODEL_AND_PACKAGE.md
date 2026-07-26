@@ -1,5 +1,8 @@
 # Data model and package specification
 
+**Status:** Canonical data-model guidance. Existing public schemas remain the Feature 002 contracts. Export packaging is
+an experiment owned by Feature 014, not a current stable format.
+
 ## 1. Design goals
 
 - Human-debuggable JSON/JSONL.
@@ -10,13 +13,15 @@
 - Forward-compatible extension fields.
 - Optional JSON-LD/PROV/RO-Crate compatibility profile later.
 
-## 2. Runtime versus portable package
+## 2. Runtime versus export experiment
 
-The runtime store is optimized and deduplicated. A portable export is a self-contained ZIP.
+The implemented runtime store is content-addressed and deduplicated. No custom portable package has been selected.
+Feature 014 evaluates existing packaging profiles and a minimal custom archive against concrete exchange requirements.
+The earlier illustrative tree is retained only as a non-binding candidate:
 
 ```text
-<document-id>-<version-id>.ardp.zip
-├── ardp-manifest.json
+<export-root>/
+├── manifest.json
 ├── document.json
 ├── blocks.jsonl
 ├── relations.jsonl
@@ -29,7 +34,8 @@ The runtime store is optimized and deduplicated. A portable export is a self-con
 └── schemas/                 # optional frozen schemas
 ```
 
-Never require an LLM to unzip or decode this manually. The CLI/MCP server reads the package and returns targeted content.
+If a future archive is adopted, import verifies it before publication and clients receive targeted content rather than
+being asked to decode archives manually.
 
 ## 3. Identity
 
@@ -124,7 +130,8 @@ OCR may be necessary to expose scanned content, but it remains a derived asserti
   records; document-originated text remains explicitly untrusted data.
 
 These runtime records are internal Python/catalog contracts. They do not change the F002 public JSON Schema release and
-do not claim that a portable package, search index or rich-document representation exists.
+do not claim that a portable package or rich-document representation exists. Feature 005 separately implements a
+non-authoritative lexical index.
 
 ### Document manifest
 
@@ -189,7 +196,7 @@ in a document.
 
 ## 7. Schema evolution
 
-- Use semantic versioning for package/specification versions.
+- Version application releases, public contracts, workspace schemas, provider profiles and export profiles independently.
 - The installed F002 readers accept exactly reviewed release `0.1.0`; a well-formed but uninstalled minor is rejected
   distinctly from malformed text and an unsupported major family.
 - Core records are closed. Readers preserve JSON-only unknown data only under `extensions`.
@@ -206,12 +213,12 @@ later services. See [`schemas/README.md`](../schemas/README.md) for the complete
 
 ## 8. Integrity
 
-`integrity.json` lists every packaged file path, byte length and SHA-256. Portable import verifies all records before making
-them available. Optional signatures/attestations are post-MVP.
+Any future export inventory must list each packaged path, byte length and SHA-256. Import must verify all records before
+making them available. Optional signatures/attestations remain a later decision.
 
-At runtime, F003–F004 apply the same original-first principle before portable packaging exists: SHA-256 is computed over
+At runtime, F003–F005 apply the same original-first principle before portable packaging exists: SHA-256 is computed over
 exact streamed bytes, canonical leaves are immutable, catalog object lengths cannot drift, READY reuse verifies every
-artifact, and every reachability inventory rehashes complete files. Normalized text blocks are reproducible derived data;
+artifact, and every reachability inventory rehashes complete files. Prepared text blocks are reproducible derived data;
 their trust role is fixed to data and instruction execution remains disabled.
 
 ## 9. Alignment strategy

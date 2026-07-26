@@ -1,5 +1,8 @@
 # First Codex session prompt
 
+> **Historical onboarding artifact.** This prompt records the completed Feature 001 bootstrap and must not be used to
+> select current work. Use [`FEATURE_MAP.md`](FEATURE_MAP.md) and the active feature prompt instead.
+
 Paste the text below into Codex from the repository root after running the bootstrap script.
 
 ```text

@@ -7,6 +7,14 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Constitution 2.0.0 with implementation-first positioning, complete provider-native artifact preservation, thin
+  evidence projection, verified disposable indexes, fair evidence and independent contract-version governance.
+- Accepted ADRs 0007–0010 for implementation-first evolution, provider-native representations, non-authoritative indexes
+  and contracts-before-adapters.
+- Curated v3.1 strategy, prior-art, non-goal, contract-lifecycle, benchmark, release, operations, privacy, supply-chain,
+  contract-example and conformance guidance.
+- Authoritative continuation prompts and roadmap for Features 005A–017, including retention/recovery and
+  alternate-parser conformance work packages.
 - Lexical search over prepared evidence: checksummed catalog revision 4 with contentless-delete FTS5, STRICT mapping
   table, atomic READY+index commits, coverage fail-closed checks and explicit idempotent `reindex`.
 - Bounded term/phrase query grammar, deterministic bm25 ranking with total tie-break, verified CAS snippets and
@@ -48,6 +56,11 @@ semantic versioning once the public package lifecycle begins.
 
 ### Changed
 
+- Reconciled entry points with the completed Feature 005 search behavior and classified future capabilities explicitly.
+- Replaced the planned complete OpenARDP rich-document IR with immutable provider-native artifacts plus thin
+  provider-neutral evidence projections.
+- Deferred the proposed custom `.ardp.zip` decision to an evidence-based Feature 014 export/interchange experiment.
+- Propagated Constitution 2.0.0 into Spec Kit templates, `AGENTS.md`, architecture, security and operating guidance.
 - Moved the extracted Blueprint from its accidental nested folder to the repository root without altering its content.
 - Limited feature 001 to package metadata and architecture namespaces.
 - Pinned uv 0.11.31 and enabled its bounded centralized-project-environment preview after both 0.11.16 and 0.11.31 local
@@ -64,6 +77,7 @@ semantic versioning once the public package lifecycle begins.
 
 ### Removed
 
+- Superseded pre-v3.1 future feature prompts that conflicted with the adopted 005A–017 dependency order.
 - Premature chunking and CLI scaffold behavior that belongs to later bounded features.
 - Placeholder runtime dependencies and extras for Docling, MCP, watchers and other later work packages.
 

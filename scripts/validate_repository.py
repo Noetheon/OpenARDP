@@ -50,6 +50,48 @@ _CANONICAL_COMMANDS = (
     "uv run mypy src",
     "uv run pytest",
 )
+_F005A_OVERLAY_DESTINATIONS = (
+    "codex/MASTER_SESSION_PROMPT.md",
+    "conformance/README.md",
+    "contracts/README.md",
+    "contracts/example-selection-receipt.json",
+    "docs/00_REVISED_EXECUTIVE_BRIEF.md",
+    "docs/01_VISION_AND_POSITIONING.md",
+    "docs/02_NORMATIVE_SCOPE_CANDIDATE.md",
+    "docs/03_NON_GOALS.md",
+    "docs/04_PRIOR_ART_AND_DD.md",
+    "docs/05_TARGET_ARCHITECTURE.md",
+    "docs/06_SECURITY_MODEL_V2.md",
+    "docs/07_BENCHMARK_AND_EVIDENCE_PLAN.md",
+    "docs/08_RELEASE_AND_ADOPTION_STRATEGY.md",
+    "docs/09_CONTRACT_LIFECYCLE_AND_COMPATIBILITY.md",
+    "docs/10_OPERATIONS_PRIVACY_SUPPLY_CHAIN.md",
+    "docs/adr/0007-implementation-first.md",
+    "docs/adr/0008-preserve-provider-native-representations.md",
+    "docs/adr/0009-indexes-are-non-authoritative.md",
+    "docs/adr/0010-contracts-before-adapters.md",
+    "spec-kit/CONSTITUTION_V3_SOURCE.md",
+    "spec-kit/FEATURE_MAP_V3.md",
+    "spec-kit/OPERATING_PROCEDURE_V3.md",
+    "spec-kit/feature-prompts/005A-strategic-realignment.md",
+    "spec-kit/feature-prompts/006-evidence-contract-foundation.md",
+    "spec-kit/feature-prompts/007-docling-native-adapter.md",
+    "spec-kit/feature-prompts/008-context-compiler-receipts.md",
+    "spec-kit/feature-prompts/009-read-only-mcp.md",
+    "spec-kit/feature-prompts/010-reconciliation-derivation-dag.md",
+    "spec-kit/feature-prompts/011-visual-evidence-escalation.md",
+    "spec-kit/feature-prompts/012-local-watcher-and-jobs.md",
+    "spec-kit/feature-prompts/013-retention-recovery-migrations.md",
+    "spec-kit/feature-prompts/014-export-interchange-experiment.md",
+    "spec-kit/feature-prompts/015-benchmark-security-release-gate.md",
+    "spec-kit/feature-prompts/016-alternate-parser-conformance-spike.md",
+    "spec-kit/feature-prompts/017-microsoft-graph-design-spike.md",
+)
+_F005A_ADOPTION_SOURCES = {
+    "spec-kit/CONSTITUTION_V3_SOURCE.md": "CONSTITUTION_SOURCE.md",
+    "spec-kit/FEATURE_MAP_V3.md": "FEATURE_MAP.md",
+    "spec-kit/OPERATING_PROCEDURE_V3.md": "OPERATING_PROCEDURE.md",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,6 +371,76 @@ def _governance_finding(root: Path, code: str, target: str, message: str) -> Dia
     return _diagnostic(root / target, 1, code, target, message)
 
 
+def _validate_f005a_governance(root: Path) -> list[Diagnostic]:
+    """Validate the curated v3.1 migration without consulting its source package."""
+    diagnostics: list[Diagnostic] = []
+    for relative_path in _F005A_OVERLAY_DESTINATIONS:
+        if not (root / relative_path).is_file():
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV007",
+                    relative_path,
+                    "reviewed F005A overlay destination is missing",
+                )
+            )
+
+    constitution = root / ".specify/memory/constitution.md"
+    constitution_source = root / "spec-kit/CONSTITUTION_SOURCE.md"
+    if (
+        constitution.is_file()
+        and constitution_source.is_file()
+        and constitution.read_bytes() != constitution_source.read_bytes()
+    ):
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV008",
+                "spec-kit/CONSTITUTION_SOURCE.md",
+                "ratified constitution mirror differs from managed constitution",
+            )
+        )
+
+    for relative_path, canonical_name in _F005A_ADOPTION_SOURCES.items():
+        path = root / relative_path
+        if not path.is_file():
+            continue
+        content = path.read_text(encoding="utf-8").casefold()
+        if "adoption source" not in content or "not authoritative" not in content:
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV008",
+                    relative_path,
+                    "versioned source lacks non-authoritative adoption label",
+                )
+            )
+        if canonical_name.casefold() not in content:
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV008",
+                    relative_path,
+                    f"versioned source does not point to {canonical_name}",
+                )
+            )
+
+    for path in root.rglob("*"):
+        relative_parts = path.relative_to(root).parts
+        if ".git" in relative_parts:
+            continue
+        if path.name == ".DS_Store" or "openardp_codex_blueprint_v3_1" in relative_parts:
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV009",
+                    path.relative_to(root).as_posix(),
+                    "external blueprint package or platform metadata must not be committed",
+                )
+            )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -409,6 +521,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
                         f"governance link is missing: {name}",
                     )
                 )
+    diagnostics.extend(_validate_f005a_governance(root))
     return _sort_diagnostics(root, diagnostics)
 
 

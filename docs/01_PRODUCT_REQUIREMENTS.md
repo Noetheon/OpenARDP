@@ -1,5 +1,8 @@
 # Product requirements document
 
+**Status:** Canonical product requirements. Requirement presence does not imply current implementation; see the
+[README](../README.md) and [feature map](../spec-kit/FEATURE_MAP.md) for delivered and planned scope.
+
 ## 1. Problem statement
 
 Knowledge workers and coding agents repeatedly pay the perception cost of the same documents. Parsing, OCR, layout
@@ -52,10 +55,12 @@ Wants to add a parser, storage backend, model provider or agent client without f
 - Give blocks deterministic or reconciled stable identifiers.
 - Persist explicit schema and normalization versions.
 
-### FR-3 Normalized document model
+### FR-3 Native representation and thin evidence projection
 
-- Represent hierarchy, text, lists, tables, code, equations, pictures, charts, notes and page/slide locations.
-- Preserve parser-native lossless output as an attached artifact.
+- Preserve the complete parser-native output as an immutable provider-labelled artifact.
+- Project only the hierarchy, text, table/cell, picture/page, trust and navigation fields required for shared evidence
+  identity and retrieval.
+- Do not reproduce a provider’s complete semantic model in a second OpenARDP document IR.
 - Keep original assets or exact references to them.
 
 ### FR-4 Derived artifacts
@@ -96,19 +101,24 @@ Wants to add a parser, storage backend, model provider or agent client without f
 - Local directory watcher with debouncing, stable-file checks and retries.
 - Later: Microsoft Graph change notification + delta reconciliation connector.
 
-### FR-10 Portability
+### FR-10 Export/interchange experiment
 
-- Export a document version as `.ardp.zip` containing a manifest, normalized records, assets and integrity metadata.
+- Evaluate RO-Crate, OCFL, BagIt and minimal project archives against concrete interchange use cases.
+- Record an evidence-backed decision; “no custom format” is an acceptable outcome.
+- Any export includes only licensed/permitted assets and explicit integrity, trust and version metadata.
 - Runtime storage may remain unpacked and content-addressed for efficiency.
 
 ## 5. Non-functional requirements
 
-### Performance
+### Performance targets requiring Feature 015 evidence
 
 - Unchanged file check p95 under 250 ms for local files up to 100 MB, excluding slow/network filesystems.
 - Search p95 under 300 ms for 100k blocks on reference hardware.
 - No parser invocation for a known source hash.
 - Stream large records; do not load all assets into memory.
+
+These are test targets, not claims about the current implementation. Evidence must report the environment, workload,
+strong baselines, raw results and limitations.
 
 ### Reliability
 

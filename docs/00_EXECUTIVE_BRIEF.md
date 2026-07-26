@@ -1,5 +1,11 @@
 # Executive brief
 
+**Status:** Canonical product brief. Delivered behavior is listed in the [README](../README.md); future outcomes follow
+the [feature map](../spec-kit/FEATURE_MAP.md).
+
+OpenARDP is an implementation-first open-source reference platform, not an announced external standard. Public contracts
+remain experimental interoperability candidates.
+
 ## Vision
 
 A person edits a Word document, PowerPoint or PDF as usual. A local watcher or enterprise connector notices the new
@@ -24,25 +30,26 @@ recomputation**, not magical byte-level incremental PDF parsing. Native Open XML
 
 ## Why this is not just another RAG project
 
-Existing tools already parse documents, expose MCP conversion tools and perform hybrid retrieval. OpenARDP's unique scope is:
+Existing tools already parse documents, expose MCP conversion tools and perform hybrid retrieval. OpenARDP’s hypothesis
+to test through running software and evidence is:
 
-1. a portable and validated package contract;
+1. durable source, version, native-artifact and evidence identity;
 2. durable document/version/block identity;
 3. content-addressed original and derived artifacts;
 4. explicit dependency and invalidation graphs;
 5. source-versus-derived trust separation;
 6. budget-aware, evidence-preserving context compilation;
 7. automation from local save events to Microsoft 365 change streams;
-8. reproducible evaluation of latency, cost, quality and security.
+8. reproducible evaluation of latency, cost, quality and security against strong baselines.
 
 ## Recommended first decision
 
 Build a reference implementation **on top of Docling**, not a new parsing engine. Evaluate MinerU as an optional parser for
 complex PDF workloads and MarkItDown as a lightweight fallback/export adapter.
 
-## MVP definition of done
+## Planned v0.1 definition of done
 
-The MVP is complete when a clean machine can:
+The v0.1 decision gate is reached when a clean machine can:
 
 1. ingest a TXT/MD and a representative PDF/DOCX/PPTX through adapters;
 2. skip unchanged files without invoking a parser;
@@ -54,3 +61,6 @@ The MVP is complete when a clean machine can:
 8. run a local watcher safely;
 9. pass schema, security and adversarial document tests;
 10. publish a reproducible benchmark comparing raw-file, text-only and OpenARDP workflows.
+
+Feature 005A does not claim that this list is already delivered. The current implementation supports local TXT/Markdown
+ingestion, exact navigation and verified lexical retrieval. Each remaining outcome is owned by a separate work package.

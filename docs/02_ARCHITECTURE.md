@@ -1,5 +1,8 @@
 # Architecture
 
+**Status:** Canonical architecture. Sections distinguish delivered Features 001–005 from planned components in the
+[005A–017 feature map](../spec-kit/FEATURE_MAP.md).
+
 ## 1. Architectural style
 
 Use a modular monolith for the MVP with hexagonal boundaries. A distributed system would add operational failure modes
@@ -21,10 +24,10 @@ Sources         │ Local FS | OneDrive/SharePoint (later)  │
                  └──────────┬──────┘   └───────┬──────────┘
                             │                  │ parser-native output
                             │        ┌─────────▼──────────┐
-                            │        │ Normalizer         │
-                            │        │ OpenARDP IR        │
+                            │        │ Native artifact    │
+                            │        │ + thin projection  │
                             │        └─────────┬──────────┘
-                            │                  │ blocks/assets/relations
+                            │                  │ evidence/anchors/trust
                      ┌──────▼──────────────────▼──────┐
                      │ Content-addressed Artifact Store│
                      └──────┬──────────────────┬──────┘
@@ -52,7 +55,7 @@ reconcile authoritative state using delta APIs.
 
 ### Ingestion coordinator
 
-The implemented F004 coordinator snapshots an explicitly selected regular local file into CAS, registers or reuses its
+The implemented F004/F005 coordinator snapshots an explicitly selected regular local file into CAS, registers or reuses its
 immutable source version, and acquires a fenced representation claim. Parsing runs outside SQLite against CAS bytes only;
 the complete manifest, native reference, normalized block projections, head and ingestion event then become visible in
 one immediate transaction. An unchanged candidate is reused only after physical and semantic verification of every READY
@@ -69,18 +72,19 @@ length, block count and wall-clock time.
 The built-in `openardp-text` adapter supports only UTF-8 TXT and a reviewed Markdown subset. Docling and other rich-format
 providers remain later adapters rather than implicit F004 dependencies.
 
-### Normalizer
+### Native artifacts and evidence projection
 
-Maps parser-specific data into the stable OpenARDP IR. It must not invent content. Model-generated interpretation belongs
-in derived artifacts, never in canonical source blocks.
+The complete provider-native representation is retained unchanged as an immutable derived artifact. A projection builder
+emits only evidence identity, navigation, retrieval, trust and lifecycle fields. It must not invent content or reproduce
+the provider’s complete model. Model-generated interpretation belongs in derived artifacts, never in source evidence.
 
 ### Catalog
 
 The implemented SQLite catalog records exact source-key identity, logical documents, immutable source-version facts,
 object references, recoverable job/event state and, since revision 3, fenced document representations, body-free block
-projections, current heads and append-only ingestion evidence. Later features add derivation dependencies, staleness and
-index state through append-only migrations. Binary and canonical JSON bodies live in the content-addressed store rather
-than ordinary catalog rows.
+projections, current heads and append-only ingestion evidence. Revision 4 adds lexical index coverage and mapping records.
+Later features add derivation dependencies and staleness through append-only migrations. Binary and canonical JSON bodies
+live in the content-addressed store rather than ordinary catalog rows.
 
 Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
 an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
@@ -130,9 +134,10 @@ If the key exists, reuse it. A network/model call is prohibited when a valid art
 
 ### Index service
 
-- SQLite FTS5 is mandatory for exact/local search.
+- SQLite FTS5 implements exact local search in Feature 005.
 - Embeddings are optional and namespaced by model/profile.
 - Reranking is optional and never required for retrieval correctness tests.
+- All indexes are disposable accelerators. Hits, bodies, trust and attribution are verified against CAS/catalog authority.
 
 ### Context compiler
 
@@ -161,13 +166,12 @@ Output: immutable `ContextBundle` containing selected representations, provenanc
 single Python process
 SQLite + FTS5
 filesystem CAS
-local watcher
-stdio MCP
-Docling in-process or subprocess
+bounded parser worker
+CLI
 ```
 
-Run parsers in a worker subprocess even locally when possible, so parser crashes and memory growth do not corrupt the main
-process.
+Watcher, read-only MCP and Docling are later bounded features. Run rich parsers in a worker process with explicit limits
+and denied network where supported; this is defense in depth, not a universal strong sandbox.
 
 ### Team server
 
@@ -199,8 +203,9 @@ A version becomes `READY` only after:
 4. every required object hash and semantic scope verified;
 5. catalog representation, block projections, head and event committed atomically.
 
-F004's processing profile requires no index because F005 is not installed. A complete object published before a failed
-catalog transaction is a safe reachability candidate, never a partially visible READY representation.
+F005 publishes lexical entries in the same transaction before the representation becomes READY. Coverage and drift fail
+closed, and `reindex` rebuilds from verified READY evidence. A complete object published before a failed catalog
+transaction is a safe reachability candidate, never a partially visible READY representation.
 
 Optional enrichment may remain `PENDING`. Search must expose artifact freshness.
 

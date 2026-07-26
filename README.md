@@ -1,105 +1,67 @@
-# OpenARDP — Open Agent-Ready Document Package
+# OpenARDP
 
-> Working title. Ownership, employer-IP, public naming and trademark checks are still required before public release.
+> **Working title.** Ownership, employer-IP, public naming and trademark checks remain required before public release.
 
-OpenARDP is a local-first, provider-neutral reference architecture for **parse once, reuse many** document intelligence.
-It is designed to prepare PDF, DOCX, PPTX and related files once, preserve a versioned and provenance-rich intermediate
-representation, and let agents retrieve the smallest sufficient evidence instead of reparsing entire files for every task.
+OpenARDP is an implementation-first, local-first open-source reference platform for persistent, verifiable and reusable
+document evidence in AI-agent systems. It combines immutable source/version identity, content-addressed storage,
+provenance, trust-aware retrieval and progressive context delivery above document-intelligence providers such as
+Docling.
 
-## Current status
-
-The repository implements the roadmap one bounded GitHub Spec Kit feature at a time. Features
-`001-repository-baseline` and `002-domain-models-schemas` established the reproducible foundation and public domain
-contracts. Feature `003-cas-sqlite-catalog` added the first local persistence slice. Feature
-`004-text-ingestion-slice` now supplies the first complete operator workflow:
-
-- Python 3.12 and uv with a committed lock;
-- installable package metadata and empty architecture namespaces;
-- Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
-- least-privilege cross-platform CI configuration;
-- observed green Ubuntu, macOS and Windows GitHub Actions execution;
-- offline Markdown/governance validation;
-- license, contribution, security and validation evidence;
-- strict, frozen Pydantic v2 models for Manifest, Block, Derivation, Relation and Context Bundle;
-- five reviewed JSON Schema Draft 2020-12 contracts with synthetic golden fixtures;
-- strict raw-JSON validation, RFC 8785 canonical bytes and versioned SHA-256 identity projections;
-- deterministic schema regeneration and drift checks;
-- an immutable streaming filesystem CAS with atomic same-filesystem publication and full integrity verification;
-- a checksummed, transactionally migrated SQLite catalog for exact source keys, source-version facts and fenced jobs;
-- provider-neutral object-store/catalog ports plus persistence and read-only reachability services;
-- deterministic crash, concurrency, path-safety, migration, restart and reclamation-candidate tests;
-- an explicit versioned local workspace and installable `openardp` command;
-- read-only, race-detecting snapshots of regular `.txt`, `.md` and `.markdown` sources into the immutable CAS;
-- strict incremental UTF-8 parsing and a reviewed Markdown subset behind a provider-neutral parser port;
-- a default killable spawned parser worker with input, line, block and wall-clock bounds and denied socket creation;
-- revision-3 SQLite representations with fenced `STAGING`/`FAILED`/`READY` transitions, current heads and append-only
-  ingestion events;
-- canonical F002 manifest/block CAS records with deterministic SHA-256-derived UUIDv8 block handles and untrusted-data
-  labels;
-- verified unchanged-source cache hits, changed immutable versions, force convergence and A → B → A head correctness;
-- body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation.
-
-The built-in parser is intentionally limited to local UTF-8 text and a documented Markdown subset; it does not claim
-CommonMark or rich-document fidelity. There is still deliberately **no search/index, chunking, embedding, context
-compiler, MCP server, watcher, model provider, cloud connector, rich-document parser or automatic garbage deletion**.
-Those remain separate features in [the feature map](spec-kit/FEATURE_MAP.md).
+OpenARDP is not an adopted, official, universal or consensus standard. Its public contracts are experimental
+interoperability candidates until external use, an independent implementation, conformance evidence and migration
+practice justify stabilization.
 
 ## Product thesis
 
 > Compress access, not truth.
 
-Original files remain authoritative. Parsed blocks, summaries, OCR, captions, embeddings and indexes are derived,
-versioned caches with explicit provenance and invalidation rules. Embeddings stay optional and model-specific; document
-content is untrusted data, never an instruction channel.
+Original source bytes remain authoritative. Complete provider-native parser representations remain available as immutable
+derived artifacts. OpenARDP projects only the thin provider-neutral evidence needed for identity, navigation, retrieval,
+trust and lifecycle; it does not create a second full document representation.
 
-## Why OpenARDP is not simply another RAG layer
+Summaries, OCR, captions, embeddings, projections and indexes are reproducible derived artifacts. Lexical and future
+vector indexes are non-authoritative accelerators: returned content and security-sensitive metadata must be verified
+against authoritative content-addressed objects and catalog facts.
 
-OpenARDP's planned differentiators are:
+## Implemented status
 
-1. portable, validated package contracts;
-2. durable document/version/block identity;
-3. content-addressed original and derived artifacts;
-4. explicit dependency and invalidation graphs;
-5. source-versus-derived trust separation;
-6. budget-aware, evidence-preserving context compilation;
-7. local automation and later least-privilege enterprise connectors;
-8. reproducible evaluation of latency, cost, quality and security.
+The repository has completed the bounded runtime work through
+[`005-lexical-search`](specs/005-lexical-search/spec.md) and the documentation/governance realignment in
+[`005A-strategic-realignment`](specs/005A-strategic-realignment/spec.md):
 
-The architecture uses Docling through a future adapter rather than rebuilding a PDF/Office parser. SQLite, filesystem CAS,
-read-only MCP and optional embeddings remain governed by the accepted/proposed ADR status in `docs/adr/`.
+- Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
+- least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
+- strict Pydantic v2 domain models and five JSON Schema 2020-12 interchange contracts;
+- RFC 8785 canonical JSON and versioned SHA-256 identity projections;
+- immutable streaming filesystem CAS with verified reads and atomic same-filesystem publication;
+- checksummed transactional SQLite migrations, exact source/version facts and fenced job transitions;
+- explicit local workspace plus an installable `openardp` command;
+- read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md` and `.markdown` files;
+- a bounded spawned parser worker with denied socket creation and documented residual platform risk;
+- deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
+- body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation;
+- exact term/phrase lexical search with deterministic filters, verified bounded snippets and fail-closed index coverage;
+- idempotent `reindex` from verified READY evidence.
 
-## Prerequisites
+The built-in parser intentionally supports only strict UTF-8 text and a documented Markdown subset. There is no
+rich-document parser, context compiler, MCP server, watcher, model provider, cloud connector, automatic garbage
+collection or stable custom export format yet. Those remain separate work packages in the
+[authoritative feature map](spec-kit/FEATURE_MAP.md).
 
-- Git
-- uv 0.11.31
-- Linux, macOS or Windows
+## Quickstart
 
-The project selects Python 3.12 through `.python-version`. A newer global Python does not replace the project environment.
-
-## Set up a clean checkout
+Prerequisites: Git, `uv` 0.11.31 and Linux, macOS or Windows. The repository selects Python 3.12.
 
 ```bash
 uv sync --all-extras --locked
-```
 
-This installs the package and mandatory development group from `uv.lock`. Locked mode fails when dependency metadata and
-the lock disagree; it does not silently rewrite the lock. The repository enables uv's bounded
-`centralized-project-envs` preview: the disposable environment lives in uv's cache while the conventional `.venv` path
-remains available to editors as a discovery link when the host filesystem permits it. If a file provider blocks that
-link, uv still resolves the centralized environment directly.
-
-## Run the authoritative quality gate
-
-```bash
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
 uv run pytest
 ```
 
-Pytest includes branch coverage, an 85 percent threshold, socket blocking and offline repository/documentation checks.
-
-## Use the local text workflow
+Create a local workspace and prepare text evidence:
 
 ```bash
 openardp init --store .openardp
@@ -108,58 +70,26 @@ openardp list --store .openardp
 openardp status ./notes.md --store .openardp
 openardp outline <document-uuid> --store .openardp
 openardp get <block-uuid> --store .openardp
+openardp search '"exact phrase" evidence' --store .openardp
+openardp reindex --store .openardp
 ```
 
-Add `--json` to any command for one stable versioned stdout envelope. Only `get` returns a full block body. Every command
-other than `init` requires an already marked compatible workspace; commands never search parent directories or initialize
-state implicitly.
+Add `--json` to any command for a versioned machine-readable stdout envelope. Only `get` returns a full block body.
+Search returns bounded verified snippets. Every command except `init` requires an explicitly initialized compatible
+workspace; commands do not search parent directories or create state implicitly.
 
-Validate the repository directly with:
-
-```bash
-uv run python scripts/validate_repository.py
-```
-
-## Enable commit-time checks
+## Validation and build
 
 ```bash
-uv run pre-commit install
 uv run pre-commit run --all-files
-```
-
-The hooks use the locked project tools rather than separately resolved hook environments.
-
-## Build the baseline package
-
-```bash
+uv run python scripts/validate_repository.py
+uv run --locked python scripts/generate_schemas.py --check
 uv build
 ```
 
-The wheel exposes `openardp.__version__`, `py.typed`, the pure `openardp.domain` record/identity API, provider-neutral
-persistence/parser ports, reviewed filesystem/SQLite/text adapters, ingestion/query services and the `openardp` CLI. MCP
-and HTTP interfaces remain later features.
-
-Validate or regenerate the reviewed public schemas with:
-
-```bash
-uv run --locked python scripts/generate_schemas.py --check
-uv run --locked python scripts/generate_schemas.py --write  # explicit review action only
-```
-
-## Spec Kit workflow
-
-Project-wide constraints live in the [Constitution](.specify/memory/constitution.md), [AGENTS.md](AGENTS.md), accepted ADRs,
-public schemas and `docs/`. Feature-specific truth lives under `specs/<feature>/`.
-
-Every production-relevant feature follows:
-
-```text
-specify → clarify → plan → checklist → tasks → analyze → implement → converge
-```
-
-Implementation is blocked by unresolved critical/high analysis findings. One feature must converge before a dependent
-feature begins. See [the operating procedure](spec-kit/OPERATING_PROCEDURE.md) and
-[contribution guide](CONTRIBUTING.md).
+The committed lockfile is authoritative. Core tests block network access and use synthetic or redistributable fixtures.
+Performance, quality, cost, security, interoperability and sustainability statements are claims only when accompanied by
+reproducible environment, data, baselines, raw results and limitations.
 
 ## Architecture boundaries
 
@@ -167,29 +97,50 @@ feature begins. See [the operating procedure](spec-kit/OPERATING_PROCEDURE.md) a
 - `ports/`: narrow provider-neutral protocols.
 - `adapters/`: parsers, stores, sources and providers.
 - `services/`: use cases and orchestration.
-- `interfaces/`: CLI, MCP and later HTTP entry points.
+- `interfaces/`: CLI and later read-only MCP/HTTP entry points.
 
-Dependencies point inward. Features 003–004 keep storage, source and parser I/O in adapters and cross-resource ordering in
-services; domain models remain pure and provider-neutral.
+Dependencies point inward. Provider-specific semantics remain in native artifacts or explicit profiles. The core remains
+usable locally with no cloud, user tracking, external model call or network egress enabled by default.
 
-## Read first
+## Governance and roadmap
 
-1. [Executive brief](docs/00_EXECUTIVE_BRIEF.md)
-2. [Product requirements](docs/01_PRODUCT_REQUIREMENTS.md)
-3. [Architecture](docs/02_ARCHITECTURE.md)
-4. [Security threat model](docs/06_SECURITY_THREAT_MODEL.md)
-5. [Test and benchmark strategy](docs/07_TEST_AND_BENCHMARK_STRATEGY.md)
-6. [Codex execution plan](docs/09_CODEX_EXECUTION_PLAN.md)
-7. [Spec Kit integration](docs/12_SPEC_KIT_INTEGRATION.md)
+Project-wide authority follows this order:
+
+1. [Constitution 2.0.0](.specify/memory/constitution.md) and accepted security/legal constraints;
+2. accepted [ADRs](docs/adr/) and public [schemas](schemas/);
+3. canonical project documentation;
+4. the active feature specification and plan;
+5. tasks;
+6. implementation.
+
+Every production-relevant feature follows:
+
+```text
+specify → clarify → plan → checklist → tasks → analyze → implement → converge
+```
+
+Critical/high analysis findings block implementation; critical/high convergence findings block merge. One bounded
+feature is completed and merged before its dependent successor begins. Feature 006 defines the minimal evidence contracts
+before Feature 007 implements the Docling adapter.
+
+## Read next
+
+1. [Start here](START_HERE.md)
+2. [Revised executive brief](docs/00_REVISED_EXECUTIVE_BRIEF.md)
+3. [Vision and positioning](docs/01_VISION_AND_POSITIONING.md)
+4. [Target architecture](docs/05_TARGET_ARCHITECTURE.md)
+5. [Security model](docs/06_SECURITY_MODEL_V2.md)
+6. [Contract lifecycle](docs/09_CONTRACT_LIFECYCLE_AND_COMPATIBILITY.md)
+7. [Operations, privacy and supply chain](docs/10_OPERATIONS_PRIVACY_SUPPLY_CHAIN.md)
 8. [Feature map](spec-kit/FEATURE_MAP.md)
 
-## Governance
+## Project policy
 
-- [License](LICENSE): Apache-2.0
+- [License](LICENSE): Apache-2.0; no trademark grant
 - [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
+- [Security reporting](SECURITY.md)
 - [Validation evidence](VALIDATION.md)
 - [Changelog](CHANGELOG.md)
+- [Prior art and claims discipline](docs/04_PRIOR_ART_AND_DD.md)
 
-Apache-2.0 is the repository license. It does not grant trademark rights, and it does not replace the ownership,
-employer-IP, naming or trademark clearance required before public release.
+The repository and its examples are implementation evidence, not legal, security, standards or performance guarantees.

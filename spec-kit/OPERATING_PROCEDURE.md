@@ -1,64 +1,51 @@
 # OpenARDP Spec Kit operating procedure
 
-## Before every feature
+**Status:** Authoritative
+**Adopted:** 2026-07-26 through Feature 005A
 
-1. Pull the latest default branch and confirm a clean working tree.
-2. Read the feature prompt and the previous feature's convergence report.
-3. Verify `specify version` matches `spec-kit/PINNED_VERSION.txt`.
-4. Run `specify integration status` and resolve errors.
-5. Start Codex from the repository root.
+## Per-feature lifecycle
 
-## Specification gate
+1. Establish a clean branch, green locked baseline and exact rollback commit.
+2. Specify a measurable outcome, explicit non-goals and compatibility impact.
+3. Clarify trust, identity, failure, cancellation, privacy, licensing and migration semantics.
+4. Plan architecture, dependency, ADR, storage, contract/version and operational effects.
+5. Run a requirements-quality checklist that challenges completeness and testability.
+6. Produce dependency-ordered, file-scoped tasks with tests before implementation where practical.
+7. Analyze specification, plan, tasks and constitution; block on every critical or high finding.
+8. Implement the smallest bounded change and mark tasks only after evidence exists.
+9. Validate lint, format, strict typing, unit/property/integration tests, build, offline behavior and supported-platform CI.
+10. Validate failure injection, cancellation, restart/idempotency, upgrade/rebuild and recovery paths where relevant.
+11. Converge behavior, documentation, contracts, ADRs, changelog, task state and validation evidence.
+12. Submit one feature pull request with residual risks and exact rollback instructions; confirm post-merge `main` CI.
 
-Use the feature prompt with `$speckit-specify`. The specification must:
+The complete order is: constitution → specify → clarify → plan → checklist → tasks → analyze → implement → converge.
+Constitution amendments occur only when the active feature explicitly owns them.
 
-- focus on user-visible or operator-visible behavior rather than implementation details;
-- contain prioritized independently testable stories;
-- include Given/When/Then acceptance scenarios;
-- include negative and security scenarios;
-- define measurable success criteria;
-- list explicit non-goals and dependencies.
+## Implementation discipline
 
-Then run `$speckit-clarify` until no material ambiguity remains.
+- Inspect current code, schemas, merged specifications and accepted ADRs before abstraction work.
+- Extend current ports and services; do not create parallel frameworks.
+- Never weaken tests, typing, coverage, security controls or accepted decisions to make a gate pass.
+- Every external dependency requires maintenance, license, security, lockfile and supply-chain review.
+- Generated output requires deterministic regeneration and drift checks.
+- Public contracts must not leak Python, SQLite, FTS5 or provider internals unless explicitly profile-scoped.
+- Resource limits must state units, defaults, supported configuration range and failure behavior.
+- A worker process is bounded isolation, not a universally strong sandbox.
+- Success paths alone are insufficient: cancellation, crash, disk exhaustion, malformed input and restart behavior are
+  acceptance concerns where the feature can encounter them.
 
-## Planning gate
+## Evidence and claims
 
-Use `$speckit-plan` and require it to cite relevant project docs and ADRs. The plan must identify:
+- Record exact commands, versions, environments, results, limitations and rollback point.
+- Use persisted provider-native reuse as a baseline for redundant-parsing performance claims.
+- Qualify future behavior as planned; do not present a roadmap requirement as implemented.
+- Public contracts remain experimental until external-use and independent-implementation evidence supports stabilization.
+- Verify content and security-sensitive metadata referenced by disposable indexes against authoritative records.
 
-- exact architecture boundaries;
-- data model and contracts;
-- migration or compatibility impact;
-- security/privacy impact;
-- performance and resource constraints;
-- test strategy;
-- rejected alternatives.
+## Pull-request boundary
 
-Run `$speckit-checklist`, then `$speckit-tasks`. Tasks must include exact file paths, dependencies and tests.
-
-## Consistency gate
-
-Run `$speckit-analyze`. Critical or high issues block implementation. Fix the source artifact and regenerate downstream
-artifacts rather than patching only `tasks.md`.
-
-## Implementation gate
-
-Run `$speckit-implement` for one phase or bounded task group at a time. Require:
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-```
-
-No network access is allowed in unit tests.
-
-## Convergence and review gate
-
-Run `$speckit-converge`. If it appends tasks, implement and converge again. Before merge:
-
-- inspect the diff;
-- verify source immutability and trust-boundary tests;
-- update docs/ADRs/schemas as needed;
-- record exact checks and results;
-- keep the pull request limited to the active feature.
+- One bounded feature per branch/PR.
+- No later-feature runtime behavior.
+- No unrelated dependency or lockfile change.
+- Historical artifacts remain discoverable; supersession is explicit.
+- Critical/high convergence findings block merge.

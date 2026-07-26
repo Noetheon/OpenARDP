@@ -1,5 +1,8 @@
 # Security threat model
 
+**Status:** Active threat model. Planned controls are not implementation claims; delivered controls are enumerated in
+the [README](../README.md) and feature validation evidence.
+
 ## 1. Assets
 
 - source documents and embedded files;
@@ -14,8 +17,8 @@
 
 ```text
 untrusted file bytes
-→ sandboxed parser worker
-→ validated normalized IR
+→ bounded parser worker
+→ validated native artifact + thin evidence projection
 → derived enrichment providers
 → catalog/artifact store
 → retrieval/context compiler
@@ -33,7 +36,7 @@ Threats: malformed PDF, decompression bomb, parser RCE, memory exhaustion, infin
 Controls:
 
 - file size, page, object, nesting and decompressed-size limits;
-- process/container isolation;
+- bounded worker/process isolation and optional stronger platform containment;
 - no macro execution;
 - no external link fetching by default;
 - CPU/memory/time quotas;
@@ -129,3 +132,4 @@ all external providers disabled unless policy-approved.
 
 No prompt-injection filter can guarantee that a general-purpose model will never be influenced by untrusted natural
 language. The architecture reduces authority and separates data from instructions; it does not claim perfect prevention.
+Likewise, a portable worker process is not a universal strong sandbox.

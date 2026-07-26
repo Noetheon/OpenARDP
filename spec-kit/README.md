@@ -1,5 +1,8 @@
 # GitHub Spec Kit integration for OpenARDP
 
+**Status:** Active integration guidance. Bootstrap sections are recovery reference only; normal clones use the committed
+integration as-is.
+
 This directory turns the architecture blueprint into a controlled Codex implementation workflow.
 
 ## What Spec Kit does here
@@ -55,9 +58,11 @@ specify integration status
 
 Commit the repository before initialization so every generated or changed file is reviewable.
 
-## First Codex session
+## Historical first Codex session
 
-Open Codex from the repository root and paste the contents of `FIRST_CODEX_SESSION.md`. Codex should:
+`FIRST_CODEX_SESSION.md` preserves the initial Feature 001 onboarding prompt. Do not use it to select current work.
+For current work, read the authoritative feature map and matching prompt. The historical first session instructed Codex
+to:
 
 1. inspect the repository;
 2. verify Spec Kit skills are available;

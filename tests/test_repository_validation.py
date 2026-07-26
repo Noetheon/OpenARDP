@@ -133,6 +133,17 @@ def test_governance_reports_missing_required_files(tmp_path: Path) -> None:
     assert any(diagnostic.target == "LICENSE" for diagnostic in diagnostics)
 
 
+def test_f005a_governance_rejects_drift_and_source_package(tmp_path: Path) -> None:
+    """Detect missing overlay files, authority drift and uncurated platform metadata."""
+    _write(tmp_path / ".specify/memory/constitution.md", "managed\n")
+    _write(tmp_path / "spec-kit/CONSTITUTION_SOURCE.md", "drifted\n")
+    _write(tmp_path / "spec-kit/CONSTITUTION_V3_SOURCE.md", "# unlabeled\n")
+    _write(tmp_path / "openardp_codex_blueprint_v3_1/.DS_Store", "metadata")
+
+    codes = set(_codes(validate_governance(tmp_path)))
+    assert {"GOV007", "GOV008", "GOV009"} <= codes
+
+
 def test_real_repository_contract_is_clean(repository_root: Path) -> None:
     """Validate all real Markdown and governance contracts offline."""
     assert validate_repository(repository_root) == []

@@ -1,5 +1,8 @@
 # Operational and enterprise requirements
 
+**Status:** Future operational acceptance requirements, not current service-level claims. Feature 013 owns
+retention/recovery implementation; Feature 015 owns release evidence; Feature 017 is mock-only Graph design.
+
 ## SLO candidates for a pilot
 
 - Catalog/search availability: 99.5% during business hours.
@@ -8,7 +11,7 @@
 - Authorization decision p95: under 200 ms excluding identity provider latency.
 - Zero known cross-tenant data disclosure.
 
-These are placeholders until workload measurements exist.
+These are candidate targets only until workload measurements, deployment scope and support ownership exist.
 
 ## Observability
 
@@ -34,7 +37,8 @@ Metrics:
 
 Do not attach document text, embeddings or filenames containing personal data to telemetry by default.
 
-F004 still does not emit an observability backend. Its error boundary deliberately reports identifiers/classifications only:
+Features 004–005 do not emit an observability backend. Their error boundary deliberately reports identifiers and
+classifications only:
 source locators, document bytes, raw SQL parameters, raw lease tokens and untrusted exception text are excluded. Future
 telemetry adapters must preserve that default.
 
@@ -46,10 +50,11 @@ telemetry adapters must preserve that default.
 - Deleted source: preserve/tombstone based on policy; remove from default retrieval immediately.
 - Garbage collection: mark-and-sweep from live manifests and retention holds.
 
-F004 extends the safe observation prerequisite: every historical representation manifest/native/block object joins all
+F005 extends the safe observation prerequisite: every historical representation manifest/native/block object joins all
 source-version and job references as a conservative live root. Verified unreferenced objects remain advisory candidates;
 missing, corrupt, malformed, unsafe and staging entries are inconsistencies. There is no deletion API, retention decision
-or secure-erasure claim.
+or secure-erasure claim. Feature 013 must add dry-run, quarantine, grace-period, restore and explicit operator commit
+before irreversible reclamation is considered.
 
 ## Authorization
 
@@ -80,8 +85,8 @@ For enterprise mode:
   not hold a SQLite transaction while processing.
 - Expired running jobs are requeued only while attempts remain; exhausted work becomes terminal and repeated recovery is
   empty until state changes again.
-- Backups, point-in-time recovery, network filesystems, disk failure and universal power-loss durability are not provided
-  by F003 and require explicit operational validation in the deployment environment.
+- Backups, point-in-time recovery, network filesystems, disk failure and universal power-loss durability are not currently
+  provided and require explicit Feature 013 plus deployment-environment validation.
 
 ## Cost controls
 

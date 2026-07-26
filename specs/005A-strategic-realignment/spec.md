@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-26
 
-**Status**: Converged locally; remote verification pending
+**Status**: Converged, merged and remotely verified
 
 **Input**: Reconcile OpenARDP with the reviewed v3.1 blueprint, adopting an implementation-first strategy and an explicit experimental contract boundary without changing runtime behavior or existing public-schema semantics.
 

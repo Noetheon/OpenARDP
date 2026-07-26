@@ -1,11 +1,15 @@
 # Experimental contract candidates
 
-**Status:** Experimental design guidance only; this is not a public schema or stability commitment.
+**Status:** Experimental contract program. Feature 006 roots are implemented public
+schemas; later candidates and the example receipt remain design guidance.
 
-Feature 006 owns the first minimal provider-neutral contract foundation. Candidate objects are `SourceIdentity`,
-`SourceVersion`, `NativeRepresentation`, `EvidenceReference`, `EvidenceProjection`, `DerivationRecord`,
-`TrustClassification`, `ContextBundle` and `SelectionReceipt`. The included
-[`example-selection-receipt.json`](example-selection-receipt.json) is illustrative only.
+Feature 006 delivers `NativeRepresentation`, `EvidenceReference`, `EvidenceProjection`,
+and `TrustClassification` as independently versioned experimental roots under
+[`schemas/`](../schemas/README.md). Candidate objects not delivered by F006 are
+`SourceIdentity`, `SourceVersion`, `DerivationRecord`, `ContextBundle` and
+`SelectionReceipt`. The included
+[`example-selection-receipt.json`](example-selection-receipt.json) is illustrative only
+and is not a public schema.
 
 Every implemented schema requires `$schema`, `$id`, an independent `contract_version`, a stability label, canonical
 identity rules, a strict extension/unknown-field policy, supported-version behavior, valid/invalid fixtures and migration

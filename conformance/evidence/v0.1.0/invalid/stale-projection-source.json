@@ -1,0 +1,47 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "evidence_projection_id": "sha256:9c2d9e96975043a69f27a2a5ce21b16130ddf1269def58e36fff4f168afcb42b",
+  "source_version_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+  "reference": {
+    "contract_version": "0.1.0",
+    "stability": "experimental",
+    "extensions": {},
+    "evidence_reference_id": "sha256:795c2d7373b6847fcea398809a9fef9a9030fcaa77808a927eea7a8d4e42f076",
+    "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+    "anchor": {
+      "anchor_type": "text_span",
+      "coordinate_system": "unicode_code_points",
+      "start": 5,
+      "end": 12,
+      "text_length": 20
+    }
+  },
+  "retrieval": {
+    "artifact_id": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "media_type": "text/plain",
+    "byte_length": 42
+  },
+  "parent_projection_id": null,
+  "ordinal": 0,
+  "trust": {
+    "contract_version": "0.1.0",
+    "stability": "experimental",
+    "extensions": {},
+    "origin_zone": "external_untrusted",
+    "effective_zone": "external_untrusted",
+    "role": "data",
+    "instruction_execution_allowed": false,
+    "integrity": "verified_sha256",
+    "sensitivity": "internal"
+  },
+  "provenance": {
+    "generator_name": "synthetic-projector",
+    "generator_version": "1.0.0",
+    "generator_config_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "created_at": "2026-07-26T12:00:00Z"
+  }
+}

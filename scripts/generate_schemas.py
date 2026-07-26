@@ -14,6 +14,13 @@ from openardp.domain.block import ContentBlock
 from openardp.domain.common import SCHEMA_VERSION
 from openardp.domain.context import ContextBundle
 from openardp.domain.derivation import DerivationRecord
+from openardp.domain.evidence import (
+    EVIDENCE_CONTRACT_VERSION,
+    EvidenceProjection,
+    EvidenceReference,
+    NativeRepresentation,
+    TrustClassification,
+)
 from openardp.domain.manifest import DocumentManifest
 from openardp.domain.relation import Relation
 
@@ -31,6 +38,8 @@ class RootContract:
     schema_id: str
     title: str
     version_field: str
+    metadata_key: str = "x-openardp-schema-version"
+    version: str = SCHEMA_VERSION
 
 
 ROOT_CONTRACTS: dict[str, RootContract] = {
@@ -71,6 +80,47 @@ ROOT_CONTRACTS: dict[str, RootContract] = {
     ),
 }
 
+EVIDENCE_ROOT_CONTRACTS: dict[str, RootContract] = {
+    "evidence-projection.schema.json": RootContract(
+        EvidenceProjection,
+        "evidence-projection.json",
+        "https://openardp.example/schema/evidence-projection-0.1.0.json",
+        "OpenARDP Evidence Projection",
+        "contract_version",
+        "x-openardp-contract-version",
+        EVIDENCE_CONTRACT_VERSION,
+    ),
+    "evidence-reference.schema.json": RootContract(
+        EvidenceReference,
+        "evidence-reference-text.json",
+        "https://openardp.example/schema/evidence-reference-0.1.0.json",
+        "OpenARDP Evidence Reference",
+        "contract_version",
+        "x-openardp-contract-version",
+        EVIDENCE_CONTRACT_VERSION,
+    ),
+    "native-representation.schema.json": RootContract(
+        NativeRepresentation,
+        "native-representation.json",
+        "https://openardp.example/schema/native-representation-0.1.0.json",
+        "OpenARDP Native Representation",
+        "contract_version",
+        "x-openardp-contract-version",
+        EVIDENCE_CONTRACT_VERSION,
+    ),
+    "trust-classification.schema.json": RootContract(
+        TrustClassification,
+        "trust-classification.json",
+        "https://openardp.example/schema/trust-classification-0.1.0.json",
+        "OpenARDP Trust Classification",
+        "contract_version",
+        "x-openardp-contract-version",
+        EVIDENCE_CONTRACT_VERSION,
+    ),
+}
+
+ALL_ROOT_CONTRACTS = {**ROOT_CONTRACTS, **EVIDENCE_ROOT_CONTRACTS}
+
 
 def _add_block_payload_constraint(schema: dict[str, Any]) -> None:
     schema["anyOf"] = [
@@ -89,7 +139,7 @@ def _add_block_payload_constraint(schema: dict[str, Any]) -> None:
 def build_schemas() -> dict[str, dict[str, Any]]:
     """Return fresh deterministic Draft 2020-12 schemas for every public root."""
     schemas: dict[str, dict[str, Any]] = {}
-    for filename, contract in ROOT_CONTRACTS.items():
+    for filename, contract in ALL_ROOT_CONTRACTS.items():
         schema = contract.model.model_json_schema(
             mode="validation",
             ref_template="#/$defs/{model}",
@@ -97,7 +147,7 @@ def build_schemas() -> dict[str, dict[str, Any]]:
         schema["$schema"] = DRAFT_2020_12
         schema["$id"] = contract.schema_id
         schema["title"] = contract.title
-        schema["x-openardp-schema-version"] = SCHEMA_VERSION
+        schema[contract.metadata_key] = contract.version
         if filename == "block.schema.json":
             _add_block_payload_constraint(schema)
         schemas[filename] = schema
@@ -146,13 +196,13 @@ def main() -> int:
     arguments = _parser().parse_args()
     if arguments.write:
         write_schemas()
-        print(f"wrote {len(ROOT_CONTRACTS)} schemas")
+        print(f"wrote {len(ALL_ROOT_CONTRACTS)} schemas")
         return 0
     drift = check_schemas()
     if drift:
         print("schema drift: " + ", ".join(drift))
         return 1
-    print(f"all {len(ROOT_CONTRACTS)} schemas are current")
+    print(f"all {len(ALL_ROOT_CONTRACTS)} schemas are current")
     return 0
 
 

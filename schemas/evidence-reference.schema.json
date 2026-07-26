@@ -1,0 +1,295 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "OpaqueProviderPointerAnchor": {
+      "additionalProperties": false,
+      "description": "Provider-specific target that the neutral core never interprets.",
+      "properties": {
+        "anchor_type": {
+          "const": "provider_pointer",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "target"
+      ],
+      "title": "OpaqueProviderPointerAnchor",
+      "type": "object"
+    },
+    "PageRegionAnchor": {
+      "additionalProperties": false,
+      "description": "Exact fixed-point normalized rectangle on a one-based page.",
+      "properties": {
+        "anchor_type": {
+          "const": "page_region",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "normalized_ppm_top_left",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Height",
+          "type": "integer"
+        },
+        "page_number": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Page Number",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Width",
+          "type": "integer"
+        },
+        "x": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "page_number",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "PageRegionAnchor",
+      "type": "object"
+    },
+    "ProviderPointer": {
+      "additionalProperties": false,
+      "description": "Opaque pointer whose meaning is scoped to one provider profile.",
+      "properties": {
+        "pointer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Pointer",
+          "type": "string"
+        },
+        "pointer_format": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Pointer Format",
+          "type": "string"
+        },
+        "provider_profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Profile",
+          "type": "string"
+        },
+        "provider_profile_version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Provider Profile Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_profile",
+        "provider_profile_version",
+        "pointer_format",
+        "pointer"
+      ],
+      "title": "ProviderPointer",
+      "type": "object"
+    },
+    "TableCellAnchor": {
+      "additionalProperties": false,
+      "description": "Zero-based table cell scoped to an opaque native table pointer.",
+      "properties": {
+        "anchor_type": {
+          "const": "table_cell",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "column_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Column Index",
+          "type": "integer"
+        },
+        "column_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Column Span",
+          "type": "integer"
+        },
+        "row_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Row Index",
+          "type": "integer"
+        },
+        "row_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Row Span",
+          "type": "integer"
+        },
+        "table": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "table",
+        "row_index",
+        "column_index"
+      ],
+      "title": "TableCellAnchor",
+      "type": "object"
+    },
+    "TextSpanAnchor": {
+      "additionalProperties": false,
+      "description": "Half-open code-point offsets in a provider-profile text view.",
+      "properties": {
+        "anchor_type": {
+          "const": "text_span",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "unicode_code_points",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "end": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "text_length": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Length"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "start",
+        "end"
+      ],
+      "title": "TextSpanAnchor",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/evidence-reference-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One source/native-bound provider-neutral evidence anchor.",
+  "properties": {
+    "anchor": {
+      "discriminator": {
+        "mapping": {
+          "page_region": "#/$defs/PageRegionAnchor",
+          "provider_pointer": "#/$defs/OpaqueProviderPointerAnchor",
+          "table_cell": "#/$defs/TableCellAnchor",
+          "text_span": "#/$defs/TextSpanAnchor"
+        },
+        "propertyName": "anchor_type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextSpanAnchor"
+        },
+        {
+          "$ref": "#/$defs/PageRegionAnchor"
+        },
+        {
+          "$ref": "#/$defs/TableCellAnchor"
+        },
+        {
+          "$ref": "#/$defs/OpaqueProviderPointerAnchor"
+        }
+      ],
+      "title": "Anchor"
+    },
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "evidence_reference_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Evidence Reference Id",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "native_representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Native Representation Id",
+      "type": "string"
+    },
+    "source_version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Version Id",
+      "type": "string"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    }
+  },
+  "required": [
+    "evidence_reference_id",
+    "source_version_id",
+    "native_representation_id",
+    "anchor"
+  ],
+  "title": "OpenARDP Evidence Reference",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

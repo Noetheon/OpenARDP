@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "ProviderRecipe": {
+      "additionalProperties": false,
+      "description": "Provider recipe that generated a retained native artifact.",
+      "properties": {
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Profile",
+          "type": "string"
+        },
+        "profile_version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Profile Version",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "profile",
+        "profile_version",
+        "config_hash"
+      ],
+      "title": "ProviderRecipe",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/native-representation-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Immutable metadata for one complete retained provider-native artifact.",
+  "properties": {
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "native_artifact_byte_length": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "title": "Native Artifact Byte Length",
+      "type": "integer"
+    },
+    "native_artifact_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Native Artifact Id",
+      "type": "string"
+    },
+    "native_artifact_media_type": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$",
+      "title": "Native Artifact Media Type",
+      "type": "string"
+    },
+    "native_representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Native Representation Id",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/ProviderRecipe"
+    },
+    "source_version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Version Id",
+      "type": "string"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    }
+  },
+  "required": [
+    "native_representation_id",
+    "source_version_id",
+    "native_artifact_id",
+    "native_artifact_media_type",
+    "native_artifact_byte_length",
+    "provider",
+    "created_at"
+  ],
+  "title": "OpenARDP Native Representation",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

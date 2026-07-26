@@ -7,6 +7,14 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Experimental evidence contract family `0.1.0`: four strict JSON Schema 2020-12 roots
+  for retained native artifacts, source-bound evidence anchors, thin retrieval
+  projections, and anti-escalation trust classifications.
+- Text-span, fixed-point page-region, table-cell, and opaque provider-pointer anchors
+  with synthetic valid/invalid conformance fixtures, canonical SHA-256 vectors, and an
+  offline adapter-independent validator.
+- Optional W3C PROV/Web Annotation mapping guidance that introduces no mandatory JSON-LD
+  field, remote context, or conformance claim.
 - Constitution 2.0.0 with implementation-first positioning, complete provider-native artifact preservation, thin
   evidence projection, verified disposable indexes, fair evidence and independent contract-version governance.
 - Accepted ADRs 0007–0010 for implementation-first evolution, provider-native representations, non-authoritative indexes
@@ -83,6 +91,9 @@ semantic versioning once the public package lifecycle begins.
 
 ### Security
 
+- Evidence contract roots reject stale source/native scope, malformed geometry and
+  pointers, trust promotion, unknown direct fields, unsafe JSON, and instruction
+  authority; fixture paths are confined to the declared conformance tree.
 - Unit tests block socket access.
 - CI uses read-only permissions, non-persistent checkout credentials and full-SHA Action pins.
 - Private-phase vulnerability reporting avoids public exploit details and requires GitHub private vulnerability reporting

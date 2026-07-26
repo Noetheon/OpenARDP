@@ -1,0 +1,149 @@
+{
+  "canonicalization": "RFC8785",
+  "cases": [
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:native-representation\",\"identity_version\":1,\"payload\":{\"native_artifact_id\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"native_artifact_media_type\":\"application/json\",\"provider\":{\"config_hash\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"name\":\"synthetic-rich-parser\",\"profile\":\"portable\",\"profile_version\":\"0.4.0\",\"version\":\"1.2.3\"},\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:native-representation",
+        "identity_version": 1,
+        "payload": {
+          "native_artifact_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "native_artifact_media_type": "application/json",
+          "provider": {
+            "config_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "name": "synthetic-rich-parser",
+            "profile": "portable",
+            "profile_version": "0.4.0",
+            "version": "1.2.3"
+          },
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "native_representation",
+      "sha256": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465"
+    },
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:evidence-reference\",\"identity_version\":1,\"payload\":{\"anchor\":{\"anchor_type\":\"text_span\",\"coordinate_system\":\"unicode_code_points\",\"end\":12,\"start\":5,\"text_length\":20},\"native_representation_id\":\"sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465\",\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:evidence-reference",
+        "identity_version": 1,
+        "payload": {
+          "anchor": {
+            "anchor_type": "text_span",
+            "coordinate_system": "unicode_code_points",
+            "end": 12,
+            "start": 5,
+            "text_length": 20
+          },
+          "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "evidence_reference_text_span",
+      "sha256": "sha256:795c2d7373b6847fcea398809a9fef9a9030fcaa77808a927eea7a8d4e42f076"
+    },
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:evidence-reference\",\"identity_version\":1,\"payload\":{\"anchor\":{\"anchor_type\":\"page_region\",\"coordinate_system\":\"normalized_ppm_top_left\",\"height\":400000,\"page_number\":1,\"width\":300000,\"x\":100000,\"y\":200000},\"native_representation_id\":\"sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465\",\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:evidence-reference",
+        "identity_version": 1,
+        "payload": {
+          "anchor": {
+            "anchor_type": "page_region",
+            "coordinate_system": "normalized_ppm_top_left",
+            "height": 400000,
+            "page_number": 1,
+            "width": 300000,
+            "x": 100000,
+            "y": 200000
+          },
+          "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "evidence_reference_page_region",
+      "sha256": "sha256:6228ada20af67f37e7d1f299ec7f198000245996480f663ef7cd90d559eb59ca"
+    },
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:evidence-reference\",\"identity_version\":1,\"payload\":{\"anchor\":{\"anchor_type\":\"table_cell\",\"column_index\":2,\"column_span\":2,\"row_index\":0,\"row_span\":1,\"table\":{\"pointer\":\"tables/7\",\"pointer_format\":\"synthetic-node-id\",\"provider_profile\":\"portable\",\"provider_profile_version\":\"0.4.0\"}},\"native_representation_id\":\"sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465\",\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:evidence-reference",
+        "identity_version": 1,
+        "payload": {
+          "anchor": {
+            "anchor_type": "table_cell",
+            "column_index": 2,
+            "column_span": 2,
+            "row_index": 0,
+            "row_span": 1,
+            "table": {
+              "pointer": "tables/7",
+              "pointer_format": "synthetic-node-id",
+              "provider_profile": "portable",
+              "provider_profile_version": "0.4.0"
+            }
+          },
+          "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "evidence_reference_table_cell",
+      "sha256": "sha256:33f7d13132de8eb786e0438b1732312f2c35eef7270821b9a0d54837ed29d3e1"
+    },
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:evidence-reference\",\"identity_version\":1,\"payload\":{\"anchor\":{\"anchor_type\":\"provider_pointer\",\"target\":{\"pointer\":\"pictures/3\",\"pointer_format\":\"synthetic-node-id\",\"provider_profile\":\"portable\",\"provider_profile_version\":\"0.4.0\"}},\"native_representation_id\":\"sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465\",\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:evidence-reference",
+        "identity_version": 1,
+        "payload": {
+          "anchor": {
+            "anchor_type": "provider_pointer",
+            "target": {
+              "pointer": "pictures/3",
+              "pointer_format": "synthetic-node-id",
+              "provider_profile": "portable",
+              "provider_profile_version": "0.4.0"
+            }
+          },
+          "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "evidence_reference_provider_pointer",
+      "sha256": "sha256:f9d141e14fc9f3daaa05c26f4b19d54ed7a3f71adb0130e90a393f9505d93d6d"
+    },
+    {
+      "canonical": "{\"canonicalization\":\"RFC8785\",\"domain\":\"openardp:evidence-projection\",\"identity_version\":1,\"payload\":{\"evidence_reference_id\":\"sha256:795c2d7373b6847fcea398809a9fef9a9030fcaa77808a927eea7a8d4e42f076\",\"generator\":{\"config_hash\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"name\":\"synthetic-projector\",\"version\":\"1.0.0\"},\"native_representation_id\":\"sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465\",\"ordinal\":0,\"parent_projection_id\":null,\"retrieval\":{\"artifact_id\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"media_type\":\"text/plain\"},\"source_version_id\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "envelope": {
+        "canonicalization": "RFC8785",
+        "domain": "openardp:evidence-projection",
+        "identity_version": 1,
+        "payload": {
+          "evidence_reference_id": "sha256:795c2d7373b6847fcea398809a9fef9a9030fcaa77808a927eea7a8d4e42f076",
+          "generator": {
+            "config_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "name": "synthetic-projector",
+            "version": "1.0.0"
+          },
+          "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+          "ordinal": 0,
+          "parent_projection_id": null,
+          "retrieval": {
+            "artifact_id": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "media_type": "text/plain"
+          },
+          "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "name": "evidence_projection",
+      "sha256": "sha256:9c2d9e96975043a69f27a2a5ce21b16130ddf1269def58e36fff4f168afcb42b"
+    }
+  ],
+  "contract_version": "0.1.0",
+  "identity_version": 1
+}

@@ -1,0 +1,17 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "evidence_reference_id": "sha256:6228ada20af67f37e7d1f299ec7f198000245996480f663ef7cd90d559eb59ca",
+  "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+  "anchor": {
+    "anchor_type": "page_region",
+    "coordinate_system": "normalized_ppm_top_left",
+    "page_number": 1,
+    "x": 100000,
+    "y": 200000,
+    "width": 300000,
+    "height": 400000
+  }
+}

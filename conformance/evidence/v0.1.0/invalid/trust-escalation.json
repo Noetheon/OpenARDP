@@ -1,0 +1,11 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "origin_zone": "external_untrusted",
+  "effective_zone": "local_trusted",
+  "role": "data",
+  "instruction_execution_allowed": false,
+  "integrity": "verified_sha256",
+  "sensitivity": "internal"
+}

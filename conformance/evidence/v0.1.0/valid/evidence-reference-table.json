@@ -1,0 +1,21 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "extensions": {},
+  "evidence_reference_id": "sha256:33f7d13132de8eb786e0438b1732312f2c35eef7270821b9a0d54837ed29d3e1",
+  "source_version_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "native_representation_id": "sha256:72182f254c13df619e08d78ba8f0a10f67e9b43e764aacfbb83243ab1a3b3465",
+  "anchor": {
+    "anchor_type": "table_cell",
+    "table": {
+      "provider_profile": "portable",
+      "provider_profile_version": "0.4.0",
+      "pointer_format": "synthetic-node-id",
+      "pointer": "tables/7"
+    },
+    "row_index": 0,
+    "column_index": 2,
+    "row_span": 1,
+    "column_span": 2
+  }
+}

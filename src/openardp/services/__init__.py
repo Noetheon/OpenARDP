@@ -1,5 +1,12 @@
 """Application services orchestrating domain operations through ports."""
 
+from openardp.services.context_compiler import (
+    ContextCompilerService,
+    candidate_total_order_key,
+    classify_candidates,
+    context_algorithm_identity,
+    required_representations,
+)
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
 from openardp.services.persistence import PersistenceService
@@ -9,6 +16,7 @@ from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
 
 __all__ = [
+    "ContextCompilerService",
     "DocumentQueryService",
     "IngestionService",
     "PersistenceService",
@@ -17,4 +25,8 @@ __all__ = [
     "RichEvidenceService",
     "RichIngestionService",
     "SearchService",
+    "candidate_total_order_key",
+    "classify_candidates",
+    "context_algorithm_identity",
+    "required_representations",
 ]

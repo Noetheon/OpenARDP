@@ -224,6 +224,33 @@ post-merge `main` workflow
 [30208840651](https://github.com/Noetheon/OpenARDP/actions/runs/30208840651) both
 passed the complete locked gate on Linux, macOS, and Windows.
 
+## Feature 008 local evidence
+
+Feature `008-context-compiler-receipts` adds the deterministic provider-free context
+compiler, the public `ContextBundle 0.2.0`, the experimental `SelectionReceipt 0.1.0`
+and checksummed SQLite migration 6 without changing the nine earlier public schemas
+or their identity vectors. Locally observed macOS/Python 3.12 evidence covers verified
+lexical discovery over text and rich evidence, byte-exact fixed-point budgeting,
+20-repeat byte-identical compilation, atomic compilation persistence, five-repeat and
+head-change-pinned replay, the complete hostile-path matrix (index, CAS, catalog,
+limits, cancellation, publish/commit faults), body-free receipts/logs/CLI envelopes,
+and the stable `context`/`context-receipt` JSON and human contracts.
+
+The closing local gate passed 696 tests at 85.92% total coverage (85% branch gate).
+Ruff, formatting, strict native and Windows-target mypy over 43 source files, all
+eleven generated schemas, the F006 conformance corpus, repository validation,
+`git diff --check`, source/wheel builds, and core/rich isolated-wheel probes passed —
+the core wheel (seven packages, no `docling`) executed the full compile/receipt/replay
+CLI workflow. Byte comparison to the F007 base found no change in the nine earlier
+public schema JSON files, either identity-vector file, or the F006 conformance corpus.
+Exact commands, hashes, packaging and quickstart evidence are in the feature notes.
+
+GitHub Actions minutes were exhausted for this feature, so no remote three-platform
+workflow ran; the locked local gate above replaces it and the merge is performed
+locally onto `main`. The `win32` strict mypy gate and portable test design provide
+the cross-platform code evidence. If remote capacity returns, the standard quality
+workflow should be re-run against the merge commit and this record updated.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

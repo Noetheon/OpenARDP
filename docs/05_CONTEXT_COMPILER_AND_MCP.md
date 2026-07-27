@@ -1,52 +1,54 @@
 # Context compiler, CLI and MCP contracts
 
-**Status:** Planned Feature 008/009 contract guidance. The currently delivered CLI verbs are documented in the
-[README](../README.md); no MCP server exists through Feature 005A.
+**Status:** Feature 008 delivered the deterministic context compiler, the public
+`ContextBundle 0.2.0`, the experimental `SelectionReceipt 0.1.0` and the `context` /
+`context-receipt` CLI verbs documented below. MCP tools remain planned Feature 009
+guidance; no MCP server exists.
 
 ## 1. Context compiler objective
 
 Construct the smallest evidence bundle that can support the requested task under a budget and policy. It is not simply a
 top-k vector search.
 
-## 2. Selection stages
+## 2. Delivered selection stages (F008)
 
-1. Resolve document scope and required freshness.
-2. Classify task requirements deterministically where possible:
-   - exact facts/numbers;
-   - summarization;
-   - visual/layout review;
-   - cross-document comparison;
-   - source verification.
-3. Retrieve lexical candidates.
-4. Optionally add semantic candidates.
-5. Expand structural parents/children and captions.
-6. Enforce evidence-type rules.
-7. Deduplicate and rank.
-8. Allocate budget across metadata, exact text, tables and visual evidence.
-9. Emit bundle plus selection trace and omitted-candidate reasons.
+1. Resolve each requested document to one exact READY snapshot scope.
+2. Discover lexical candidates from the verified FTS accelerator and the bounded
+   rich-projection scan; every hit is reverified against content-addressed bodies.
+3. Classify freshness, trust zone, sensitivity and duplicates under the declared
+   policy into selected-eligible, rejected and stale partitions.
+4. Order candidates by the documented total order (high value, coverage, occurrences,
+   scope, source order, representation, evidence id).
+5. Admit greedily under one fixed-point estimator budget with ten-percent response
+   reserve; record exact per-item costs.
+6. Emit the bundle, the body-free receipt with exhaustive decision inventories, and
+   honest missing-evidence/visual-escalation entries.
+
+Semantic candidates, structural expansion and provider tokenizers remain later work
+packages; the estimator is an exact versioned replaceable port with built-in
+byte/character/conservative-token identities.
 
 ## 3. Evidence rules
 
 - Numeric questions include exact table cells or source text, not only summaries.
-- Visual/layout questions include the relevant image/page crop.
+- Visual/layout questions include the relevant image/page crop. Until visual
+  extraction exists, VISUAL mode escalates `visual_evidence_required` honestly.
 - Source-verification questions include source locator and integrity state.
 - Generated summaries are labelled and never presented as quoted source text.
 - Low-confidence OCR includes the original crop.
 
-## 4. Budgeting
+## 4. Delivered budgeting (F008)
 
-Use a pluggable tokenizer estimator. The core operates with a conservative character/byte estimator when no provider is
-configured. Store both estimated and actual provider token counts when available.
-
-Budget reserve:
-
-- 10% response/system reserve;
-- 10% provenance/metadata reserve;
-- remainder for evidence, configurable by caller.
+The compiler measures complete canonical bundle bytes with one exact versioned
+estimator (`openardp.utf8-bytes`, `openardp.unicode-characters` or
+`openardp.conservative-utf8-tokens`, each `1.0.0`). The ledger reserves ten percent of
+the limit for the response, admits whole items until the ceiling and records base,
+incremental, used and remaining units. Estimated and actual usage are identical by
+construction; provider token counts remain a later estimator implementation.
 
 ## 5. Context bundle
 
-See `schemas/context-bundle.schema.json`. The bundle contains:
+See `schemas/context-bundle-0.2.0.schema.json`. The bundle contains:
 
 - query/task;
 - source version scope;
@@ -58,10 +60,22 @@ See `schemas/context-bundle.schema.json`. The bundle contains:
 - selection trace;
 - warnings and missing evidence.
 
-## 6. Target CLI surface
+## 6. CLI surface
 
-The following is a roadmap sketch, not a current command contract. Feature-specific specs may refine or reject later
-verbs. In particular, export/import/verify remain an experiment:
+Delivered context verbs (stable JSON envelopes; human output may change):
+
+```text
+openardp context TASK --document ID [--document ID ...] --budget N \
+    [--unit bytes|characters|tokens] [--mode MODE] [--include-bundle]
+openardp context TASK --replay RECEIPT_ID [--unit UNIT]
+openardp context-receipt RECEIPT_ID
+```
+
+Replay accepts only task, unit and receipt: the recorded snapshot, policy and budget
+are authoritative. Default output is body-free handles plus accounting; only
+`--include-bundle` returns the digest-checked untrusted-data payload. The remaining
+roadmap sketch (watch/export/import/verify/gc/doctor/mcp) stays subject to its own
+feature specs:
 
 ```text
 openardp init [--store PATH]
@@ -72,7 +86,6 @@ openardp status PATH|DOCUMENT_ID
 openardp outline DOCUMENT_ID [--version VERSION]
 openardp search QUERY [--document ID] [--kind KIND] [--limit N]
 openardp get BLOCK_ID [--representation exact|summary|visual]
-openardp context QUERY --document ID [--budget N] [--mode MODE]
 openardp export DOCUMENT_ID --output FILE
 openardp import FILE
 openardp verify FILE

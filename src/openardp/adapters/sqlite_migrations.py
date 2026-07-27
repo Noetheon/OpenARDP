@@ -502,7 +502,108 @@ MIGRATION_5 = Migration(
     ),
 )
 
-MIGRATIONS = (MIGRATION_1, MIGRATION_2, MIGRATION_3, MIGRATION_4, MIGRATION_5)
+MIGRATION_6 = Migration(
+    version=6,
+    name="context-compilations",
+    statements=(
+        """
+        CREATE TABLE context_compilations (
+            receipt_id TEXT PRIMARY KEY CHECK (
+                length(receipt_id) = 71
+                AND substr(receipt_id, 1, 7) = 'sha256:'
+                AND substr(receipt_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            receipt_object_id TEXT NOT NULL,
+            receipt_byte_length INTEGER NOT NULL CHECK (receipt_byte_length >= 0),
+            bundle_object_id TEXT NOT NULL,
+            bundle_byte_length INTEGER NOT NULL CHECK (bundle_byte_length >= 0),
+            bundle_id TEXT NOT NULL CHECK (length(bundle_id) = 36),
+            task_digest TEXT NOT NULL CHECK (
+                length(task_digest) = 71
+                AND substr(task_digest, 1, 7) = 'sha256:'
+                AND substr(task_digest, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            algorithm_name TEXT NOT NULL CHECK (length(algorithm_name) BETWEEN 1 AND 128),
+            algorithm_version TEXT NOT NULL CHECK (length(algorithm_version) BETWEEN 1 AND 64),
+            algorithm_config_hash TEXT NOT NULL CHECK (
+                length(algorithm_config_hash) = 71
+                AND substr(algorithm_config_hash, 1, 7) = 'sha256:'
+                AND substr(algorithm_config_hash, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            estimator_name TEXT NOT NULL CHECK (length(estimator_name) BETWEEN 1 AND 128),
+            estimator_version TEXT NOT NULL CHECK (length(estimator_version) BETWEEN 1 AND 64),
+            estimator_unit TEXT NOT NULL CHECK (
+                estimator_unit IN ('bytes', 'characters', 'tokens')
+            ),
+            estimator_config_hash TEXT NOT NULL CHECK (
+                length(estimator_config_hash) = 71
+                AND substr(estimator_config_hash, 1, 7) = 'sha256:'
+                AND substr(estimator_config_hash, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            policy_digest TEXT NOT NULL CHECK (
+                length(policy_digest) = 71
+                AND substr(policy_digest, 1, 7) = 'sha256:'
+                AND substr(policy_digest, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            budget_limit INTEGER NOT NULL CHECK (budget_limit BETWEEN 1 AND 16777216),
+            budget_unit TEXT NOT NULL CHECK (budget_unit IN ('bytes', 'characters', 'tokens')),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            selected_count INTEGER NOT NULL CHECK (selected_count BETWEEN 0 AND 12000),
+            omitted_count INTEGER NOT NULL CHECK (omitted_count BETWEEN 0 AND 12000),
+            rejected_count INTEGER NOT NULL CHECK (rejected_count BETWEEN 0 AND 12000),
+            stale_count INTEGER NOT NULL CHECK (stale_count BETWEEN 0 AND 12000),
+            row_fingerprint TEXT NOT NULL CHECK (
+                length(row_fingerprint) = 71
+                AND substr(row_fingerprint, 1, 7) = 'sha256:'
+                AND substr(row_fingerprint, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            FOREIGN KEY (receipt_object_id) REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (bundle_object_id) REFERENCES objects(object_id) ON DELETE RESTRICT,
+            CHECK (receipt_id = receipt_object_id)
+        ) STRICT
+        """,
+        """
+        CREATE TABLE context_compilation_scopes (
+            receipt_id TEXT NOT NULL,
+            ordinal INTEGER NOT NULL CHECK (ordinal BETWEEN 0 AND 31),
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL CHECK (
+                length(version_id) = 71
+                AND substr(version_id, 1, 7) = 'sha256:'
+                AND substr(version_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            representation_id TEXT NOT NULL CHECK (
+                length(representation_id) = 71
+                AND substr(representation_id, 1, 7) = 'sha256:'
+                AND substr(representation_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            PRIMARY KEY (receipt_id, ordinal),
+            UNIQUE (receipt_id, document_id, version_id, representation_id),
+            FOREIGN KEY (receipt_id)
+                REFERENCES context_compilations(receipt_id) ON DELETE RESTRICT,
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES document_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE INDEX context_compilations_receipt_object_idx "
+        "ON context_compilations(receipt_object_id)",
+        "CREATE INDEX context_compilations_bundle_object_idx "
+        "ON context_compilations(bundle_object_id)",
+        "CREATE INDEX context_compilation_scopes_scope_idx "
+        "ON context_compilation_scopes(document_id, version_id, representation_id)",
+    ),
+)
+
+MIGRATIONS = (
+    MIGRATION_1,
+    MIGRATION_2,
+    MIGRATION_3,
+    MIGRATION_4,
+    MIGRATION_5,
+    MIGRATION_6,
+)
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
 __all__ = [
@@ -513,5 +614,6 @@ __all__ = [
     "MIGRATION_3",
     "MIGRATION_4",
     "MIGRATION_5",
+    "MIGRATION_6",
     "Migration",
 ]

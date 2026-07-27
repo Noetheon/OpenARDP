@@ -1,0 +1,552 @@
+{
+  "$defs": {
+    "AlgorithmIdentity": {
+      "additionalProperties": false,
+      "description": "Exact deterministic context algorithm identity.",
+      "properties": {
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "config_hash"
+      ],
+      "title": "AlgorithmIdentity",
+      "type": "object"
+    },
+    "BudgetLedger": {
+      "additionalProperties": false,
+      "description": "Exact fixed-point context budget accounting.",
+      "properties": {
+        "base_bundle_used": {
+          "minimum": 0,
+          "title": "Base Bundle Used",
+          "type": "integer"
+        },
+        "bundle_ceiling": {
+          "minimum": 0,
+          "title": "Bundle Ceiling",
+          "type": "integer"
+        },
+        "bundle_used": {
+          "minimum": 0,
+          "title": "Bundle Used",
+          "type": "integer"
+        },
+        "limit": {
+          "maximum": 16777216,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "provenance_target": {
+          "minimum": 1,
+          "title": "Provenance Target",
+          "type": "integer"
+        },
+        "remaining": {
+          "minimum": 0,
+          "title": "Remaining",
+          "type": "integer"
+        },
+        "response_reserved": {
+          "minimum": 1,
+          "title": "Response Reserved",
+          "type": "integer"
+        },
+        "selected_incremental_used": {
+          "minimum": 0,
+          "title": "Selected Incremental Used",
+          "type": "integer"
+        },
+        "unit": {
+          "$ref": "#/$defs/BudgetUnit"
+        }
+      },
+      "required": [
+        "unit",
+        "limit",
+        "response_reserved",
+        "bundle_ceiling",
+        "provenance_target",
+        "base_bundle_used",
+        "selected_incremental_used",
+        "bundle_used",
+        "remaining"
+      ],
+      "title": "BudgetLedger",
+      "type": "object"
+    },
+    "BudgetUnit": {
+      "description": "Unit used by a context budget estimator.",
+      "enum": [
+        "tokens",
+        "characters",
+        "bytes"
+      ],
+      "title": "BudgetUnit",
+      "type": "string"
+    },
+    "ContextMode": {
+      "description": "Evidence-selection intent recorded by a bundle.",
+      "enum": [
+        "summary",
+        "exact",
+        "numeric",
+        "visual",
+        "verification",
+        "mixed"
+      ],
+      "title": "ContextMode",
+      "type": "string"
+    },
+    "ContextSelectionPolicy": {
+      "additionalProperties": false,
+      "description": "Complete safe context selection policy recorded in each receipt.",
+      "properties": {
+        "allowed_trust_zones": {
+          "default": [
+            "external_untrusted"
+          ],
+          "items": {
+            "$ref": "#/$defs/TrustZone"
+          },
+          "title": "Allowed Trust Zones",
+          "type": "array"
+        },
+        "freshness": {
+          "const": "current_only",
+          "default": "current_only",
+          "title": "Freshness",
+          "type": "string"
+        },
+        "include_history": {
+          "const": false,
+          "default": false,
+          "title": "Include History",
+          "type": "boolean"
+        },
+        "maximum_sensitivity": {
+          "$ref": "#/$defs/Sensitivity",
+          "default": "internal"
+        },
+        "mode": {
+          "$ref": "#/$defs/ContextMode"
+        },
+        "provenance_target_percent": {
+          "const": 10,
+          "default": 10,
+          "title": "Provenance Target Percent",
+          "type": "integer"
+        },
+        "required_evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceRepresentation"
+          },
+          "title": "Required Evidence",
+          "type": "array"
+        },
+        "response_reserve_percent": {
+          "const": 10,
+          "default": 10,
+          "title": "Response Reserve Percent",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "ContextSelectionPolicy",
+      "type": "object"
+    },
+    "EstimatorIdentity": {
+      "additionalProperties": false,
+      "description": "Exact replaceable budget estimator identity.",
+      "properties": {
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "unit": {
+          "$ref": "#/$defs/BudgetUnit"
+        },
+        "version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "unit",
+        "config_hash"
+      ],
+      "title": "EstimatorIdentity",
+      "type": "object"
+    },
+    "EvidenceRepresentation": {
+      "description": "Representation level included or reported missing in a bundle.",
+      "enum": [
+        "metadata",
+        "outline",
+        "summary",
+        "exact",
+        "structured",
+        "visual_handle",
+        "original_handle"
+      ],
+      "title": "EvidenceRepresentation",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "ReceiptDecision": {
+      "additionalProperties": false,
+      "description": "One body-free member of the exhaustive receipt decision partition.",
+      "properties": {
+        "estimated_cost": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Estimated Cost",
+          "type": "integer"
+        },
+        "evidence_id": {
+          "pattern": "^(?:sha256:[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "final_order": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Order"
+        },
+        "high_value": {
+          "title": "High Value",
+          "type": "boolean"
+        },
+        "occurrences": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Occurrences",
+          "type": "integer"
+        },
+        "outcome": {
+          "$ref": "#/$defs/SelectionOutcome"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "representation": {
+          "$ref": "#/$defs/EvidenceRepresentation"
+        },
+        "scope": {
+          "$ref": "#/$defs/VersionScope"
+        },
+        "source_order": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Source Order",
+          "type": "integer"
+        },
+        "term_coverage": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Term Coverage",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "outcome",
+        "evidence_id",
+        "scope",
+        "representation",
+        "reason_code",
+        "high_value",
+        "term_coverage",
+        "occurrences",
+        "source_order",
+        "estimated_cost"
+      ],
+      "title": "ReceiptDecision",
+      "type": "object"
+    },
+    "ReceiptNotice": {
+      "additionalProperties": false,
+      "description": "Stable body-free missing, escalation or coverage notice.",
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "pattern": "^(?:sha256:[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Id"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "ReceiptNotice",
+      "type": "object"
+    },
+    "SelectionOutcome": {
+      "description": "Receipt inventory containing one discovered subject.",
+      "enum": [
+        "selected",
+        "omitted",
+        "rejected",
+        "stale"
+      ],
+      "title": "SelectionOutcome",
+      "type": "string"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    },
+    "VersionScope": {
+      "additionalProperties": false,
+      "description": "One exact logical document, source and representation revision.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id",
+        "representation_id"
+      ],
+      "title": "VersionScope",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/selection-receipt-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Deterministic body-free explanation of one context compilation.",
+  "properties": {
+    "algorithm": {
+      "$ref": "#/$defs/AlgorithmIdentity"
+    },
+    "budget": {
+      "$ref": "#/$defs/BudgetLedger"
+    },
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "corpus_snapshot": {
+      "items": {
+        "$ref": "#/$defs/VersionScope"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Corpus Snapshot",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "estimator": {
+      "$ref": "#/$defs/EstimatorIdentity"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "identity_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Identity Version",
+      "type": "integer"
+    },
+    "notices": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReceiptNotice"
+      },
+      "title": "Notices",
+      "type": "array"
+    },
+    "omitted": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReceiptDecision"
+      },
+      "title": "Omitted",
+      "type": "array"
+    },
+    "policy": {
+      "$ref": "#/$defs/ContextSelectionPolicy"
+    },
+    "policy_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Policy Digest",
+      "type": "string"
+    },
+    "receipt_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "rejected": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReceiptDecision"
+      },
+      "title": "Rejected",
+      "type": "array"
+    },
+    "selected": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReceiptDecision"
+      },
+      "title": "Selected",
+      "type": "array"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    },
+    "stale": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ReceiptDecision"
+      },
+      "title": "Stale",
+      "type": "array"
+    },
+    "task_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Task Digest",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "receipt_id",
+    "created_at",
+    "task_digest",
+    "algorithm",
+    "estimator",
+    "policy",
+    "policy_digest",
+    "corpus_snapshot",
+    "budget",
+    "truncated"
+  ],
+  "title": "OpenARDP Selection Receipt",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

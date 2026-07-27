@@ -7,6 +7,24 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Deterministic provider-free context compiler: exact READY corpus snapshots,
+  verified lexical candidate discovery over text and rich evidence, policy-based
+  trust/sensitivity/freshness classification, a documented total order and greedy
+  fixed-point budget admission with ten-percent response reserve.
+- Public `ContextBundle 0.2.0` with discriminated block/projection provenance inside
+  delimited untrusted-data envelopes, plus the body-free experimental
+  `SelectionReceipt 0.1.0` recording task digest, algorithm/estimator/policy
+  identities, corpus snapshot, budget ledger and exhaustive
+  selected/omitted/rejected/stale inventories.
+- Checksummed catalog revision 6 with atomic immutable compilation rows, exact scope
+  pinning, insert-once conflict semantics and receipt/bundle reachability roots.
+- Byte-identical task-supplied replay against the recorded snapshot with closed
+  task/estimator/algorithm mismatch and integrity failure taxonomy.
+- Provider-free `context` and `context-receipt` CLI commands with stable JSON and
+  human envelopes, explicit `--include-bundle` body access and sanitized failure
+  mapping.
+- Body-free structured operational logging and cancellation checkpoints across
+  discovery, verification, publication and commit.
 - Exact optional `docling==2.114.0` rich adapter with spawned offline conversion,
   complete native JSON retention, deterministic F006 thin evidence and reviewed local
   PDF model-bundle validation.

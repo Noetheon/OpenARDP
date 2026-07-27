@@ -48,3 +48,22 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - Default CLI/error output omits bodies, native JSON, provider tracebacks and absolute
   source/model paths. `get-evidence` returns a body only after an explicit projection
   request.
+
+## Feature 008 operating profile
+
+- Context compilation adds no dependency: the compiler, estimators and CLI verbs are
+  stdlib/Pydantic-only and provider-free; the optional Docling extra stays an
+  ingestion-time boundary.
+- Workspace migration 6 is additive and checksummed. Before opening a production
+  revision-5 workspace with this release, create a backup; older software requires
+  restoring that backup. Live in-place downgrade is unsupported.
+- Compilation publication is atomic: a commit fault or cancellation exposes no
+  compilation row, and pre-published immutable CAS objects remain unreachable until
+  Feature 013 retention/recovery tooling.
+- Replay is task-supplied and exact: it recompiles the recorded snapshot with default
+  compile limits. Compilations recorded through the CLI always use those defaults;
+  compilations recorded through the API with custom limits fail replay honestly as a
+  divergence instead of silently converging.
+- Operational logs from `openardp.context_compiler` carry identifiers, counts and
+  millisecond timings only; failure lines reduce to closed taxonomy codes. Receipts
+  and default CLI output never contain task text, evidence bodies or source paths.

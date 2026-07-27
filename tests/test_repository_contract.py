@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -72,12 +73,69 @@ F005A_ADRS = (
     "0009-indexes-are-non-authoritative.md",
     "0010-contracts-before-adapters.md",
 )
+F007_SCHEMA_HASHES = {
+    "block.schema.json": "413d725016a9f4f261e384efff3f82906a08c7e3b73a25bc8f96963a10861562",
+    "context-bundle.schema.json": (
+        "e6cea129f58bd11ec52e1f63ef87258d8ec9c01ac37ff7fa933b08e96790a31a"
+    ),
+    "derivation.schema.json": ("56e8fc17050584b6d4bfc430d5f8d24de03237e5ef2b96fc7d9f6afd61f3e88a"),
+    "evidence-projection.schema.json": (
+        "cc580d589e46142a6c8429e0deb855c1bf3be79cf4334d9b39129e46c80aaf1e"
+    ),
+    "evidence-reference.schema.json": (
+        "b86968eca4d9a8c208c4a4f52f207dda863377dcc5bf353775b0067e2b4f4362"
+    ),
+    "manifest.schema.json": "1995cc1062e5322405a00adba8e47c7f3bed9fa294de6920dc27476c5a36dfd4",
+    "native-representation.schema.json": (
+        "c4685f98633f2628240059e55703a0d8f27e32eb549cd7d453deb91b23d4d6ef"
+    ),
+    "relation.schema.json": "00b581b077089e6534f4cc0c3af511fa2caa8ede6b81649ee5094f0b60bca142",
+    "trust-classification.schema.json": (
+        "7c4a7b429a3994ebd62af394b06cf7daaeeb691720778ef0122c1871fff302bc"
+    ),
+}
+F007_VECTOR_HASHES = {
+    "tests/fixtures/domain/canonicalization-vectors.json": (
+        "9387f64d8cf90f2039ca975c71d6f02d57cef8027005b69da6e07b4f8b6c291b"
+    ),
+    "conformance/evidence/v0.1.0/canonicalization-vectors.json": (
+        "da1c718da44c6e51f3ec2e7aafcd94de4b59dad8b3c02e442eb02527a8729e97"
+    ),
+}
+F007_EVIDENCE_CORPUS_DIGEST = (
+    "sha256:e5fd01bc89d49267cd3d113e76428f0c931f99ce43b10756ac3aafc6e31eaccb"
+)
 
 
 def _project_configuration(repository_root: Path) -> dict[str, Any]:
     """Load the complete project configuration."""
     with (repository_root / "pyproject.toml").open("rb") as stream:
         return tomllib.load(stream)
+
+
+def _tree_digest(root: Path) -> str:
+    """Hash sorted relative names and exact bytes for one frozen fixture tree."""
+    digest = hashlib.sha256()
+    for path in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return "sha256:" + digest.hexdigest()
+
+
+def test_f007_contract_bytes_remain_frozen(repository_root: Path) -> None:
+    """Prevent additive F008 work from changing any established public contract byte."""
+    for name, expected in F007_SCHEMA_HASHES.items():
+        actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
+        assert actual == expected
+    for relative, expected in F007_VECTOR_HASHES.items():
+        actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
+        assert actual == expected
+    assert (
+        _tree_digest(repository_root / "conformance" / "evidence" / "v0.1.0")
+        == F007_EVIDENCE_CORPUS_DIGEST
+    )
 
 
 def test_required_repository_files_exist(repository_root: Path) -> None:

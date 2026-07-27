@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from collections.abc import Sequence
+from uuid import UUID, uuid5
 
 import rfc8785
 from pydantic import JsonValue
@@ -13,6 +14,8 @@ from openardp.domain.common import ensure_json_value
 
 CANONICALIZATION_ALGORITHM = "RFC8785"
 IDENTITY_VERSION = 1
+SELECTION_RECEIPT_DOMAIN = "openardp:selection-receipt"
+CONTEXT_BUNDLE_UUID_NAMESPACE = UUID("26e5d61b-8bf1-5c67-943d-540decd608e4")
 
 _SHA256_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 _RELATION_REFERENCE_FIELDS = {
@@ -55,6 +58,37 @@ def source_version_id(source_bytes: bytes) -> str:
 def model_bundle_id(manifest: dict[str, JsonValue]) -> str:
     """Hash one reviewed path-independent model-bundle manifest."""
     return _identity_sha256("openardp:model-bundle", manifest)
+
+
+def context_policy_id(policy: dict[str, JsonValue]) -> str:
+    """Hash the complete safe context-selection policy."""
+    ensure_json_value(policy, path="$.policy")
+    return _identity_sha256("openardp:context-policy", policy)
+
+
+def selection_receipt_id(receipt: dict[str, JsonValue]) -> str:
+    """Hash every semantic receipt field except its declared identifier."""
+    ensure_json_value(receipt, path="$.receipt")
+    if "receipt_id" in receipt:
+        raise ValueError("selection receipt identity payload must exclude receipt_id")
+    return _identity_sha256(SELECTION_RECEIPT_DOMAIN, receipt)
+
+
+def context_bundle_id(bundle: dict[str, JsonValue]) -> UUID:
+    """Derive a stable UUIDv5 from every semantic ContextBundle field."""
+    ensure_json_value(bundle, path="$.bundle")
+    if "bundle_id" in bundle:
+        raise ValueError("context bundle identity payload must exclude bundle_id")
+    digest = _identity_sha256("openardp:context-bundle", bundle)
+    return uuid5(CONTEXT_BUNDLE_UUID_NAMESPACE, digest)
+
+
+def context_compilation_fingerprint(record: dict[str, JsonValue]) -> str:
+    """Hash immutable SQLite compilation row facts excluding the fingerprint itself."""
+    ensure_json_value(record, path="$.compilation")
+    if "row_fingerprint" in record:
+        raise ValueError("compilation fingerprint payload must exclude row_fingerprint")
+    return _identity_sha256("openardp:context-compilation-row", record)
 
 
 def _require_sha256_id(value: str, *, field: str) -> str:

@@ -69,5 +69,25 @@ Ingestion adapters may only emit the first two. Promotion to trusted policy or e
 - pointer resolution accepts only the retained native object, matching provider
   profile/version and bounded local RFC 6901 syntax.
 
+## Delivered Feature 008 controls
+
+- every accelerator hit is reverified against the content-addressed body, catalog
+  scope and indexed text hash before scoring; incomplete or drifted coverage fails
+  closed and is never repaired implicitly;
+- selected bodies travel only inside the delimited `untrusted_data` envelope with
+  `instruction_execution_allowed=false`; trust promotion from index or projection
+  metadata is impossible because classification reads the reverified body trust;
+- the selection receipt, catalog compilation rows, operational logs and CLI error
+  envelopes carry identifiers, digests, counts and timings only — never task text,
+  evidence bodies or source paths;
+- resource bounds (scopes, discovery, candidates, body bytes, decisions, bundle
+  units) fail closed before unbounded allocation;
+- cancellation checkpoints are bounded and leave no catalog-visible partial
+  compilation; pre-published immutable objects remain unreachable recovery candidates;
+- replay reuses the recorded exact snapshot and rejects task, estimator, algorithm or
+  integrity drift with closed mismatch codes instead of substituting newer content;
+- compilation rows are insert-once with recomputed fingerprints; conflicting
+  same-identity records fail closed.
+
 These controls reduce exposure but do not prove that Python process isolation,
 platform resource limits or the third-party parser are a universally secure sandbox.

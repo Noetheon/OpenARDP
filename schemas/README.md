@@ -31,6 +31,20 @@ These roots declare `stability=experimental`, use URI-namespaced extensions, and
 exactly installed contract release `0.1.0`. Their version does not change the application,
 workspace, provider-profile, export-profile, or F002 schema release.
 
+### Feature 008 context roots
+
+| Record | Python model | Schema | Golden fixture | Version field |
+|---|---|---|---|---|
+| Context Bundle | `ContextBundleV020` | `context-bundle-0.2.0.schema.json` | `tests/fixtures/context/context-bundle-0.2.0.json` | `schema_version` |
+| Selection Receipt | `SelectionReceipt` | `selection-receipt.schema.json` | `tests/fixtures/context/selection-receipt.json` | `contract_version` |
+
+The F008 bundle evolves the F002 `ContextBundle` line to release `0.2.0` with
+discriminated block/projection provenance and untrusted-data envelopes. The receipt is
+an independent experimental `0.1.0` root with its own RFC 8785/SHA-256 identity
+projection; identity vectors live in `tests/fixtures/context/`. Both generations are
+deterministic; the nine earlier schema files and both earlier vector files remain
+byte-identical.
+
 ## Compatibility policy
 
 - Readers accept exactly the explicitly installed schema release `0.1.0`; they do not guess compatibility from a shared minor number.

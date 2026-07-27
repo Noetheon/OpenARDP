@@ -171,6 +171,30 @@ evidence rows. All rich CAS objects, including divergent attempts, remain reacha
 roots. A changed source, provider profile, semantic limit or model-bundle identity
 creates a separate representation identity.
 
+### Feature 008 context compilation records
+
+Feature 008 adds two public roots and internal persistence records without changing
+any earlier public schema:
+
+- `ContextBundleV020` is the public `ContextBundle 0.2.0` handoff: query, exact
+  version scopes, discriminated block/projection items in untrusted-data envelopes,
+  selection trace, budget, warnings and missing evidence. Its UUIDv5 identity is
+  recomputed over the canonical payload.
+- `SelectionReceipt` is the public experimental `SelectionReceipt 0.1.0`: task digest,
+  algorithm/estimator/policy identities with policy digest, corpus snapshot, complete
+  budget ledger and the exhaustive selected/omitted/rejected/stale decision
+  inventories. It is body-free by construction; its RFC 8785/SHA-256 identity equals
+  the digest of its stored identity envelope, so the CAS object id equals the receipt
+  id.
+- `ContextCompilationRecord` plus `ContextCompilationScope` are internal immutable
+  catalog rows linking both object identities, digests, counts and one recomputed row
+  fingerprint; `ContextCompilationCommit` carries the atomic insert unit.
+
+Checksummed workspace migration 6 adds the compilation and scope tables with RESTRICT
+foreign keys to persisted representations; receipt and bundle objects are
+reachability roots. Compilation rows are insert-once: a conflicting same-identity
+record fails closed, an identical re-commit converges.
+
 ### Document manifest
 
 See `schemas/manifest.schema.json`.

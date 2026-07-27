@@ -13,6 +13,12 @@ from pydantic import BaseModel
 from openardp.domain.block import ContentBlock
 from openardp.domain.common import SCHEMA_VERSION
 from openardp.domain.context import ContextBundle
+from openardp.domain.context_compilation import (
+    CONTEXT_BUNDLE_SCHEMA_VERSION,
+    SELECTION_RECEIPT_CONTRACT_VERSION,
+    ContextBundleV020,
+    SelectionReceipt,
+)
 from openardp.domain.derivation import DerivationRecord
 from openardp.domain.evidence import (
     EVIDENCE_CONTRACT_VERSION,
@@ -119,7 +125,32 @@ EVIDENCE_ROOT_CONTRACTS: dict[str, RootContract] = {
     ),
 }
 
-ALL_ROOT_CONTRACTS = {**ROOT_CONTRACTS, **EVIDENCE_ROOT_CONTRACTS}
+CONTEXT_ROOT_CONTRACTS: dict[str, RootContract] = {
+    "context-bundle-0.2.0.schema.json": RootContract(
+        ContextBundleV020,
+        "context-bundle-0.2.0.json",
+        "https://openardp.example/schema/context-bundle-0.2.0.json",
+        "OpenARDP Context Bundle 0.2.0",
+        "schema_version",
+        "x-openardp-schema-version",
+        CONTEXT_BUNDLE_SCHEMA_VERSION,
+    ),
+    "selection-receipt.schema.json": RootContract(
+        SelectionReceipt,
+        "selection-receipt.json",
+        "https://openardp.example/schema/selection-receipt-0.1.0.json",
+        "OpenARDP Selection Receipt",
+        "contract_version",
+        "x-openardp-contract-version",
+        SELECTION_RECEIPT_CONTRACT_VERSION,
+    ),
+}
+
+ALL_ROOT_CONTRACTS = {
+    **ROOT_CONTRACTS,
+    **EVIDENCE_ROOT_CONTRACTS,
+    **CONTEXT_ROOT_CONTRACTS,
+}
 
 
 def _add_block_payload_constraint(schema: dict[str, Any]) -> None:

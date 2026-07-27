@@ -6,6 +6,10 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 from uuid import UUID
 
+from openardp.domain.context_compilation import (
+    ContextCompilationCommit,
+    ContextCompilationRecord,
+)
 from openardp.domain.ingestion import (
     DocumentHead,
     DocumentHeadUpdate,
@@ -140,6 +144,14 @@ class SearchIndexIncomplete(CatalogError):
 
 class SearchIndexDrifted(CatalogError):
     """Raised when index rows disagree with verified catalog or CAS evidence."""
+
+
+class ContextCompilationNotFound(CatalogError):
+    """Raised when a requested persisted context compilation does not exist."""
+
+
+class ContextCompilationConflict(CatalogError):
+    """Raised when a receipt identity is reused with different immutable facts."""
 
 
 @runtime_checkable
@@ -439,4 +451,27 @@ class RichCatalog(Catalog, Protocol):
         scope: RepresentationScope,
     ) -> tuple[RichParseAttempt, ...]:
         """Return rich attempts in deterministic creation and identifier order."""
+        ...
+
+
+@runtime_checkable
+class ContextCatalog(Catalog, Protocol):
+    """Additive atomic persistence boundary for F008 context compilations."""
+
+    def commit_context_compilation(
+        self,
+        commit: ContextCompilationCommit,
+    ) -> ContextCompilationRecord:
+        """Atomically insert or exactly reuse one compilation and its scope rows."""
+        ...
+
+    def load_context_compilation(
+        self,
+        receipt_id: str,
+    ) -> ContextCompilationCommit | None:
+        """Return one body-free compilation aggregate from a single snapshot."""
+        ...
+
+    def list_context_compilations(self) -> tuple[ContextCompilationRecord, ...]:
+        """Return immutable compilation rows in deterministic identity order."""
         ...

@@ -61,5 +61,8 @@ CI before starting the successor.
 
 Feature 005 implements TXT/Markdown preparation and verified lexical search. Feature 005A realigns governance without
 runtime change. Feature 006 defines evidence contracts; Feature 007 implements the first
-bounded Docling-native adapter. Feature 008 is the next dependency-ordered work package.
-Do not reuse the pre-v3.1 numbering.
+bounded Docling-native adapter. Feature 008 delivers deterministic context compilation,
+body-free selection receipts, atomic persistence, replay and the `context` /
+`context-receipt` CLI. Feature 009 (read-only MCP wrapping of the same application
+services) is the next dependency-ordered work package. Do not reuse the pre-v3.1
+numbering.

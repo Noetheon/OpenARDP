@@ -1,7 +1,9 @@
 # Architecture
 
 **Status:** Canonical architecture. Sections distinguish delivered Features 001–005 from planned components in the
-[005A–017 feature map](../spec-kit/FEATURE_MAP.md).
+[005A–017 feature map](../spec-kit/FEATURE_MAP.md). Feature 007 delivered the bounded
+Docling-native adapter; Feature 008 delivered the deterministic context compiler and
+selection receipts described below.
 
 ## 1. Architectural style
 
@@ -234,3 +236,23 @@ new canonical aggregate is byte-identical to the persisted evidence.
 - Failed object staging exposes no canonical leaf. A post-publication catalog failure leaves only a complete orphan.
 - Failed migration chains roll back every pending DDL statement and migration record.
 - Reachability inconsistencies are reported separately from complete unreferenced candidates and trigger no deletion.
+
+## 7. Delivered Feature 008 context compiler
+
+The context compiler is a provider-neutral service above the existing ports. One
+invocation resolves an exact READY corpus snapshot, discovers lexical candidates from
+the verified FTS accelerator and the bounded rich-projection scan, reverifies every
+candidate body against content-addressed facts, classifies trust/sensitivity/freshness
+under the declared policy, sorts by a documented total order and admits items greedily
+under one fixed-point estimator budget with a ten-percent response reserve. Output is
+one public `ContextBundle 0.2.0` with structurally delimited untrusted-data envelopes
+plus one body-free experimental `SelectionReceipt 0.1.0`.
+
+Persistence composes the existing primitives: both canonical objects are published to
+the CAS, reverified, then linked atomically by checksummed workspace migration 6 rows
+with exact scope foreign keys. Replay rebuilds the recorded snapshot from those scope
+rows and requires byte-identical bundle and receipt objects; algorithm, estimator,
+policy and task drift fail with closed mismatch codes instead of silent recompilation.
+All failure paths use the sanitized ports taxonomy with bounded cancellation
+checkpoints; pre-published objects from interrupted runs remain unreachable immutable
+recovery candidates until Feature 013 retention tooling.

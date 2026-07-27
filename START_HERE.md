@@ -2,8 +2,9 @@
 
 OpenARDP is built implementation-first, one bounded Spec Kit feature at a time. The
 repository is complete through the Feature 005 lexical-search runtime, Feature 005A
-strategic/governance boundary, Feature 006 experimental evidence contracts and Feature
-007's bounded Docling-native adapter.
+strategic/governance boundary, Feature 006 experimental evidence contracts, Feature
+007's bounded Docling-native adapter and Feature 008's deterministic context compiler
+with body-free selection receipts.
 
 ## 1. Read the authoritative rules
 
@@ -53,30 +54,42 @@ openardp reindex --store .openardp --json
 openardp ingest ./document.docx --store .openardp --json
 openardp evidence <document-uuid> --store .openardp --json
 openardp get-evidence <projection-sha256> --document <document-uuid> --store .openardp --json
+openardp context "Which exact controls are documented?" \
+  --document <document-uuid> --budget 12000 --unit tokens --mode verification \
+  --store .openardp --json
+openardp context-receipt <receipt-sha256> --store .openardp --json
+openardp context "Which exact controls are documented?" \
+  --replay <receipt-sha256> --store .openardp --json
 ```
 
 Feature 002 provides the domain models, public schemas and deterministic identities. Feature 003 provides the filesystem
 CAS, SQLite catalog, migrations and persistence/reachability services. Feature 004 provides bounded local TXT/Markdown
 ingestion and progressive exact navigation. Feature 005 provides deterministic lexical search, fail-closed coverage,
-verified snippets and explicit index rebuild.
+verified snippets and explicit index rebuild. Feature 008 compiles bounded evidence
+under an exact estimator budget, persists bundle and receipt atomically and replays the
+recorded snapshot byte-identically.
 
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
-identity.
+identity. Context compilation applies the same rule: accelerator hits are reverified
+against content-addressed bodies, and drifted or incomplete coverage fails closed until
+an explicit `reindex`.
 
 ## 5. Respect the current boundary
 
-The optional Docling extra now provides bounded DOCX/PPTX parsing and PDF parsing only
-with reviewed local assets. The current implementation does not yet provide context
-compilation, MCP, local watching, retention/garbage collection, stable export or
+The optional Docling extra provides bounded DOCX/PPTX parsing and PDF parsing only
+with reviewed local assets. Feature 008 provides deterministic local context
+compilation, body-free receipts and replay. The current implementation does not yet
+provide MCP, local watching, retention/garbage collection, stable export or
 Microsoft Graph access. The [005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
 outcomes individually.
 
 Public contracts remain experimental interoperability candidates. Feature 006 publishes
-the first four provider-neutral evidence/native/trust roots; later examples under
-[`contracts/`](contracts/README.md) remain design guidance unless their own feature
-promotes them to reviewed schemas. Feature 007 implements Docling while preserving
-complete provider-native output.
+the first four provider-neutral evidence/native/trust roots; Feature 008 adds the
+public `ContextBundle 0.2.0` and experimental `SelectionReceipt 0.1.0` roots. Later
+examples under [`contracts/`](contracts/README.md) remain design guidance unless their
+own feature promotes them to reviewed schemas. Feature 007 implements Docling while
+preserving complete provider-native output.
 
 ## 6. Find focused evidence
 
@@ -87,6 +100,7 @@ complete provider-native output.
 - [F005A validation](specs/005A-strategic-realignment/quickstart.md)
 - [F006 validation](specs/006-evidence-contract-foundation/quickstart.md)
 - [F007 quickstart](specs/007-docling-native-adapter/quickstart.md)
+- [F008 quickstart](specs/008-context-compiler-receipts/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

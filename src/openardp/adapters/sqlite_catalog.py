@@ -13,11 +13,17 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
 
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 
 from openardp.adapters.sqlite_migrations import MIGRATIONS, Migration
 from openardp.domain.block import BlockKind
 from openardp.domain.common import TrustZone
+from openardp.domain.context import BudgetUnit, VersionScope
+from openardp.domain.context_compilation import (
+    ContextCompilationCommit,
+    ContextCompilationRecord,
+    ContextCompilationScope,
+)
 from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import (
     DocumentHead,
@@ -78,6 +84,7 @@ from openardp.ports.catalog import (
     CatalogError,
     CatalogIncompatible,
     CatalogTooNew,
+    ContextCompilationConflict,
     DocumentConflict,
     DocumentNotFound,
     InvalidJobTransition,
@@ -182,6 +189,33 @@ _SCHEMA_TABLES = {
             "rich_parse_attempts",
             "rich_attempt_evidence",
             "rich_accepted_representations",
+        }
+    ),
+    6: frozenset(
+        {
+            "schema_migrations",
+            "objects",
+            "documents",
+            "document_versions",
+            "version_object_references",
+            "jobs",
+            "job_events",
+            "job_object_references",
+            "document_representations",
+            "representation_blocks",
+            "document_heads",
+            "ingestion_events",
+            "block_search_entries",
+            "block_search_index",
+            "block_search_index_config",
+            "block_search_index_data",
+            "block_search_index_docsize",
+            "block_search_index_idx",
+            "rich_parse_attempts",
+            "rich_attempt_evidence",
+            "rich_accepted_representations",
+            "context_compilations",
+            "context_compilation_scopes",
         }
     ),
 }
@@ -959,6 +993,187 @@ class SQLiteCatalog:
             except ValueError as error:
                 raise RepresentationIntegrityError("rich attempt metadata is invalid") from error
 
+    def commit_context_compilation(
+        self,
+        commit: ContextCompilationCommit,
+    ) -> ContextCompilationRecord:
+        """Atomically insert or exactly reuse one compilation and its scope rows."""
+        record = commit.record
+        created_at = encode_storage_datetime(record.created_at)
+        with self._write_connection() as connection:
+            self._register_object(connection, record.receipt_object, registered_at=created_at)
+            self._register_object(connection, record.bundle_object, registered_at=created_at)
+            for scope in commit.scopes:
+                root = connection.execute(
+                    "SELECT 1 FROM document_representations "
+                    "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
+                    (
+                        str(scope.scope.document_id),
+                        scope.scope.version_id,
+                        scope.scope.representation_id,
+                    ),
+                ).fetchone()
+                if root is None:
+                    raise RepresentationNotFound(
+                        "compilation scope root is not a persisted representation"
+                    )
+            connection.execute(
+                "INSERT INTO context_compilations("
+                "receipt_id, receipt_object_id, receipt_byte_length, bundle_object_id, "
+                "bundle_byte_length, bundle_id, task_digest, algorithm_name, "
+                "algorithm_version, algorithm_config_hash, estimator_name, "
+                "estimator_version, estimator_unit, estimator_config_hash, policy_digest, "
+                "budget_limit, budget_unit, created_at, selected_count, omitted_count, "
+                "rejected_count, stale_count, row_fingerprint) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(receipt_id) DO NOTHING",
+                self._compilation_row_values(record, created_at),
+            )
+            for scope in commit.scopes:
+                connection.execute(
+                    "INSERT INTO context_compilation_scopes("
+                    "receipt_id, ordinal, document_id, version_id, representation_id) "
+                    "VALUES (?, ?, ?, ?, ?) ON CONFLICT(receipt_id, ordinal) DO NOTHING",
+                    (
+                        record.receipt_id,
+                        scope.ordinal,
+                        str(scope.scope.document_id),
+                        scope.scope.version_id,
+                        scope.scope.representation_id,
+                    ),
+                )
+            persisted = self._load_context_compilation(connection, record.receipt_id)
+            if persisted is None:
+                raise CatalogError("context compilation insert did not persist")
+            if persisted != commit:
+                raise ContextCompilationConflict(
+                    "context compilation conflicts with the persisted immutable record"
+                )
+            return persisted.record
+
+    def load_context_compilation(
+        self,
+        receipt_id: str,
+    ) -> ContextCompilationCommit | None:
+        """Return one body-free compilation aggregate from a single snapshot."""
+        with self._read_connection() as connection:
+            return self._load_context_compilation(connection, receipt_id)
+
+    def list_context_compilations(self) -> tuple[ContextCompilationRecord, ...]:
+        """Return immutable compilation rows in deterministic identity order."""
+        with self._read_connection() as connection:
+            rows = connection.execute(
+                "SELECT receipt_id FROM context_compilations ORDER BY receipt_id"
+            ).fetchall()
+            records: list[ContextCompilationRecord] = []
+            for row in rows:
+                commit = self._load_context_compilation(connection, str(row["receipt_id"]))
+                if commit is None:
+                    raise CatalogError("context compilation row vanished during listing")
+                records.append(commit.record)
+            return tuple(records)
+
+    def _load_context_compilation(
+        self,
+        connection: sqlite3.Connection,
+        receipt_id: str,
+    ) -> ContextCompilationCommit | None:
+        row = connection.execute(
+            "SELECT * FROM context_compilations WHERE receipt_id = ?",
+            (receipt_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        scope_rows = connection.execute(
+            "SELECT * FROM context_compilation_scopes WHERE receipt_id = ? ORDER BY ordinal",
+            (receipt_id,),
+        ).fetchall()
+        try:
+            record = ContextCompilationRecord.model_validate(
+                {
+                    "receipt_id": str(row["receipt_id"]),
+                    "receipt_object": {
+                        "object_id": str(row["receipt_object_id"]),
+                        "byte_length": int(row["receipt_byte_length"]),
+                    },
+                    "bundle_object": {
+                        "object_id": str(row["bundle_object_id"]),
+                        "byte_length": int(row["bundle_byte_length"]),
+                    },
+                    "bundle_id": UUID(str(row["bundle_id"])),
+                    "task_digest": str(row["task_digest"]),
+                    "algorithm": {
+                        "name": str(row["algorithm_name"]),
+                        "version": str(row["algorithm_version"]),
+                        "config_hash": str(row["algorithm_config_hash"]),
+                    },
+                    "estimator": {
+                        "name": str(row["estimator_name"]),
+                        "version": str(row["estimator_version"]),
+                        "unit": BudgetUnit(str(row["estimator_unit"])),
+                        "config_hash": str(row["estimator_config_hash"]),
+                    },
+                    "policy_digest": str(row["policy_digest"]),
+                    "budget_limit": int(row["budget_limit"]),
+                    "budget_unit": BudgetUnit(str(row["budget_unit"])),
+                    "created_at": decode_storage_datetime(str(row["created_at"])),
+                    "selected_count": int(row["selected_count"]),
+                    "omitted_count": int(row["omitted_count"]),
+                    "rejected_count": int(row["rejected_count"]),
+                    "stale_count": int(row["stale_count"]),
+                    "row_fingerprint": str(row["row_fingerprint"]),
+                }
+            )
+            commit = ContextCompilationCommit(
+                record=record,
+                scopes=tuple(
+                    ContextCompilationScope(
+                        receipt_id=str(scope_row["receipt_id"]),
+                        ordinal=int(scope_row["ordinal"]),
+                        scope=VersionScope(
+                            document_id=UUID(str(scope_row["document_id"])),
+                            version_id=str(scope_row["version_id"]),
+                            representation_id=str(scope_row["representation_id"]),
+                        ),
+                    )
+                    for scope_row in scope_rows
+                ),
+            )
+        except (ValidationError, ValueError) as error:
+            raise CatalogError("context compilation rows failed integrity validation") from error
+        return commit
+
+    @staticmethod
+    def _compilation_row_values(
+        record: ContextCompilationRecord,
+        created_at: str,
+    ) -> tuple[object, ...]:
+        return (
+            record.receipt_id,
+            record.receipt_object.object_id,
+            record.receipt_object.byte_length,
+            record.bundle_object.object_id,
+            record.bundle_object.byte_length,
+            str(record.bundle_id),
+            record.task_digest,
+            record.algorithm.name,
+            record.algorithm.version,
+            record.algorithm.config_hash,
+            record.estimator.name,
+            record.estimator.version,
+            record.estimator.unit.value,
+            record.estimator.config_hash,
+            record.policy_digest,
+            record.budget_limit,
+            record.budget_unit.value,
+            created_at,
+            record.selected_count,
+            record.omitted_count,
+            record.rejected_count,
+            record.stale_count,
+            record.row_fingerprint,
+        )
+
     def get_document_head(self, document_id: UUID) -> DocumentHead | None:
         """Return the current successful representation observation."""
         with self._read_connection() as connection:
@@ -1483,6 +1698,8 @@ class SQLiteCatalog:
                 "UNION SELECT reference_object_id FROM rich_attempt_evidence "
                 "UNION SELECT projection_object_id FROM rich_attempt_evidence "
                 "UNION SELECT retrieval_object_id FROM rich_attempt_evidence "
+                "UNION SELECT receipt_object_id FROM context_compilations "
+                "UNION SELECT bundle_object_id FROM context_compilations "
                 "ORDER BY object_id"
             ).fetchall()
             return ReferenceSnapshot(

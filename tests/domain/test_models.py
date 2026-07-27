@@ -13,12 +13,14 @@ from pydantic import ValidationError
 from openardp.domain import validate_json
 from openardp.domain.block import ContentBlock
 from openardp.domain.context import ContextBundle
+from openardp.domain.context_compilation import ContextBundleV020, SelectionReceipt
 from openardp.domain.derivation import DerivationRecord
 from openardp.domain.identity import relation_identity
 from openardp.domain.manifest import DocumentManifest
 from openardp.domain.relation import Relation
 
 FIXTURE_DIR = Path(__file__).parents[1] / "fixtures" / "domain"
+CONTEXT_FIXTURE_DIR = Path(__file__).parents[1] / "fixtures" / "context"
 
 
 def _load(name: str) -> dict[str, Any]:
@@ -434,3 +436,89 @@ def test_context_accepts_explicit_no_result_and_actual_budget_overrun() -> None:
     ]
     payload["budget"]["actual_used"] = 999
     validate_json(ContextBundle, json.dumps(payload))
+
+
+@pytest.mark.parametrize(
+    ("name", "model"),
+    (
+        ("context-bundle-0.2.0.json", ContextBundleV020),
+        ("selection-receipt.json", SelectionReceipt),
+    ),
+)
+def test_f008_golden_records_round_trip_without_loss(
+    name: str,
+    model: type[ContextBundleV020 | SelectionReceipt],
+) -> None:
+    """Keep the additive F008 public roots byte-faithful to their golden JSON."""
+    raw = (CONTEXT_FIXTURE_DIR / name).read_bytes()
+    record = validate_json(model, raw)
+    assert record.model_dump(mode="json") == json.loads(raw)
+    assert validate_json(model, record.model_dump_json()) == record
+
+
+@pytest.mark.parametrize(
+    ("name", "model", "change", "message"),
+    (
+        (
+            "context-bundle-0.2.0.json",
+            ContextBundleV020,
+            {"unexpected": True},
+            "Extra inputs are not permitted",
+        ),
+        (
+            "context-bundle-0.2.0.json",
+            ContextBundleV020,
+            {"schema_version": "0.1.0"},
+            "is not installed",
+        ),
+        (
+            "context-bundle-0.2.0.json",
+            ContextBundleV020,
+            {"bundle_id": "655425c7-c68f-512e-b5cd-873abcb0e61b"},
+            "bundle_id",
+        ),
+        (
+            "selection-receipt.json",
+            SelectionReceipt,
+            {"unexpected": True},
+            "Extra inputs are not permitted",
+        ),
+        (
+            "selection-receipt.json",
+            SelectionReceipt,
+            {"contract_version": "0.2.0"},
+            "is not installed",
+        ),
+        (
+            "selection-receipt.json",
+            SelectionReceipt,
+            {"receipt_id": "sha256:" + "9" * 64},
+            "receipt_id",
+        ),
+        (
+            "selection-receipt.json",
+            SelectionReceipt,
+            {"task": "Explain exact evidence"},
+            "Extra inputs are not permitted",
+        ),
+    ),
+)
+def test_f008_golden_records_reject_invalid_raw_json(
+    name: str,
+    model: type[ContextBundleV020 | SelectionReceipt],
+    change: dict[str, object],
+    message: str,
+) -> None:
+    """Reject unknown fields, uninstalled versions, identity drift and task text."""
+    payload: dict[str, Any] = json.loads((CONTEXT_FIXTURE_DIR / name).read_bytes())
+    payload.update(change)
+    with pytest.raises(ValidationError, match=message):
+        validate_json(model, json.dumps(payload))
+
+
+def test_f008_bundle_0_1_0_remains_the_installed_prior_reader() -> None:
+    """Keep ContextBundle 0.1.0 and additive 0.2.0 as independent strict models."""
+    prior = _load("context-bundle.json")
+    validate_json(ContextBundle, json.dumps(prior))
+    with pytest.raises(ValidationError):
+        validate_json(ContextBundleV020, json.dumps(prior))

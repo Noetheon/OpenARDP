@@ -31,7 +31,9 @@ realignment in [`005A-strategic-realignment`](specs/005A-strategic-realignment/s
 and the experimental contract foundation in
 [`006-evidence-contract-foundation`](specs/006-evidence-contract-foundation/spec.md), plus
 the bounded provider adapter in
-[`007-docling-native-adapter`](specs/007-docling-native-adapter/spec.md):
+[`007-docling-native-adapter`](specs/007-docling-native-adapter/spec.md) and the
+deterministic context compiler in
+[`008-context-compiler-receipts`](specs/008-context-compiler-receipts/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -46,18 +48,28 @@ the bounded provider adapter in
 - deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
 - body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation;
 - exact term/phrase lexical search with deterministic filters, verified bounded snippets and fail-closed index coverage;
-- idempotent `reindex` from verified READY evidence.
+- idempotent `reindex` from verified READY evidence;
 - an exact optional `docling==2.114.0` extra for offline, spawned DOCX/PPTX conversion
   and explicitly provisioned PDF conversion;
 - complete immutable Docling JSON, strict F006 thin evidence and checksummed catalog
   revision 5 with accepted plus append-only converged/diverged attempts;
 - fully verified rich cache reuse and provider-free `evidence`/`get-evidence`
-  inspection.
+  inspection;
+- deterministic budgeted context compilation over verified text and rich evidence with
+  an exact corpus snapshot, a documented total order and greedy byte-exact admission
+  under a versioned estimator budget with ten-percent response reserve;
+- the public `ContextBundle 0.2.0` handoff with structurally delimited untrusted-data
+  envelopes and the body-free experimental `SelectionReceipt 0.1.0` recording every
+  selection, omission, rejection, stale item and unit of budget;
+- checksummed catalog revision 6 with atomic immutable compilation rows, exact scope
+  pinning and byte-identical task-supplied replay after later head changes;
+- provider-free `context` and `context-receipt` CLI commands with stable JSON and
+  human envelopes, closed failure taxonomy and body-free operational logs.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
-an explicit optional extra and remains local/offline by default. There is no context
-compiler, MCP server, watcher, cloud connector, automatic garbage collection or stable
-custom export format yet. Those remain separate work packages in the
+an explicit optional extra and remains local/offline by default. There is no MCP
+server, watcher, cloud connector, automatic garbage collection or stable custom export
+format yet. Those remain separate work packages in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Quickstart
@@ -87,13 +99,23 @@ openardp reindex --store .openardp
 openardp ingest ./document.docx --store .openardp
 openardp evidence <document-uuid> --store .openardp
 openardp get-evidence <projection-sha256> --document <document-uuid> --store .openardp
+openardp context "Which exact controls are documented?" \
+  --document <document-uuid> --budget 12000 --unit tokens --mode verification \
+  --store .openardp
+openardp context-receipt <receipt-sha256> --store .openardp
+openardp context "Which exact controls are documented?" \
+  --replay <receipt-sha256> --store .openardp
 ```
 
 PDF additionally requires `--docling-model-root` and
 `--docling-model-manifest` pointing to reviewed local assets; URLs are not accepted.
 Add `--json` to any command for a versioned machine-readable stdout envelope. Only
-`get` and the explicitly selected `get-evidence` return bodies. Search returns bounded
-verified snippets. Every command except `init` requires an explicitly initialized
+`get`, the explicitly selected `get-evidence` and `context --include-bundle` return
+bodies, always inside delimited untrusted-data envelopes. Search returns bounded
+verified snippets. Receipts, default `context` output, logs and error envelopes never
+contain the task string, evidence bodies or source paths. Replay reuses the recorded
+exact snapshot and fails with a stable mismatch error instead of recompiling silently.
+Every command except `init` requires an explicitly initialized
 compatible workspace; commands do not search parent directories or create state
 implicitly.
 

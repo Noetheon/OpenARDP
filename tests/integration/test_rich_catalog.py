@@ -105,7 +105,7 @@ def _setup(
         representation_id=recipe.parser.representation_id_for(source.object_id),
     )
     catalog = SQLiteCatalog(tmp_path / "catalog.sqlite3")
-    assert catalog.initialize(now=NOW) == 5
+    assert catalog.initialize(now=NOW) == 6
     catalog.register_document(
         SourceKey(connector="local", locator="/synthetic/source.docx"),
         document_id=DOCUMENT_ID,

@@ -1,0 +1,66 @@
+{
+  "context_bundle": {
+    "bundle_id": "655425c7-c68f-512e-b5cd-873abcb0e61a",
+    "fixture": "context-bundle-0.2.0.json"
+  },
+  "context_compilation_row": {
+    "fingerprint": "sha256:696ab04ea521a92fab93c3c2ee1bd3a905f55faf29d33434194b06d213451519",
+    "record": {
+      "algorithm": {
+        "config_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "name": "openardp.lexical-context",
+        "version": "1.0.0"
+      },
+      "budget_limit": 10000,
+      "budget_unit": "bytes",
+      "bundle_id": "655425c7-c68f-512e-b5cd-873abcb0e61a",
+      "bundle_object": {
+        "byte_length": 4096,
+        "object_id": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "created_at": "2026-07-26T12:00:00Z",
+      "estimator": {
+        "config_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "name": "openardp.utf8-bytes",
+        "unit": "bytes",
+        "version": "1.0.0"
+      },
+      "omitted_count": 0,
+      "policy_digest": "sha256:7d04570cd45529bd4c7cd9a07206c6ae0b776c336c36edb4ee6df7e2f653567d",
+      "receipt_id": "sha256:98feee5f12d52c3e0ae214b355e9eb8d4a9397c81c3b3cbe86bbe2d5d65f0b71",
+      "receipt_object": {
+        "byte_length": 2048,
+        "object_id": "sha256:98feee5f12d52c3e0ae214b355e9eb8d4a9397c81c3b3cbe86bbe2d5d65f0b71"
+      },
+      "rejected_count": 0,
+      "selected_count": 1,
+      "stale_count": 0,
+      "task_digest": "sha256:4b5047d7479a5345801e33a571127ec51300e1525cba4a374b954a042c51349c"
+    }
+  },
+  "context_policy": {
+    "digest": "sha256:7d04570cd45529bd4c7cd9a07206c6ae0b776c336c36edb4ee6df7e2f653567d",
+    "policy": {
+      "allowed_trust_zones": [
+        "external_untrusted"
+      ],
+      "freshness": "current_only",
+      "include_history": false,
+      "maximum_sensitivity": "internal",
+      "mode": "exact",
+      "provenance_target_percent": 10,
+      "required_evidence": [
+        "exact"
+      ],
+      "response_reserve_percent": 10
+    }
+  },
+  "selection_receipt": {
+    "fixture": "selection-receipt.json",
+    "receipt_id": "sha256:98feee5f12d52c3e0ae214b355e9eb8d4a9397c81c3b3cbe86bbe2d5d65f0b71"
+  },
+  "task_digest": {
+    "digest": "sha256:4b5047d7479a5345801e33a571127ec51300e1525cba4a374b954a042c51349c",
+    "task": "Explain exact evidence"
+  }
+}

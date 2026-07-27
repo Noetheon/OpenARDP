@@ -1,0 +1,739 @@
+{
+  "$defs": {
+    "BudgetUnit": {
+      "description": "Unit used by a context budget estimator.",
+      "enum": [
+        "tokens",
+        "characters",
+        "bytes"
+      ],
+      "title": "BudgetUnit",
+      "type": "string"
+    },
+    "ContextBlockProvenance": {
+      "additionalProperties": false,
+      "description": "Exact F002 block-backed context provenance.",
+      "properties": {
+        "block_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "record_type": {
+          "const": "block",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "document_id",
+        "version_id",
+        "representation_id",
+        "block_id",
+        "source"
+      ],
+      "title": "ContextBlockProvenance",
+      "type": "object"
+    },
+    "ContextBundleBudget": {
+      "additionalProperties": false,
+      "description": "Declared bound and exact final estimator use for ContextBundle 0.2.0.",
+      "properties": {
+        "actual_used": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Used"
+        },
+        "estimated_used": {
+          "minimum": 0,
+          "title": "Estimated Used",
+          "type": "integer"
+        },
+        "estimator": {
+          "$ref": "#/$defs/EstimatorIdentity"
+        },
+        "limit": {
+          "maximum": 16777216,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "unit": {
+          "$ref": "#/$defs/BudgetUnit"
+        }
+      },
+      "required": [
+        "unit",
+        "limit",
+        "estimated_used",
+        "estimator"
+      ],
+      "title": "ContextBundleBudget",
+      "type": "object"
+    },
+    "ContextBundleNotice": {
+      "additionalProperties": false,
+      "description": "Stable warning code and bounded non-sensitive message.",
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ContextBundleNotice",
+      "type": "object"
+    },
+    "ContextEvidenceItem": {
+      "additionalProperties": false,
+      "description": "Selected exact evidence in a ContextBundle 0.2.0.",
+      "properties": {
+        "artifact_handle": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Handle"
+        },
+        "artifact_id": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Id"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UntrustedContentEnvelope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "provenance": {
+          "discriminator": {
+            "mapping": {
+              "block": "#/$defs/ContextBlockProvenance",
+              "evidence_projection": "#/$defs/ContextProjectionProvenance"
+            },
+            "propertyName": "record_type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ContextBlockProvenance"
+            },
+            {
+              "$ref": "#/$defs/ContextProjectionProvenance"
+            }
+          ],
+          "title": "Provenance"
+        },
+        "reason": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason",
+          "type": "string"
+        },
+        "representation": {
+          "$ref": "#/$defs/EvidenceRepresentation"
+        },
+        "trust": {
+          "$ref": "#/$defs/DataTrustClassification"
+        }
+      },
+      "required": [
+        "provenance",
+        "representation",
+        "reason",
+        "trust"
+      ],
+      "title": "ContextEvidenceItem",
+      "type": "object"
+    },
+    "ContextMissingEvidence": {
+      "additionalProperties": false,
+      "description": "Evidence requirement that could not be satisfied honestly.",
+      "properties": {
+        "evidence_type": {
+          "$ref": "#/$defs/EvidenceRepresentation"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VersionScope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "evidence_type",
+        "reason_code"
+      ],
+      "title": "ContextMissingEvidence",
+      "type": "object"
+    },
+    "ContextMode": {
+      "description": "Evidence-selection intent recorded by a bundle.",
+      "enum": [
+        "summary",
+        "exact",
+        "numeric",
+        "visual",
+        "verification",
+        "mixed"
+      ],
+      "title": "ContextMode",
+      "type": "string"
+    },
+    "ContextProjectionProvenance": {
+      "additionalProperties": false,
+      "description": "Exact F006 projection-backed context provenance without fabricated block identity.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "evidence_projection_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Evidence Projection Id",
+          "type": "string"
+        },
+        "evidence_reference_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Evidence Reference Id",
+          "type": "string"
+        },
+        "native_representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Native Representation Id",
+          "type": "string"
+        },
+        "record_type": {
+          "const": "evidence_projection",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "source_version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "document_id",
+        "version_id",
+        "representation_id",
+        "source_version_id",
+        "native_representation_id",
+        "evidence_reference_id",
+        "evidence_projection_id"
+      ],
+      "title": "ContextProjectionProvenance",
+      "type": "object"
+    },
+    "ContextSelectionTrace": {
+      "additionalProperties": false,
+      "description": "Compact body-free selected-stage fact embedded in the handoff.",
+      "properties": {
+        "evidence_id": {
+          "pattern": "^(?:sha256:[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "final_order": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Final Order",
+          "type": "integer"
+        },
+        "reason_code": {
+          "pattern": "^[a-z][a-z0-9_]{0,127}$",
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "final_order",
+        "reason_code"
+      ],
+      "title": "ContextSelectionTrace",
+      "type": "object"
+    },
+    "DataTrustClassification": {
+      "additionalProperties": false,
+      "description": "Trust metadata for content that must remain non-authoritative data.",
+      "properties": {
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "zone": {
+          "$ref": "#/$defs/TrustZone"
+        }
+      },
+      "required": [
+        "zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "DataTrustClassification",
+      "type": "object"
+    },
+    "EstimatorIdentity": {
+      "additionalProperties": false,
+      "description": "Exact replaceable budget estimator identity.",
+      "properties": {
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "unit": {
+          "$ref": "#/$defs/BudgetUnit"
+        },
+        "version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "unit",
+        "config_hash"
+      ],
+      "title": "EstimatorIdentity",
+      "type": "object"
+    },
+    "EvidenceRepresentation": {
+      "description": "Representation level included or reported missing in a bundle.",
+      "enum": [
+        "metadata",
+        "outline",
+        "summary",
+        "exact",
+        "structured",
+        "visual_handle",
+        "original_handle"
+      ],
+      "title": "EvidenceRepresentation",
+      "type": "string"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "description": "Precise source location treated as data rather than access authority.",
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "extraction_method": {
+          "minLength": 1,
+          "title": "Extraction Method",
+          "type": "string"
+        },
+        "native_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Native Id"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "slide": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Slide"
+        }
+      },
+      "required": [
+        "extraction_method"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    },
+    "UntrustedContentEnvelope": {
+      "additionalProperties": false,
+      "description": "Structural data-only delimiter for one verified evidence body.",
+      "properties": {
+        "body": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "content_role": {
+          "const": "untrusted_data",
+          "default": "untrusted_data",
+          "title": "Content Role",
+          "type": "string"
+        },
+        "delimiter": {
+          "const": "openardp-evidence-v1",
+          "default": "openardp-evidence-v1",
+          "title": "Delimiter",
+          "type": "string"
+        },
+        "media_type": {
+          "maxLength": 255,
+          "minLength": 3,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*$",
+          "title": "Media Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "media_type",
+        "body"
+      ],
+      "title": "UntrustedContentEnvelope",
+      "type": "object"
+    },
+    "VersionScope": {
+      "additionalProperties": false,
+      "description": "One exact logical document, source and representation revision.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id",
+        "representation_id"
+      ],
+      "title": "VersionScope",
+      "type": "object"
+    }
+  },
+  "$id": "https://openardp.example/schema/context-bundle-0.2.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Immutable deterministic context handoff with true block/projection provenance.",
+  "properties": {
+    "budget": {
+      "$ref": "#/$defs/ContextBundleBudget"
+    },
+    "bundle_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Bundle Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "items": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ContextEvidenceItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "missing_evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ContextMissingEvidence"
+      },
+      "title": "Missing Evidence",
+      "type": "array"
+    },
+    "mode": {
+      "$ref": "#/$defs/ContextMode"
+    },
+    "query": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.2.0",
+      "default": "0.2.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selection_trace": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ContextSelectionTrace"
+      },
+      "title": "Selection Trace",
+      "type": "array"
+    },
+    "versions": {
+      "items": {
+        "$ref": "#/$defs/VersionScope"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Versions",
+      "type": "array"
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ContextBundleNotice"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "bundle_id",
+    "created_at",
+    "query",
+    "mode",
+    "budget",
+    "versions"
+  ],
+  "title": "OpenARDP Context Bundle 0.2.0",
+  "type": "object",
+  "x-openardp-schema-version": "0.2.0"
+}

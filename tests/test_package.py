@@ -6,6 +6,8 @@ import importlib
 import importlib.metadata
 import importlib.util
 import pkgutil
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from types import ModuleType
@@ -31,6 +33,7 @@ DOMAIN_MODULES = {
     "block",
     "common",
     "context",
+    "context_compilation",
     "derivation",
     "evidence",
     "identity",
@@ -41,8 +44,10 @@ DOMAIN_MODULES = {
     "ingestion",
     "search",
 }
-PORT_MODULES = {"catalog", "object_store", "parser"}
+PORT_MODULES = {"catalog", "context", "object_store", "parser"}
 ADAPTER_MODULES = {
+    "context_candidates",
+    "context_estimators",
     "docling_native",
     "filesystem_cas",
     "isolated_docling",
@@ -54,6 +59,7 @@ ADAPTER_MODULES = {
     "text_parser",
 }
 SERVICE_MODULES = {
+    "context_compiler",
     "document_query",
     "ingestion",
     "persistence",
@@ -103,11 +109,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_007(
+def test_module_surface_is_bounded_to_feature_008(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F007 modules."""
+    """Expose exactly the reviewed F002-F008 modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules
@@ -129,3 +135,29 @@ def test_exact_openardp_console_script_is_installed(repository_root: Path) -> No
         if entry.value.startswith("openardp")
     }
     assert openardp_entries == {("openardp", "openardp.interfaces.cli:main")}
+
+
+def test_context_surfaces_import_without_loading_provider_runtime(
+    repository_root: Path,
+) -> None:
+    """Keep Phase 2 compiler contracts usable in the core-only install."""
+    code = """
+import sys
+import openardp.domain.context_compilation
+import openardp.ports.context
+import openardp.ports.catalog
+import openardp.adapters.context_estimators
+import openardp.adapters.context_candidates
+import openardp.services.context_compiler
+import openardp.adapters
+import openardp.services
+assert not any(name == "docling" or name.startswith("docling.") for name in sys.modules)
+"""
+    completed = subprocess.run(  # noqa: S603 - fixed interpreter and literal test code
+        [sys.executable, "-c", code],
+        cwd=repository_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr

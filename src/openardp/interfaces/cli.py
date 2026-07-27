@@ -15,6 +15,15 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from openardp.adapters.context_candidates import (
+    RichLexicalCandidateSource,
+    TextLexicalCandidateSource,
+)
+from openardp.adapters.context_estimators import (
+    ConservativeTokenEstimator,
+    UnicodeCharacterEstimator,
+    Utf8ByteEstimator,
+)
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
 from openardp.adapters.local_source import (
@@ -27,7 +36,13 @@ from openardp.adapters.local_workspace import (
     LocalWorkspace,
     WorkspaceError,
 )
-from openardp.domain.common import SCHEMA_VERSION
+from openardp.domain.common import SCHEMA_VERSION, Sensitivity
+from openardp.domain.context import ContextMode
+from openardp.domain.context_compilation import (
+    ContextCompilationResult,
+    ContextCompileRequest,
+    ContextSelectionPolicy,
+)
 from openardp.domain.ingestion import RichMediaType
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
@@ -47,8 +62,17 @@ from openardp.ports.catalog import (
     SearchIndexDrifted,
     SearchIndexIncomplete,
 )
+from openardp.ports.context import (
+    ContextCompilationCancelled,
+    ContextConfigurationMismatch,
+    ContextEstimator,
+    ContextIntegrityFailure,
+    ContextLimitExceeded,
+    ContextNotFound,
+)
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, UnsupportedTextMedia
+from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
 from openardp.services.rich_evidence import RichEvidenceService
@@ -66,7 +90,12 @@ _COMMANDS = {
     "reindex",
     "evidence",
     "get-evidence",
+    "context",
+    "context-receipt",
 }
+
+_CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
+_CONTEXT_UNITS = ("bytes", "characters", "tokens")
 
 
 class _UsageError(ValueError):
@@ -148,6 +177,26 @@ def _parser() -> _ArgumentParser:
     get_evidence.add_argument("projection_id")
     get_evidence.add_argument("--document")
     _common_options(get_evidence)
+
+    context = subparsers.add_parser(
+        "context",
+        help="compile bounded evidence context with a body-free receipt",
+    )
+    context.add_argument("task")
+    context.add_argument("--document", action="append", default=[])
+    context.add_argument("--budget", type=int)
+    context.add_argument("--unit", choices=_CONTEXT_UNITS)
+    context.add_argument("--mode", choices=_CONTEXT_MODES)
+    context.add_argument("--include-bundle", action="store_true", dest="include_bundle")
+    context.add_argument("--replay")
+    _common_options(context)
+
+    context_receipt = subparsers.add_parser(
+        "context-receipt",
+        help="inspect one exact verified body-free selection receipt",
+    )
+    context_receipt.add_argument("receipt_id")
+    _common_options(context_receipt)
     return parser
 
 
@@ -211,6 +260,129 @@ def _rich_services(
         representation_verifier=ingestion.verify_ready_representation,
     )
     return ingestion, evidence
+
+
+def _estimator_for(unit: str) -> ContextEstimator:
+    """Resolve one exact built-in estimator for the bounded CLI unit name."""
+    if unit == "characters":
+        return UnicodeCharacterEstimator()
+    if unit == "tokens":
+        return ConservativeTokenEstimator()
+    return Utf8ByteEstimator()
+
+
+def _context_compiler(
+    workspace: LocalWorkspace,
+    estimator: ContextEstimator,
+) -> ContextCompilerService:
+    """Compose the provider-free compiler over the open local workspace."""
+    rich_ingestion, _evidence = _rich_services(workspace)
+    return ContextCompilerService(
+        workspace.object_store,
+        workspace.catalog,
+        estimator,
+        (
+            TextLexicalCandidateSource(workspace.object_store, workspace.catalog),
+            RichLexicalCandidateSource(
+                workspace.object_store,
+                workspace.catalog,
+                representation_verifier=rich_ingestion.verify_ready_representation,
+            ),
+        ),
+    )
+
+
+def _receipt_identity(value: str) -> str:
+    """Validate one exact selection-receipt identity without inspecting state."""
+    digest = value.removeprefix("sha256:")
+    if (
+        len(digest) != 64
+        or len(value) != 71
+        or any(character not in "0123456789abcdef" for character in digest)
+    ):
+        raise _UsageError("receipt identifier is invalid")
+    return value
+
+
+def _context_summary(
+    result: ContextCompilationResult,
+    *,
+    replayed: bool,
+    include_bundle: bool,
+) -> dict[str, object]:
+    """Project one compile/replay result into bounded handles and accounting."""
+    receipt = result.receipt
+    summary: dict[str, object] = {
+        "bundle_id": str(result.bundle.bundle_id),
+        "receipt_id": receipt.receipt_id,
+        "persisted": True,
+        "replayed": replayed,
+        "created_at": receipt.model_dump(mode="json")["created_at"],
+        "mode": receipt.policy.mode.value,
+        "estimator": receipt.estimator,
+        "scopes": receipt.corpus_snapshot,
+        "budget": receipt.budget,
+        "counts": {
+            "selected": len(receipt.selected),
+            "omitted": len(receipt.omitted),
+            "rejected": len(receipt.rejected),
+            "stale": len(receipt.stale),
+        },
+        "truncated": receipt.truncated,
+        "notices": receipt.notices,
+        "warnings": result.bundle.warnings,
+        "missing_evidence": result.bundle.missing_evidence,
+    }
+    if include_bundle:
+        summary["bundle"] = result.bundle
+    return summary
+
+
+def _context_compile(workspace: LocalWorkspace, arguments: argparse.Namespace) -> object:
+    """Compile or replay bounded context and persist it atomically."""
+    estimator = _estimator_for(str(arguments.unit or "bytes"))
+    compiler = _context_compiler(workspace, estimator)
+    task = str(arguments.task)
+    if arguments.replay is not None:
+        if arguments.document or arguments.budget is not None or arguments.mode is not None:
+            raise _UsageError("replay accepts only task, unit, receipt and store options")
+        result = compiler.replay(task, _receipt_identity(str(arguments.replay)))
+        return _context_summary(
+            result,
+            replayed=True,
+            include_bundle=bool(arguments.include_bundle),
+        )
+    if not arguments.document:
+        raise _UsageError("at least one document is required")
+    if arguments.budget is None:
+        raise _UsageError("a budget is required")
+    document_ids = tuple(sorted({_parse_uuid(str(value)) for value in arguments.document}, key=str))
+    request = ContextCompileRequest(
+        task=task,
+        document_ids=document_ids,
+        budget_limit=int(arguments.budget),
+        estimator=estimator.identity,
+        # The local CLI admits every sensitivity of the owner's own corpus and
+        # records the classified trust body-free; instruction execution stays
+        # disabled structurally for every selected body.
+        policy=ContextSelectionPolicy(
+            mode=ContextMode(str(arguments.mode or "mixed")),
+            maximum_sensitivity=Sensitivity.UNKNOWN,
+        ),
+    )
+    persisted = compiler.compile_and_persist(request)
+    return _context_summary(
+        persisted.result,
+        replayed=False,
+        include_bundle=bool(arguments.include_bundle),
+    )
+
+
+def _context_receipt(workspace: LocalWorkspace, arguments: argparse.Namespace) -> object:
+    """Load one persisted receipt only after complete verification."""
+    compiler = _context_compiler(workspace, _estimator_for("bytes"))
+    result = compiler.load_verified(_receipt_identity(str(arguments.receipt_id)))
+    return result.receipt
 
 
 def _load_model_manifest(path: Path) -> ModelBundleManifest:
@@ -340,6 +512,10 @@ def _execute(arguments: argparse.Namespace) -> object:
                 _parse_uuid(str(arguments.document)) if arguments.document is not None else None
             ),
         )
+    if command == "context":
+        return _context_compile(workspace, arguments)
+    if command == "context-receipt":
+        return _context_receipt(workspace, arguments)
     raise _UsageError("invalid command usage")
 
 
@@ -452,6 +628,53 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
         projection = converted["projection"]
         assert isinstance(projection, dict)
         print(f"{projection['evidence_projection_id']}\t{_safe_text(str(converted['body']))}")
+    elif command == "context":
+        assert isinstance(converted, dict)
+        counts = converted["counts"]
+        assert isinstance(counts, dict)
+        budget = converted["budget"]
+        assert isinstance(budget, dict)
+        print(f"receipt={converted['receipt_id']}")
+        print(f"bundle={converted['bundle_id']}")
+        print(
+            f"selected={counts['selected']} omitted={counts['omitted']} "
+            f"rejected={counts['rejected']} stale={counts['stale']} "
+            f"truncated={str(converted['truncated']).lower()}"
+        )
+        print(
+            f"budget={budget['bundle_used']}/{budget['bundle_ceiling']} "
+            f"{budget['unit']} limit={budget['limit']}"
+        )
+        warnings = converted["warnings"]
+        assert isinstance(warnings, list)
+        for warning in warnings:
+            assert isinstance(warning, dict)
+            print(f"warning {warning['code']}: {_safe_text(str(warning['message']))}")
+        missing = converted["missing_evidence"]
+        assert isinstance(missing, list)
+        for entry in missing:
+            assert isinstance(entry, dict)
+            print(f"missing {entry['evidence_type']} ({entry['reason_code']})")
+    elif command == "context-receipt":
+        assert isinstance(converted, dict)
+        policy = converted["policy"]
+        assert isinstance(policy, dict)
+        budget = converted["budget"]
+        assert isinstance(budget, dict)
+        print(f"receipt={converted['receipt_id']}")
+        print(f"created={converted['created_at']}")
+        print(f"task_digest={converted['task_digest']}")
+        print(f"mode={policy['mode']}")
+        print(
+            f"budget={budget['bundle_used']}/{budget['bundle_ceiling']} "
+            f"{budget['unit']} limit={budget['limit']}"
+        )
+        print(
+            f"scopes={len(converted['corpus_snapshot'])} "
+            f"selected={len(converted['selected'])} omitted={len(converted['omitted'])} "
+            f"rejected={len(converted['rejected'])} stale={len(converted['stale'])} "
+            f"truncated={str(converted['truncated']).lower()}"
+        )
     else:
         print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
 
@@ -465,6 +688,14 @@ def _safe_text(value: str) -> str:
 def _classification(error: Exception) -> tuple[int, str, str]:
     if isinstance(error, _UsageError):
         return 2, "invalid_usage", "command usage is invalid"
+    if isinstance(error, ContextNotFound):
+        return 3, "not_found", "requested evidence was not found"
+    if isinstance(error, ContextLimitExceeded):
+        return 4, "rejected_input", "input was rejected"
+    if isinstance(error, (ContextConfigurationMismatch, ContextCompilationCancelled)):
+        return 5, "conflict", "operation conflicts with current state"
+    if isinstance(error, ContextIntegrityFailure):
+        return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"
     if isinstance(
         error,
         (SourceNotFound, DocumentNotFound, RepresentationNotFound, BlockNotFound),

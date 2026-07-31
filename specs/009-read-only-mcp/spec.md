@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-27
 
-**Status**: Converged and locally verified; remote publication validation pending
+**Status**: Converged, merged and remotely verified
 
 **Input**: Expose prepared evidence through object-scoped, least-privilege MCP tools over
 a local stdio transport. Configured workspace only; no arbitrary paths, ingestion,

@@ -34,7 +34,7 @@ refine those decisions but may not silently contradict them.
 | `006-evidence-contract-foundation` | Experimental native/evidence/trust roots, anchor fixtures and adapter-independent validation | Converged, merged and remotely verified |
 | `007-docling-native-adapter` | Offline bounded Docling PDF/DOCX/PPTX native artifacts and F006 thin evidence | Converged, merged and remotely verified |
 | `008-context-compiler-receipts` | Deterministic context compiler, `ContextBundle 0.2.0`, `SelectionReceipt 0.1.0`, replay and `context`/`context-receipt` CLI | Converged and locally verified |
-| `009-read-only-mcp` | Least-privilege read-only MCP stdio server, nine object-scoped tools, versioned error taxonomy and `mcp` CLI verb | Converged and locally verified; remote publication validation pending |
+| `009-read-only-mcp` | Least-privilege read-only MCP stdio server, nine object-scoped tools, versioned error taxonomy and `mcp` CLI verb | Converged, merged and remotely verified |
 
 The active-feature locator is `.specify/feature.json`. A later work package must not be started by adding behavior to an
 earlier feature directory.

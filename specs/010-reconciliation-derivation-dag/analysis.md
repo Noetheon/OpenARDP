@@ -86,5 +86,5 @@ all 14 migration-statement fault boundaries; concurrent installers and publisher
 100 independently generated DAG closure cases; exact invalidation, supersession and
 A→B→A reactivation; CAS reachability/corruption handling; and hostile-content privacy
 boundaries. The full 919-test repository suite passes at 86.87 percent branch-aware
-coverage. Remote three-platform convergence remains the only publication step and is
-tracked by T070.
+coverage. PR-head CI and post-merge `main` CI both passed the locked quality gate on
+Ubuntu, macOS and Windows, closing T070 with zero remaining convergence finding.

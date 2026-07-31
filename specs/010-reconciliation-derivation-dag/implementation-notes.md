@@ -128,5 +128,22 @@ services with `docling` absent.
 Originals and immutable CAS objects are never rewritten. Before upgrading a durable
 workspace, copy both the SQLite database and CAS root while writers are stopped. There
 is no in-place downgrade from revision 7: restore the paired pre-upgrade backup and run
-the rollback commit. Older binaries fail closed on the newer schema. Remote PR-head and
-post-merge Linux/macOS/Windows evidence is intentionally pending until publication.
+the rollback commit. Older binaries fail closed on the newer schema.
+
+### Remote convergence
+
+- Feature commit `860ee5feb6292f2385195afe24f00c3bd3f02434` merged through
+  [PR #14](https://github.com/Noetheon/OpenARDP/pull/14) as merge commit
+  `52634115accc796d2655fe9a03dce50a9ac7f8de`.
+- PR-head run
+  [30658511214](https://github.com/Noetheon/OpenARDP/actions/runs/30658511214)
+  passed the complete locked gate on Ubuntu, macOS and Windows before merge.
+- Post-merge `main` run
+  [30659080396](https://github.com/Noetheon/OpenARDP/actions/runs/30659080396)
+  passed the same gate on macOS in 2m43s, Ubuntu in 4m21s and Windows in 8m52s.
+- The first post-merge attempt was rejected before checkout by GitHub account billing;
+  after the spending limit was corrected, the unchanged merge commit passed on all
+  three platforms. This was infrastructure state, not a repository change.
+
+F010 is converged with zero unresolved critical, high, medium or low implementation
+finding. F011 may begin as a separate bounded Spec Kit feature.

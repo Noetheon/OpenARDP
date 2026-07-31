@@ -293,8 +293,8 @@ RFC 8785/SHA-256 identity domains, conservative F002 block reconciliation, check
 workspace revision 7 and an internal exact derivation lifecycle over unchanged F002
 generation records.
 
-The locally observed full network-blocked suite passed all 919 tests with 86.87 percent branch-aware
-coverage against the 85 percent gate. Focused evidence includes a reviewed 130-decision
+The locally observed full network-blocked suite passed all 919 tests with 86.87 percent
+branch-aware coverage against the 85 percent gate. Focused evidence includes a reviewed 130-decision
 corpus with zero false reuse, precision 1.000 and recall 1.000; 20 fresh-process
 identity checks; real populated revision-6→7 preservation; failed and concurrent
 migration behavior; all-or-none run/lineage/relation and slot/node/edge/event fault
@@ -304,9 +304,13 @@ reachability/integrity failure reporting.
 
 Ruff, formatting and strict mypy over 49 source files pass. The eleven public schemas,
 prior identity vectors, F006 conformance corpus, F009 MCP descriptor fixtures,
-`pyproject.toml` and `uv.lock` remain unchanged. Remote PR-head and post-merge
-Linux/macOS/Windows evidence is still pending and must be recorded before F010 is
-described as remotely converged.
+`pyproject.toml` and `uv.lock` remain unchanged. PR-head workflow
+[30658511214](https://github.com/Noetheon/OpenARDP/actions/runs/30658511214) and
+post-merge `main` workflow
+[30659080396](https://github.com/Noetheon/OpenARDP/actions/runs/30659080396) passed the
+complete locked gate on Ubuntu, macOS and Windows. The latter succeeded on its unchanged
+merge commit after an initial pre-checkout GitHub billing rejection was cleared. This
+closes F010's cross-platform publication and final Spec Kit convergence boundary.
 
 ## Corrective environment verification
 

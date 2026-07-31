@@ -186,7 +186,7 @@ all lifecycle scenarios.
 - [x] T069 Mark tasks complete only from evidence; run convergence across behavior,
   docs, ADR, migration, changelog, validation and repository status with zero
   critical/high finding.
-- [ ] T070 Commit one coherent F010 feature, push the `codex/` branch, open one PR,
+- [x] T070 Commit one coherent F010 feature, push the `codex/` branch, open one PR,
   wait for Linux/macOS/Windows CI, merge only when green, then wait for post-merge
   `main` CI before F011.
 

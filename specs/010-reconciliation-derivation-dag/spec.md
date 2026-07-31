@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-31
 
-**Status**: Implemented and locally converged; remote validation pending
+**Status**: Converged, merged and remotely verified
 
 **Input**: Reuse valid evidence across small edits without false identity reuse and
 invalidate dependent derivatives exactly. Matching is deterministic and conservative,

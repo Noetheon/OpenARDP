@@ -7,6 +7,15 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Dependency-free local read-only MCP stdio server with nine fixed identifier-scoped
+  tools over the existing query, search, rich-evidence and context-compilation
+  services; pinned protocol revision `2025-06-18` and interface version `0.1.0`.
+- Canonical MCP tool descriptors and versioned body-free error envelopes, bounded
+  newline framing, serialized responses, individual bodies, pagination, scopes and
+  monotonic deadlines, plus cooperative cancellation with zero partial compilation.
+- `openardp mcp` composition that opens only an existing compatible workspace, accepts
+  no client filesystem paths, creates no listener, invokes no parser/provider and
+  preserves all earlier CLI, schema, vector and workspace contracts.
 - Deterministic provider-free context compiler: exact READY corpus snapshots,
   verified lexical candidate discovery over text and rich evidence, policy-based
   trust/sensitivity/freshness classification, a documented total order and greedy
@@ -119,6 +128,10 @@ semantic versioning once the public package lifecycle begins.
 
 ### Security
 
+- MCP tool parameters reject path-, traversal-, URL-, shell- and control-shaped data
+  before filesystem access; body-bearing results remain explicitly untrusted, unknown
+  identifiers are uniform, and errors/audit records exclude bodies, queries, tasks,
+  source paths, exception strings and tracebacks.
 - Rich parsing denies network before provider import, bounds source/page/process/output
   resources, streams model verification, sanitizes IPC failures and reaps child
   processes on timeout, crash, cancellation and malformed output.

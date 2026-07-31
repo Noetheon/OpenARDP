@@ -1,16 +1,17 @@
-"""Installable stable CLI composition root for local text ingest and search."""
+"""Installable stable CLI composition root for local document intelligence."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import sqlite3
 import stat
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import NoReturn
+from typing import BinaryIO, NoReturn, cast
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -35,6 +36,7 @@ from openardp.adapters.local_source import (
 from openardp.adapters.local_workspace import (
     LocalWorkspace,
     WorkspaceError,
+    WorkspaceIncompatible,
 )
 from openardp.domain.common import SCHEMA_VERSION, Sensitivity
 from openardp.domain.context import ContextMode
@@ -46,6 +48,8 @@ from openardp.domain.context_compilation import (
 from openardp.domain.ingestion import RichMediaType
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
+from openardp.interfaces.mcp_protocol import SessionLimits
+from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
     AmbiguousBlock,
     BlockNotFound,
@@ -92,6 +96,7 @@ _COMMANDS = {
     "get-evidence",
     "context",
     "context-receipt",
+    "mcp",
 }
 
 _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
@@ -197,6 +202,19 @@ def _parser() -> _ArgumentParser:
     )
     context_receipt.add_argument("receipt_id")
     _common_options(context_receipt)
+
+    mcp = subparsers.add_parser(
+        "mcp",
+        help="serve the bounded read-only MCP interface over stdio",
+    )
+    mcp.add_argument("--store", type=Path, default=Path.cwd() / ".openardp")
+    mcp.add_argument("--deadline-ms", type=int, default=30_000, dest="deadline_ms")
+    mcp.add_argument(
+        "--response-cap-bytes",
+        type=int,
+        default=1_048_576,
+        dest="response_cap_bytes",
+    )
     return parser
 
 
@@ -383,6 +401,39 @@ def _context_receipt(workspace: LocalWorkspace, arguments: argparse.Namespace) -
     compiler = _context_compiler(workspace, _estimator_for("bytes"))
     result = compiler.load_verified(_receipt_identity(str(arguments.receipt_id)))
     return result.receipt
+
+
+def _mcp_server(workspace: LocalWorkspace, limits: SessionLimits) -> McpServer:
+    """Compose MCP only from verified query, search, evidence and compiler services."""
+    _ingestion, query, search = _services(workspace)
+    _rich_ingestion, evidence = _rich_services(workspace)
+    return McpServer(
+        query,
+        evidence,
+        search=search,
+        compiler_factory=lambda estimator: _context_compiler(workspace, estimator),
+        limits=limits,
+    )
+
+
+def _serve_mcp(
+    arguments: argparse.Namespace,
+    *,
+    source: BinaryIO | None = None,
+    sink: BinaryIO | None = None,
+) -> int:
+    """Validate an existing workspace and serve one bounded stdio MCP session."""
+    limits = SessionLimits(
+        deadline_ms=int(arguments.deadline_ms),
+        response_cap_bytes=int(arguments.response_cap_bytes),
+    )
+    try:
+        workspace = LocalWorkspace.open(Path(arguments.store))
+    except sqlite3.Error:
+        raise WorkspaceIncompatible("workspace is incompatible") from None
+    selected_source = cast(BinaryIO, sys.stdin.buffer) if source is None else source
+    selected_sink = cast(BinaryIO, sys.stdout.buffer) if sink is None else sink
+    return _mcp_server(workspace, limits).serve(selected_source, selected_sink)
 
 
 def _load_model_manifest(path: Path) -> ModelBundleManifest:
@@ -774,6 +825,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         arguments = _parser().parse_args(supplied)
         command = str(arguments.command)
+        if command == "mcp":
+            return _serve_mcp(arguments)
         data = _execute(arguments)
         _success(command, data, json_output=bool(arguments.json_output))
         return 0

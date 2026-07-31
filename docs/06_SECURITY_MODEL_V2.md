@@ -91,3 +91,30 @@ Ingestion adapters may only emit the first two. Promotion to trusted policy or e
 
 These controls reduce exposure but do not prove that Python process isolation,
 platform resource limits or the third-party parser are a universally secure sandbox.
+
+## Delivered Feature 009 controls
+
+- MCP is a local newline-delimited JSON-RPC stdio process only; it opens no HTTP or
+  other network listener and advertises only the tools capability.
+- The nine fixed tools accept registered document, block, evidence and receipt
+  identifiers rather than filesystem paths. Path-, traversal-, URL-, shell- and
+  control-shaped values are rejected before any source resolver or filesystem access.
+- Body-bearing results remain inside the `openardp-evidence-v1` untrusted-data
+  envelope. Neither search queries nor context tasks are promoted to instructions or
+  echoed into errors, receipts or operational audit records.
+- Inbound frames, the 64-frame pending dispatch queue, serialized responses,
+  pagination, search results, individual bodies, compilation scopes and request
+  duration have explicit fail-closed caps. Single bodies are rejected rather than
+  silently truncated; queue overflow unwinds active work and closes the session.
+- Unknown and near-miss identifiers share one fixed body-free `not_found` response;
+  catalog, index and CAS faults reduce to stable sanitized categories without source
+  paths, bodies, exception strings or tracebacks.
+- Cancellation and monotonic deadlines reuse the F008 cooperative compilation boundary;
+  they expose no partial catalog record and do not alter earlier immutable compilations.
+- Startup opens only an existing compatible workspace. It does not initialize, migrate,
+  repair, ingest, reindex or invoke a provider.
+
+These controls bound the delivered local single-user interface. They do not provide
+multi-tenant authorization or make an untrusted MCP client safe to grant local process
+execution; the operator remains responsible for which client may launch the server and
+which workspace path is configured out of band.

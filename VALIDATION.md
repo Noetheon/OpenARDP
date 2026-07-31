@@ -8,7 +8,9 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 005 notes](specs/005-lexical-search/implementation-notes.md) and
 [feature 005A notes](specs/005A-strategic-realignment/implementation-notes.md) and
 [feature 006 notes](specs/006-evidence-contract-foundation/implementation-notes.md) and
-[feature 007 notes](specs/007-docling-native-adapter/implementation-notes.md).
+[feature 007 notes](specs/007-docling-native-adapter/implementation-notes.md),
+[feature 008 notes](specs/008-context-compiler-receipts/implementation-notes.md) and
+[feature 009 notes](specs/009-read-only-mcp/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -250,6 +252,25 @@ workflow ran; the locked local gate above replaces it and the merge is performed
 locally onto `main`. The `win32` strict mypy gate and portable test design provide
 the cross-platform code evidence. If remote capacity returns, the standard quality
 workflow should be re-run against the merge commit and this record updated.
+
+## Feature 009 local evidence
+
+Feature `009-read-only-mcp` adds a dependency-free, local stdio interface over the
+existing verified application services. Its experimental `MCP interface 0.1.0` fixes
+protocol revision `2025-06-18`, nine identifier-scoped tools, canonical descriptors and
+a versioned sanitized error taxonomy. It adds no dependency, public JSON Schema,
+identity-vector revision or workspace migration.
+
+Locally observed evidence covers exact initialize/discovery/EOF transcripts,
+20-repeat navigation determinism, search and compiler parity, full receipt
+verification, bounded opt-in bundle delivery, cancellation and deadline propagation,
+malformed/oversize/batch recovery, uniform identifier failures, injected catalog/CAS/
+index drift, every published resource cap, privacy scans and byte-for-byte non-mutating
+startup failures. The server opens no listener, accepts no client source path and never
+constructs ingestion, reindex or provider services. Exact final gate counts, frozen
+hashes, isolated-wheel probes and external workflow references are maintained in the
+feature notes; external cross-platform validation remains pending until the feature is
+published.
 
 ## Corrective environment verification
 

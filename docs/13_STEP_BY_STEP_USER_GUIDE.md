@@ -64,5 +64,21 @@ runtime change. Feature 006 defines evidence contracts; Feature 007 implements t
 bounded Docling-native adapter. Feature 008 delivers deterministic context compilation,
 body-free selection receipts, atomic persistence, replay and the `context` /
 `context-receipt` CLI. Feature 009 (read-only MCP wrapping of the same application
-services) is the next dependency-ordered work package. Do not reuse the pre-v3.1
-numbering.
+services) delivers a local stdio server with nine fixed identifier-scoped tools. Start
+it only against an existing compatible workspace:
+
+```bash
+uv run --locked openardp mcp --store .openardp
+```
+
+Configure an MCP client to launch that command and pass the absolute workspace path as
+the `--store` argument. The client then performs `initialize` with protocol revision
+`2025-06-18`, sends `notifications/initialized`, and discovers the fixed surface with
+`tools/list`. The server has no network listener and client tool arguments cannot
+contain source paths or URLs.
+
+The default inbound-frame, pending-frame, response and deadline bounds are 64 KiB, 64,
+1 MiB and 30 seconds. `--response-cap-bytes` accepts 65,536 through 4,194,304 and `--deadline-ms`
+accepts 1,000 through 120,000. Body-bearing results are explicitly marked untrusted;
+errors and audit records omit bodies, queries, tasks and paths. Feature 010 is the next
+dependency-ordered work package. Do not reuse the pre-v3.1 numbering.

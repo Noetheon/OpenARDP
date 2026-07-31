@@ -2,8 +2,8 @@
 
 **Status:** Feature 008 delivered the deterministic context compiler, the public
 `ContextBundle 0.2.0`, the experimental `SelectionReceipt 0.1.0` and the `context` /
-`context-receipt` CLI verbs documented below. MCP tools remain planned Feature 009
-guidance; no MCP server exists.
+`context-receipt` CLI verbs documented below. Feature 009 delivers the bounded
+read-only stdio MCP interface documented here; HTTP and visual extraction remain later.
 
 ## 1. Context compiler objective
 
@@ -69,75 +69,53 @@ openardp context TASK --document ID [--document ID ...] --budget N \
     [--unit bytes|characters|tokens] [--mode MODE] [--include-bundle]
 openardp context TASK --replay RECEIPT_ID [--unit UNIT]
 openardp context-receipt RECEIPT_ID
+openardp mcp --store PATH [--deadline-ms N] [--response-cap-bytes N]
 ```
 
 Replay accepts only task, unit and receipt: the recorded snapshot, policy and budget
 are authoritative. Default output is body-free handles plus accounting; only
-`--include-bundle` returns the digest-checked untrusted-data payload. The remaining
-roadmap sketch (watch/export/import/verify/gc/doctor/mcp) stays subject to its own
-feature specs:
+`--include-bundle` returns the digest-checked untrusted-data payload. Ordinary commands
+support `--json`; `mcp` reserves stdout for newline-delimited JSON-RPC and accepts no
+CLI JSON envelope switch. Watch, export, import, verification, garbage collection,
+doctor, HTTP and visual tools remain separate work packages.
 
-```text
-openardp init [--store PATH]
-openardp ingest PATH [--profile PROFILE] [--force]
-openardp watch PATH [--recursive] [--debounce SECONDS]
-openardp list
-openardp status PATH|DOCUMENT_ID
-openardp outline DOCUMENT_ID [--version VERSION]
-openardp search QUERY [--document ID] [--kind KIND] [--limit N]
-openardp get BLOCK_ID [--representation exact|summary|visual]
-openardp export DOCUMENT_ID --output FILE
-openardp import FILE
-openardp verify FILE
-openardp gc --dry-run
-openardp doctor
-openardp mcp [--transport stdio|streamable-http]
-```
+## 7. Delivered MCP tools — read-only stdio
 
-All commands support `--json` for stable machine-readable output. Human output may change; JSON output follows versioned
-schemas.
+The interface is experimental `0.1.0`, pins MCP protocol revision `2025-06-18` and
+publishes exactly these tools in fixture-pinned order:
 
-## 7. MCP tools — MVP read-only
+1. `list_documents` — body-free summaries, at most 256.
+2. `get_source_status` — identifier-scoped freshness/integrity.
+3. `get_document_outline` — at most 1,000 structural items.
+4. `get_block` — one verified block in an untrusted-data envelope.
+5. `search_document` — verified lexical results, at most 100 enveloped snippets.
+6. `list_evidence` — at most 256 body-free rich projections.
+7. `get_evidence` — one verified rich retrieval body.
+8. `compile_context` — exact F008 compile-and-persist, handle-first by default.
+9. `get_context_receipt` — fully verified body-free F008 receipt.
 
-### `list_documents`
-
-Returns IDs, titles, current versions, states and last ingestion time.
-
-### `get_document_outline`
-
-Returns hierarchy and block handles without full body text.
-
-### `search_document`
-
-Inputs: query, scope, filters, limit. Returns evidence candidates with scores and source locations.
-
-### `compile_context`
-
-Inputs: query/task, document IDs, budget, mode and evidence policy. Returns a context bundle or a persisted bundle handle.
-
-### `get_block`
-
-Returns exact normalized source content for one block.
-
-### `get_visual_evidence`
-
-Returns a resource/file handle for a page, slide, image or crop; it should not base64-embed large assets by default.
-
-### `get_source_status`
-
-Reports source/representation freshness, warnings and missing assets.
+Descriptors, parameter schemas, bounds and error fixtures live under
+`tests/fixtures/mcp/`; the normative feature-level contract is
+`specs/009-read-only-mcp/contracts/mcp-read-only-tools.md`.
 
 ## 8. MCP safety
 
-- No write or external side-effect tool in MVP.
+- No ingestion, reindex, delete, export, arbitrary file, network or external
+  side-effect tool exists. `compile_context` may only publish reproducible immutable
+  derived bundle/receipt objects through the exact F008 atomic path.
 - Tool descriptions explicitly state document text is untrusted data.
-- Resource access is constrained to registered artifacts.
-- Paths supplied by clients are resolved against configured roots and canonicalized.
-- Large outputs are persisted and returned by handle to avoid context truncation.
-- Audit tool calls without logging document bodies.
+- Clients supply stored identifiers, never paths or workspace roots.
+- Inbound lines are fixed at 64 KiB; complete responses default to 1 MiB and may be
+  configured only from 64 KiB through 4 MiB at launch.
+- Deadlines default to 30 seconds (allowed 1–120 seconds); cancellation is cooperative
+  at bounded F008 checkpoints and never exposes partial catalog state.
+- Bodies are never truncated. Oversize body/response calls fail with the stable
+  versioned taxonomy; body-free pages expose explicit truncation.
+- Audit records contain only fixed tool names, request-id digests, outcomes and timing.
 
 ## 9. Codex integration
 
-Codex supports local/remote MCP servers and reads repository `AGENTS.md`. Provide an installation snippet and an OpenARDP
-skill only after the server tools are stable. The skill should instruct Codex to call `get_document_outline` or
-`compile_context` before opening raw Office/PDF files and to request original visual evidence when required.
+Configure a local client to execute `openardp mcp --store /absolute/workspace` over
+stdio. Prefer `get_document_outline` or handle-first `compile_context` before exact
+body tools. Visual evidence is not a delivered F009 tool; callers must preserve the
+compiler's `visual_evidence_required` escalation until Feature 011 exists.

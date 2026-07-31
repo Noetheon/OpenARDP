@@ -68,7 +68,7 @@ SERVICE_MODULES = {
     "rich_ingestion",
     "search",
 }
-INTERFACE_MODULES = {"cli"}
+INTERFACE_MODULES = {"cli", "mcp_protocol", "mcp_server"}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:
@@ -109,14 +109,44 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_008(
+def test_module_surface_is_bounded_to_feature_009(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F008 modules."""
+    """Expose exactly the reviewed F002-F009 modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules
+
+
+def test_no_mcp_or_network_dependency_is_introduced(repository_root: Path) -> None:
+    """Keep the F009 transport stdlib-only inside the locked dependency set."""
+    project = _project_metadata(repository_root)
+    declared = list(project.get("dependencies", []))
+    for extra_requirements in project.get("optional-dependencies", {}).values():
+        declared.extend(extra_requirements)
+    forbidden_fragments = (
+        "mcp",
+        "anyio",
+        "asyncio",
+        "trio",
+        "httpx",
+        "aiohttp",
+        "starlette",
+        "fastapi",
+        "uvicorn",
+        "websocket",
+        "requests",
+        "flask",
+        "grpc",
+    )
+    names = [
+        requirement.split("=", 1)[0].split("<", 1)[0].split(">", 1)[0].lower()
+        for requirement in declared
+    ]
+    for name in names:
+        for fragment in forbidden_fragments:
+            assert fragment not in name, f"forbidden F009 dependency: {name}"
 
 
 def test_typing_marker_is_packaged() -> None:

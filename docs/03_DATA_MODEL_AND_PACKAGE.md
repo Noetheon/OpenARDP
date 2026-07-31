@@ -57,14 +57,17 @@ Document title/state, timestamps, source locations, extensions and unrelated par
 
 ### `block_id`
 
-Stable within a logical document where possible:
+Source- and representation-scoped F002 block handle. F010 does not rewrite this frozen
+identifier across versions. Cross-version continuity instead uses a separate
+version-independent `lineage_id`; ambiguous blocks receive a new lineage. Page numbers
+remain source coordinates and never become lineage identity.
 
-1. reuse a trustworthy native Office/XML object identifier;
-2. otherwise reconcile against the previous version by exact fingerprint;
-3. then structural path + similarity matching;
-4. create a new UUID when confidence is below threshold.
+### `lineage_id` and evidence binding
 
-Never encode page numbers into permanent block identity because pagination changes.
+The lineage is a domain-separated RFC 8785/SHA-256 identity rooted at its first exact
+F002 block reference. An evidence-binding digest combines that lineage with the exact
+canonical block-content hash. Logical similarity can preserve continuity, but a
+derivation is reusable only when this exact binding remains active.
 
 ### `artifact_id`
 
@@ -135,6 +138,25 @@ representation exists. Feature 005 separately implements a non-authoritative lex
 index. Feature 006 adds an independent experimental `0.1.0` evidence family for retained
 native artifacts, source-bound references, thin projections, and anti-escalation trust;
 it does not alter the five F002 roots.
+
+### Feature 010 internal records
+
+- `ReconciliationPlan` contains both READY scopes, complete prior/current membership
+  sets, conservative one-to-one matches, inactive bindings, bounded counts and a
+  non-time result fingerprint.
+- `BlockLineageMembership` binds one exact scoped block and canonical content digest to
+  one lineage; a lineage has at most one member per representation and never crosses a
+  logical document.
+- `DerivationDependency` records ordered evidence-binding, immutable-object or exact
+  producer-output input identity.
+- `DerivationNode` maps an unchanged terminal F002 `DerivationRecord` into internal
+  workspace state `CURRENT`, `STALE`, `FAILED` or `SUPERSEDED` and carries a complete
+  row/edge fingerprint.
+- `DerivationSlotKey` identifies one logical output purpose. Replacing its current
+  artifact supersedes every prior current/stale occupant atomically.
+
+These are internal revision-7 contracts, not a twelfth public schema. Lifecycle state
+changes never rewrite the canonical record or output objects.
 
 ### Feature 006 evidence contracts
 

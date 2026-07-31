@@ -5,7 +5,8 @@ repository is complete through the Feature 005 lexical-search runtime, Feature 0
 strategic/governance boundary, Feature 006 experimental evidence contracts, Feature
 007's bounded Docling-native adapter and Feature 008's deterministic context compiler
 with body-free selection receipts, plus Feature 009's dependency-free read-only MCP
-stdio interface.
+stdio interface and Feature 010's conservative reconciliation plus exact derivation
+DAG lifecycle.
 
 ## 1. Read the authoritative rules
 
@@ -73,6 +74,11 @@ recorded snapshot byte-identically. Feature 009 exposes those verified query, ev
 search and context services as nine identifier-scoped MCP tools without accepting client
 filesystem paths or opening a network listener.
 
+Feature 010 reconciles two explicitly selected READY F002 representations, persists
+logical continuity separately from exact reuse eligibility, and transactionally
+invalidates or reactivates only the exact derivation dependency closure. It adds no
+CLI/MCP mutation, watcher, provider or model execution.
+
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
 identity. Context compilation applies the same rule: accelerator hits are reverified
@@ -108,6 +114,7 @@ preserving complete provider-native output.
 - [F007 quickstart](specs/007-docling-native-adapter/quickstart.md)
 - [F008 quickstart](specs/008-context-compiler-receipts/quickstart.md)
 - [F009 quickstart](specs/009-read-only-mcp/quickstart.md)
+- [F010 quickstart](specs/010-reconciliation-derivation-dag/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

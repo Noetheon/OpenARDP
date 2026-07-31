@@ -122,6 +122,14 @@ F009_FROZEN_MANIFEST_HASHES = {
     "pyproject.toml": "739c224eb4dbc41155a986c76f30c9074646748c95f4b13dbade356d7fa70736",
     "uv.lock": "1540dd72ac6b4d9873f9502deff4b2ebce2b9df40cd339799fe5272caed2f8dc",
 }
+F009_FROZEN_DESCRIPTOR_HASHES = {
+    "tests/fixtures/mcp/tools-list.json": (
+        "770c959ebc5db69b8ff6d1dc8214c0417f21daa3853aeff565f2822a42d29d7e"
+    ),
+    "tests/fixtures/mcp/error-envelopes.json": (
+        "7ebcfc4e348f8c3d6f247491673a3724d383ceec12a859d05e87e0df2f57a76d"
+    ),
+}
 
 
 def _project_configuration(repository_root: Path) -> dict[str, Any]:
@@ -176,6 +184,30 @@ def test_f008_contract_bytes_remain_frozen(repository_root: Path) -> None:
 def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     """Prove F009 adds no MCP SDK, async framework or network dependency."""
     for relative, expected in F009_FROZEN_MANIFEST_HASHES.items():
+        actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
+        assert actual == expected
+
+
+def test_f010_governance_and_prior_contracts_are_present_and_frozen(
+    repository_root: Path,
+) -> None:
+    """Require the active lifecycle, accepted ADR and unchanged F009 descriptors."""
+    active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
+    assert active["feature_directory"] == "specs/010-reconciliation-derivation-dag"
+    feature = repository_root / active["feature_directory"]
+    assert {path.name for path in feature.iterdir()} >= {
+        "spec.md",
+        "plan.md",
+        "tasks.md",
+        "analysis.md",
+        "implementation-notes.md",
+    }
+    adr = (
+        repository_root / "docs/adr/0011-reconciliation-lineages-and-derivation-lifecycle.md"
+    ).read_text(encoding="utf-8")
+    assert "Status: Accepted" in adr
+    assert "2026-07-31" in adr
+    for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected
 

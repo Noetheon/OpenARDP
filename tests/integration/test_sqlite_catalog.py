@@ -13,7 +13,12 @@ from uuid import UUID
 import pytest
 
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
-from openardp.adapters.sqlite_migrations import MIGRATION_1, MIGRATIONS, Migration
+from openardp.adapters.sqlite_migrations import (
+    CURRENT_SCHEMA_VERSION,
+    MIGRATION_1,
+    MIGRATIONS,
+    Migration,
+)
 from openardp.domain.storage import (
     JobEventType,
     JobSpec,
@@ -62,7 +67,7 @@ def _source_commit(
 
 def _initialized_catalog(path: Path) -> SQLiteCatalog:
     catalog = SQLiteCatalog(path)
-    assert catalog.initialize(now=NOW) == 6
+    assert catalog.initialize(now=NOW) == CURRENT_SCHEMA_VERSION
     return catalog
 
 
@@ -288,7 +293,7 @@ def test_real_revision_one_catalog_upgrades_transactionally_to_current(tmp_path:
 
     current = SQLiteCatalog(path)
 
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 6
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == CURRENT_SCHEMA_VERSION
     assert (
         current.register_document(
             SourceKey(connector="local", locator="one"), document_id=DOC_B, now=NOW
@@ -300,7 +305,7 @@ def test_real_revision_one_catalog_upgrades_transactionally_to_current(tmp_path:
             row[0]
             for row in connection.execute("SELECT version FROM schema_migrations ORDER BY version")
         )
-    assert versions == (1, 2, 3, 4, 5, 6)
+    assert versions == tuple(range(1, CURRENT_SCHEMA_VERSION + 1))
 
 
 def test_real_revision_four_catalog_upgrades_to_rich_revision_five(
@@ -314,7 +319,7 @@ def test_real_revision_four_catalog_upgrades_to_rich_revision_five(
     assert old.initialize(now=NOW) == 4
 
     current = SQLiteCatalog(path)
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 6
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == CURRENT_SCHEMA_VERSION
     assert tuple(migration.checksum for migration in MIGRATIONS[:4]) == prior_checksums
     with sqlite3.connect(path) as connection:
         tables = {
@@ -339,8 +344,8 @@ def test_real_revision_five_catalog_upgrades_to_compilation_revision_six(
     assert old.initialize(now=NOW) == 5
 
     current = SQLiteCatalog(path)
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 6
-    assert current.initialize(now=NOW + timedelta(seconds=2)) == 6
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == CURRENT_SCHEMA_VERSION
+    assert current.initialize(now=NOW + timedelta(seconds=2)) == CURRENT_SCHEMA_VERSION
     assert tuple(migration.checksum for migration in MIGRATIONS[:5]) == prior_checksums
     with sqlite3.connect(path) as connection:
         tables = {
@@ -414,7 +419,12 @@ def test_too_new_catalog_is_rejected_without_mutation(tmp_path: Path) -> None:
         connection.execute(
             "INSERT INTO schema_migrations("
             "version, name, checksum, applied_at) VALUES (?, ?, ?, ?)",
-            (7, "future", "sha256:" + "f" * 64, "2026-07-22T12:30:00.000000Z"),
+            (
+                CURRENT_SCHEMA_VERSION + 1,
+                "future",
+                "sha256:" + "f" * 64,
+                "2026-07-22T12:30:00.000000Z",
+            ),
         )
         connection.commit()
     before = _schema_dump(path)
@@ -889,11 +899,13 @@ def test_reference_snapshot_includes_versions_and_terminal_jobs(tmp_path: Path) 
     snapshot = catalog.reference_snapshot(observed_at=NOW)
 
     assert snapshot.object_ids == tuple(sorted((SHA_A, SHA_B)))
-    assert snapshot.catalog_schema_version == 6
+    assert snapshot.catalog_schema_version == CURRENT_SCHEMA_VERSION
 
 
 def test_current_migration_definitions_are_contiguous_and_checksummed() -> None:
     """Freeze released migration ordering and content identity."""
-    assert tuple(migration.version for migration in MIGRATIONS) == (1, 2, 3, 4, 5, 6)
+    assert tuple(migration.version for migration in MIGRATIONS) == tuple(
+        range(1, CURRENT_SCHEMA_VERSION + 1)
+    )
     assert all(migration.checksum.startswith("sha256:") for migration in MIGRATIONS)
-    assert len({migration.checksum for migration in MIGRATIONS}) == 6
+    assert len({migration.checksum for migration in MIGRATIONS}) == CURRENT_SCHEMA_VERSION

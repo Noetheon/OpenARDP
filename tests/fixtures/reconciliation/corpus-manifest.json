@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "algorithm_version": "openardp-block-reconcile-v1",
+  "cohorts": [
+    {
+      "name": "unique_exact_reuse",
+      "count": 60,
+      "expected_method": "exact_content",
+      "expected_reusable": true
+    },
+    {
+      "name": "native_continuity_changed_content",
+      "count": 30,
+      "expected_method": "native_id",
+      "expected_reusable": false
+    },
+    {
+      "name": "new_insertions",
+      "count": 20,
+      "expected_method": null,
+      "expected_reusable": false
+    },
+    {
+      "name": "ambiguous_duplicate_pairs",
+      "count": 10,
+      "expected_method": null,
+      "expected_reusable": false
+    }
+  ]
+}

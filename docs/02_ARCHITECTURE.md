@@ -1,9 +1,11 @@
 # Architecture
 
-**Status:** Canonical architecture. Sections distinguish delivered Features 001–009 from planned components in the
+**Status:** Canonical architecture. Sections distinguish delivered Features 001–010 from planned components in the
 [005A–017 feature map](../spec-kit/FEATURE_MAP.md). Feature 007 delivered the bounded
 Docling-native adapter; Feature 008 delivered the deterministic context compiler and
 selection receipts described below.
+Feature 010 delivers conservative F002 block lineages and the exact derivation lifecycle;
+it does not add scheduling or generator execution.
 
 ## 1. Architectural style
 
@@ -85,8 +87,12 @@ the provider’s complete model. Model-generated interpretation belongs in deriv
 The implemented SQLite catalog records exact source-key identity, logical documents, immutable source-version facts,
 object references, recoverable job/event state and, since revision 3, fenced document representations, body-free block
 projections, current heads and append-only ingestion evidence. Revision 4 adds lexical index coverage and mapping records.
-Later features add derivation dependencies and staleness through append-only migrations. Binary and canonical JSON bodies
-live in the content-addressed store rather than ordinary catalog rows.
+Revisions 5–6 add rich attempts and immutable context compilations. Revision 7 adds
+reconciliation runs, complete lineage memberships, CAS-backed relations and exact
+derivation slots/nodes/dependencies/events. Canonical relation, generation-record and
+output bytes live in the content-addressed store; the catalog retains only verified
+metadata and the canonical F002 generation-record JSON required to reconstruct and
+fingerprint its internal lifecycle row.
 
 Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
 an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
@@ -133,6 +139,14 @@ artifact_key = sha256(
 ```
 
 If the key exists, reuse it. A network/model call is prohibited when a valid artifact already exists.
+
+F010 implements the provider-free publication/lifecycle half of this component.
+`DerivationService` accepts a valid terminal F002 record plus already-generated output
+chunks, publishes and verifies record/output CAS objects, and commits the node, ordered
+direct edges, slot pointer and event in one SQLite transaction. Evidence changes stale
+the exact current transitive closure; historical nodes reactivate only when every exact
+binding/object/producer input is current and verified. `SUPERSEDED` is reserved for a
+new artifact occupying the same deterministic logical-output slot.
 
 ### Index service
 

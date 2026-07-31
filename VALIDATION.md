@@ -10,7 +10,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 006 notes](specs/006-evidence-contract-foundation/implementation-notes.md) and
 [feature 007 notes](specs/007-docling-native-adapter/implementation-notes.md),
 [feature 008 notes](specs/008-context-compiler-receipts/implementation-notes.md) and
-[feature 009 notes](specs/009-read-only-mcp/implementation-notes.md).
+[feature 009 notes](specs/009-read-only-mcp/implementation-notes.md) and
+[feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -283,6 +284,29 @@ passed the complete locked gate on Ubuntu, macOS and Windows. Every job ran Ruff
 formatting, strict mypy, all 843 network-blocked tests, distribution builds and
 tracked-file drift verification. This closes F009's cross-platform publication and
 final Spec Kit convergence boundary.
+
+## Feature 010 local evidence
+
+Feature `010-reconciliation-derivation-dag` adds no public schema, dependency, network
+operation, model execution, watcher or MCP mutation. It introduces four additive
+RFC 8785/SHA-256 identity domains, conservative F002 block reconciliation, checksummed
+workspace revision 7 and an internal exact derivation lifecycle over unchanged F002
+generation records.
+
+The locally observed full network-blocked suite passed all 919 tests with 86.87 percent branch-aware
+coverage against the 85 percent gate. Focused evidence includes a reviewed 130-decision
+corpus with zero false reuse, precision 1.000 and recall 1.000; 20 fresh-process
+identity checks; real populated revision-6→7 preservation; failed and concurrent
+migration behavior; all-or-none run/lineage/relation and slot/node/edge/event fault
+points; four-writer convergence; cycle and dependency rejection; exact transitive
+invalidation; fixed-point A→B→A reactivation; and relation, record and output
+reachability/integrity failure reporting.
+
+Ruff, formatting and strict mypy over 49 source files pass. The eleven public schemas,
+prior identity vectors, F006 conformance corpus, F009 MCP descriptor fixtures,
+`pyproject.toml` and `uv.lock` remain unchanged. Remote PR-head and post-merge
+Linux/macOS/Windows evidence is still pending and must be recorded before F010 is
+described as remotely converged.
 
 ## Corrective environment verification
 

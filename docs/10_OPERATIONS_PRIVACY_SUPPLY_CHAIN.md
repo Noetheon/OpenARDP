@@ -81,7 +81,7 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
   cap from 64 KiB through 4 MiB and the deadline from 1 through 120 seconds at launch;
   invalid values fail before stream access or workspace mutation. Pending-frame
   overflow cancels active work and closes the session with a sanitized error.
-- The server opens revision-6 workspaces read-only except for the exact additive,
+- The server opens compatible revision-7 workspaces read-only except for the exact additive,
   immutable F008 `compile_context` publication path. It never initializes, migrates,
   repairs, ingests, reindexes, deletes or runs Docling.
 - Protocol errors and audit records contain fixed categories, identifiers or their
@@ -91,3 +91,21 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - An exclusive SQLite lock, corrupt catalog, missing marker or newer workspace revision
   fails startup without repair or byte drift. Back up the workspace before upgrading
   the application even though Feature 009 itself adds no migration.
+
+## Feature 010 operating profile
+
+- Workspace migration 7 is additive and checksummed. Back up a revision-6 workspace
+  before first opening it with this release. Older software rejects revision 7 as too
+  new; downgrade requires restoring that backup, not editing migration rows.
+- Reconciliation is an explicit provider-free service over two complete READY F002
+  scopes. It does not parse, watch, enqueue, call a model, mutate MCP or infer lineages
+  from opaque F007 rich projections.
+- Relation, derivation-record and successful output objects are published and verified
+  in CAS before one catalog transaction. A fault/cancellation can leave only complete
+  unreachable objects; Feature 013 owns reclamation.
+- Errors and lifecycle events contain stable classes, identifiers/digests, counts and
+  UTC times only. Block text, prompts, outputs, source paths, URLs and provider
+  exception strings are excluded.
+- Reachability retains relation objects and record/output objects for current, stale,
+  failed and superseded history. Missing/corrupt objects are reported; F010 never
+  deletes, quarantines or repairs them.

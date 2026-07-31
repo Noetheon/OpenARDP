@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from typing import Protocol, runtime_checkable
 from uuid import UUID
@@ -9,6 +10,12 @@ from uuid import UUID
 from openardp.domain.context_compilation import (
     ContextCompilationCommit,
     ContextCompilationRecord,
+)
+from openardp.domain.derivation_lifecycle import (
+    DerivationLifecycleEvent,
+    DerivationNode,
+    DerivationPublication,
+    DerivationPublicationResult,
 )
 from openardp.domain.ingestion import (
     DocumentHead,
@@ -25,6 +32,12 @@ from openardp.domain.ingestion import (
     RepresentationLease,
     RepresentationScope,
 )
+from openardp.domain.reconciliation import (
+    BlockLineageMembership,
+    ReconciliationPlan,
+    ReconciliationResult,
+)
+from openardp.domain.relation import BlockReference
 from openardp.domain.rich_ingestion import (
     ReadyRichRepresentationCommit,
     RichAttemptAppendResult,
@@ -152,6 +165,34 @@ class ContextCompilationNotFound(CatalogError):
 
 class ContextCompilationConflict(CatalogError):
     """Raised when a receipt identity is reused with different immutable facts."""
+
+
+class ReconciliationScopeError(CatalogError):
+    """Raised when reconciliation scopes are absent, incomplete or ineligible."""
+
+
+class ReconciliationConflict(CatalogError):
+    """Raised when an accepted reconciliation identity has different facts."""
+
+
+class ReconciliationIntegrityError(CatalogError):
+    """Raised when persisted reconciliation facts fail closed verification."""
+
+
+class DerivationDependencyError(CatalogError):
+    """Raised when an exact derivation dependency is absent or ineligible."""
+
+
+class DerivationCycleError(CatalogError):
+    """Raised when a direct dependency would create a derivation cycle."""
+
+
+class DerivationConflict(CatalogError):
+    """Raised when a derivation identity, slot or immutable retry diverges."""
+
+
+class DerivationIntegrityError(CatalogError):
+    """Raised when persisted derivation facts fail closed verification."""
 
 
 @runtime_checkable
@@ -474,4 +515,44 @@ class ContextCatalog(Catalog, Protocol):
 
     def list_context_compilations(self) -> tuple[ContextCompilationRecord, ...]:
         """Return immutable compilation rows in deterministic identity order."""
+        ...
+
+
+@runtime_checkable
+class ReconciliationDerivationCatalog(Catalog, Protocol):
+    """Atomic persistence boundary for F010 lineage and derivation lifecycle facts."""
+
+    def commit_reconciliation(
+        self,
+        plan: ReconciliationPlan,
+        *,
+        object_is_verified: Callable[[str], bool] | None = None,
+    ) -> ReconciliationResult:
+        """Atomically publish or exactly converge one complete reconciliation plan."""
+        ...
+
+    def get_reconciliation(self, run_id: str) -> ReconciliationResult | None:
+        """Return one verified complete reconciliation or no result."""
+        ...
+
+    def get_lineage(self, block: BlockReference) -> BlockLineageMembership | None:
+        """Return one verified exact lineage membership or no result."""
+        ...
+
+    def publish_derivation(
+        self,
+        publication: DerivationPublication,
+    ) -> DerivationPublicationResult:
+        """Atomically publish or exactly converge one derivation DAG node."""
+        ...
+
+    def get_derivation(self, artifact_id: str) -> DerivationNode | None:
+        """Return one verified body-free derivation node or no result."""
+        ...
+
+    def list_derivation_events(
+        self,
+        artifact_id: str,
+    ) -> tuple[DerivationLifecycleEvent, ...]:
+        """Return append-only lifecycle events in sequence order."""
         ...

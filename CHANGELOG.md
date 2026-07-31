@@ -7,6 +7,19 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Conservative provider-free F010 block reconciliation with fixed phase ordering,
+  bounded work, explicit ambiguity, version-independent lineages and the hard rule
+  that reuse requires an exact canonical content digest.
+- Checksummed additive SQLite revision 7 for reconciliation runs, complete lineage
+  memberships, canonical relations, derivation slots/nodes/dependencies/events and
+  restrictive foreign keys; upgrades are transactional and older readers reject the
+  workspace as too new.
+- Transactional derivation lifecycle (`CURRENT`, `STALE`, `FAILED`, `SUPERSEDED`) over
+  unchanged F002 records, including cycle-safe CAS-first publication, exact transitive
+  invalidation, slot supersession, fixed-point reactivation and A→B→A artifact reuse.
+- A reviewed 130-decision synthetic corpus with 1.000 precision/recall and zero false
+  reuse, plus migration, fault, concurrency, reachability and hostile-data evidence.
+
 - Dependency-free local read-only MCP stdio server with nine fixed identifier-scoped
   tools over the existing query, search, rich-evidence and context-compilation
   services; pinned protocol revision `2025-06-18` and interface version `0.1.0`.

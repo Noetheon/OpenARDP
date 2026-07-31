@@ -91,6 +91,50 @@ def context_compilation_fingerprint(record: dict[str, JsonValue]) -> str:
     return _identity_sha256("openardp:context-compilation-row", record)
 
 
+def block_lineage_id(*, origin: dict[str, JsonValue]) -> str:
+    """Hash the first exact block reference that roots one logical lineage."""
+    projected = _relation_reference_payload(origin, field="origin")
+    if projected["record_type"] != "block":
+        raise ValueError("lineage origin must be a block reference")
+    return _identity_sha256("openardp:block-lineage", {"origin": projected})
+
+
+def evidence_binding_id(*, lineage_id: str, canonical_hash: str) -> str:
+    """Hash one logical lineage together with its exact block content identity."""
+    payload: dict[str, JsonValue] = {
+        "lineage_id": _require_sha256_id(lineage_id, field="lineage_id"),
+        "canonical_hash": _require_sha256_id(canonical_hash, field="canonical_hash"),
+    }
+    return _identity_sha256("openardp:evidence-binding", payload)
+
+
+def reconciliation_run_id(
+    *,
+    previous_scope: dict[str, JsonValue],
+    current_scope: dict[str, JsonValue],
+    algorithm_version: str,
+    config_hash: str,
+) -> str:
+    """Hash one exact ordered reconciliation request independently of its result."""
+    payload: dict[str, JsonValue] = {
+        "previous_scope": _representation_scope_payload(previous_scope, field="previous_scope"),
+        "current_scope": _representation_scope_payload(current_scope, field="current_scope"),
+        "algorithm_version": algorithm_version,
+        "config_hash": _require_sha256_id(config_hash, field="config_hash"),
+    }
+    return _identity_sha256("openardp:reconciliation-run", payload)
+
+
+def derivation_slot_id(*, namespace: str, subject_digest: str, purpose: str) -> str:
+    """Hash one local logical output slot without embedding subject content."""
+    payload: dict[str, JsonValue] = {
+        "namespace": namespace,
+        "subject_digest": _require_sha256_id(subject_digest, field="subject_digest"),
+        "purpose": purpose,
+    }
+    return _identity_sha256("openardp:derivation-slot", payload)
+
+
 def _require_sha256_id(value: str, *, field: str) -> str:
     if _SHA256_ID.fullmatch(value) is None:
         raise ValueError(f"{field} must be sha256: followed by 64 lowercase hexadecimal characters")
@@ -105,6 +149,32 @@ def _identity_sha256(domain: str, payload: dict[str, JsonValue]) -> str:
         "payload": payload,
     }
     return canonical_sha256(envelope)
+
+
+def _representation_scope_payload(
+    scope: dict[str, JsonValue],
+    *,
+    field: str,
+) -> dict[str, JsonValue]:
+    ensure_json_value(scope, path=f"$.{field}")
+    expected = {"document_id", "version_id", "representation_id"}
+    if set(scope) != expected:
+        raise ValueError(f"{field} must contain exactly document_id, version_id, representation_id")
+    document_id = scope["document_id"]
+    if not isinstance(document_id, str) or not document_id:
+        raise ValueError(f"{field}.document_id must be a non-empty string")
+    version_id = scope["version_id"]
+    representation = scope["representation_id"]
+    if not isinstance(version_id, str) or not isinstance(representation, str):
+        raise ValueError(f"{field} hashes must be SHA-256 identifiers")
+    return {
+        "document_id": document_id,
+        "version_id": _require_sha256_id(version_id, field=f"{field}.version_id"),
+        "representation_id": _require_sha256_id(
+            representation,
+            field=f"{field}.representation_id",
+        ),
+    }
 
 
 def representation_id(

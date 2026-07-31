@@ -18,8 +18,10 @@ automatic reparse.
 A changed file may be parsed again, but conservatively matched evidence may reuse summaries, captions, embeddings and
 other derivations when exact inputs and generation profiles remain valid.
 
-F004 derives stable source-backed block handles but does not yet reconcile or transfer downstream artifacts across changed
-versions. That policy remains a later feature and therefore this level is architectural, not yet delivered.
+F010 delivers the conservative reuse decision and exact dependency lifecycle for F002
+block aggregates. It records continuity independently from reuse: a match is reusable
+only when the previous/current canonical content digests are equal. F010 does not run a
+generator or automatically schedule reconciliation.
 
 ### Level 2 — format-aware parse optimization (post-MVP)
 
@@ -76,6 +78,12 @@ Apply in order:
 Persist `same_logical_block_as` with confidence and algorithm version. Do not automatically transfer derived artifacts
 across a low-confidence match.
 
+The delivered v1 matcher requires one-to-one unique candidates, fixed-point confidence
+and a sufficient winner margin. Duplicate/tied/incompatible candidates receive a new
+lineage. Native identity or high similarity can establish continuity but never override
+a changed content digest. Every accepted relation is canonicalized, CAS-published and
+retained as a reachability root before its catalog run becomes visible.
+
 ## 5. Dependency invalidation
 
 Each derivation records direct input artifact hashes. A derivation is current only when:
@@ -88,6 +96,14 @@ Each derivation records direct input artifact hashes. A derivation is current on
 
 Parent summaries depend on child block hashes or child summary artifacts. A table edit therefore invalidates the table
 summary and ancestors, but not unrelated images.
+
+Revision 7 records these direct edges explicitly. A head-changing reconciliation first
+rechecks that the target is still current, then stales the sorted recursive closure of
+current nodes that consume inactive bindings. Revalidation iterates stale nodes to a
+deterministic fixed point and requires every evidence binding active at a current head,
+every immutable object physically verified and every producer current with the exact
+recorded output. Failed and superseded nodes never reactivate. An A→B→A return can
+therefore restore the exact historical node/record/output without invoking a provider.
 
 ## 6. Queue semantics
 

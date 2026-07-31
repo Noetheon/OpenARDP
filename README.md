@@ -35,7 +35,8 @@ the bounded provider adapter in
 deterministic context compiler in
 [`008-context-compiler-receipts`](specs/008-context-compiler-receipts/spec.md), plus
 the least-privilege stdio interface in
-[`009-read-only-mcp`](specs/009-read-only-mcp/spec.md):
+[`009-read-only-mcp`](specs/009-read-only-mcp/spec.md) and the provider-free lifecycle in
+[`010-reconciliation-derivation-dag`](specs/010-reconciliation-derivation-dag/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -70,11 +71,20 @@ the least-privilege stdio interface in
 - a dependency-free read-only MCP stdio server with nine fixed object-scoped tools,
   pinned protocol revision `2025-06-18`, bounded messages/responses/deadlines,
   cooperative cancellation, canonical descriptors and versioned body-free errors.
+- checksummed catalog revision 7 with conservative block lineages, exact
+  lineage/content evidence bindings and canonical `same_logical_block_as` roots;
+- a provider-neutral derivation DAG over ordered evidence, object and producer inputs
+  with transactional `CURRENT`, `STALE`, `FAILED` and `SUPERSEDED` workspace state,
+  deterministic slot replacement and exact A→B→A reactivation;
+- CAS-first reconciliation/derivation services with bounded matching, cycle rejection,
+  zero-false-reuse enforcement and no model or provider invocation.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. There is no watcher,
 cloud connector, automatic garbage collection, HTTP transport or stable custom export
-format yet. Those remain separate work packages in the
+format yet. F010 also does not schedule reconciliation or execute generators; callers
+explicitly supply two READY scopes and already-generated output bytes. Those remain
+separate work packages in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Quickstart

@@ -17,6 +17,7 @@ from openardp.adapters.local_workspace import (
     WorkspaceIncompatible,
 )
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
+from openardp.adapters.sqlite_migrations import CURRENT_SCHEMA_VERSION
 from openardp.interfaces.cli import _parser, _serve_mcp, main
 from openardp.interfaces.mcp_protocol import PROTOCOL_REVISION
 
@@ -127,7 +128,12 @@ def test_incompatible_corrupt_and_too_new_startup_is_read_only(
             connection.execute(
                 "INSERT INTO schema_migrations(version, name, checksum, applied_at) "
                 "VALUES (?, ?, ?, ?)",
-                (7, "future", "sha256:" + "f" * 64, "2026-07-31T00:00:00.000000Z"),
+                (
+                    CURRENT_SCHEMA_VERSION + 1,
+                    "future",
+                    "sha256:" + "f" * 64,
+                    "2026-07-31T00:00:00.000000Z",
+                ),
             )
             connection.commit()
     before = _snapshot(store)

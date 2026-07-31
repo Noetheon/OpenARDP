@@ -11,7 +11,11 @@ from uuid import UUID
 import pytest
 
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
-from openardp.adapters.sqlite_migrations import MIGRATION_1, MIGRATION_2
+from openardp.adapters.sqlite_migrations import (
+    CURRENT_SCHEMA_VERSION,
+    MIGRATION_1,
+    MIGRATION_2,
+)
 from openardp.domain.block import BlockKind, ContentBlock
 from openardp.domain.common import (
     ContentRole,
@@ -181,7 +185,7 @@ def _ready_commit(
 
 def _catalog(path: Path) -> SQLiteCatalog:
     catalog = SQLiteCatalog(path)
-    assert catalog.initialize(now=NOW) == 6
+    assert catalog.initialize(now=NOW) == CURRENT_SCHEMA_VERSION
     catalog.register_document(
         SourceKey(connector="local", locator="/synthetic/source.txt"),
         document_id=DOCUMENT_ID,
@@ -228,8 +232,8 @@ def test_migration_three_upgrades_real_prior_catalogs_and_has_exact_tables(tmp_p
     assert old.initialize(now=NOW) == 2
 
     current = SQLiteCatalog(path)
-    assert current.initialize(now=NOW + timedelta(seconds=1)) == 6
-    assert current.initialize(now=NOW + timedelta(seconds=2)) == 6
+    assert current.initialize(now=NOW + timedelta(seconds=1)) == CURRENT_SCHEMA_VERSION
+    assert current.initialize(now=NOW + timedelta(seconds=2)) == CURRENT_SCHEMA_VERSION
     assert (MIGRATION_1.checksum, MIGRATION_2.checksum) == prior_checksums
     with sqlite3.connect(path) as connection:
         tables = {

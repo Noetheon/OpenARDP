@@ -13,6 +13,7 @@ import pytest
 from openardp.adapters.docling_native import build_docling_recipe
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
+from openardp.adapters.sqlite_migrations import CURRENT_SCHEMA_VERSION
 from openardp.domain.common import ParserDescriptor
 from openardp.domain.evidence import OpaqueProviderPointerAnchor, ProviderPointer
 from openardp.domain.identity import canonical_json_bytes
@@ -105,7 +106,7 @@ def _setup(
         representation_id=recipe.parser.representation_id_for(source.object_id),
     )
     catalog = SQLiteCatalog(tmp_path / "catalog.sqlite3")
-    assert catalog.initialize(now=NOW) == 6
+    assert catalog.initialize(now=NOW) == CURRENT_SCHEMA_VERSION
     catalog.register_document(
         SourceKey(connector="local", locator="/synthetic/source.docx"),
         document_id=DOCUMENT_ID,

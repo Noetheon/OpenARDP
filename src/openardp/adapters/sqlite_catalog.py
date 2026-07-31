@@ -6,9 +6,10 @@ import hashlib
 import json
 import re
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
@@ -17,12 +18,26 @@ from pydantic import SecretStr, ValidationError
 
 from openardp.adapters.sqlite_migrations import MIGRATIONS, Migration
 from openardp.domain.block import BlockKind
-from openardp.domain.common import TrustZone
+from openardp.domain.common import ComponentDescriptor, GenerationProvenance, TrustZone
 from openardp.domain.context import BudgetUnit, VersionScope
 from openardp.domain.context_compilation import (
     ContextCompilationCommit,
     ContextCompilationRecord,
     ContextCompilationScope,
+)
+from openardp.domain.derivation import DerivationRecord
+from openardp.domain.derivation_lifecycle import (
+    DerivationDependency,
+    DerivationDependencyKind,
+    DerivationEventReason,
+    DerivationLifecycleEvent,
+    DerivationLifecycleState,
+    DerivationNode,
+    DerivationPublication,
+    DerivationPublicationDisposition,
+    DerivationPublicationResult,
+    DerivationSlotKey,
+    derivation_node_fingerprint,
 )
 from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import (
@@ -43,6 +58,16 @@ from openardp.domain.ingestion import (
     RepresentationScope,
     RepresentationState,
 )
+from openardp.domain.reconciliation import (
+    RECONCILIATION_ALGORITHM_VERSION,
+    BlockLineageMembership,
+    MatchMethod,
+    ReconciliationDisposition,
+    ReconciliationMatch,
+    ReconciliationPlan,
+    ReconciliationResult,
+)
+from openardp.domain.relation import BlockReference, Relation, RelationKind
 from openardp.domain.rich_ingestion import (
     ReadyRichRepresentationCommit,
     RichAttemptAppendResult,
@@ -85,6 +110,10 @@ from openardp.ports.catalog import (
     CatalogIncompatible,
     CatalogTooNew,
     ContextCompilationConflict,
+    DerivationConflict,
+    DerivationCycleError,
+    DerivationDependencyError,
+    DerivationIntegrityError,
     DocumentConflict,
     DocumentNotFound,
     InvalidJobTransition,
@@ -93,6 +122,9 @@ from openardp.ports.catalog import (
     JobNotFound,
     LeaseConflict,
     MigrationFailed,
+    ReconciliationConflict,
+    ReconciliationIntegrityError,
+    ReconciliationScopeError,
     RepresentationConflict,
     RepresentationIncomplete,
     RepresentationIntegrityError,
@@ -218,6 +250,41 @@ _SCHEMA_TABLES = {
             "context_compilation_scopes",
         }
     ),
+    7: frozenset(
+        {
+            "schema_migrations",
+            "objects",
+            "documents",
+            "document_versions",
+            "version_object_references",
+            "jobs",
+            "job_events",
+            "job_object_references",
+            "document_representations",
+            "representation_blocks",
+            "document_heads",
+            "ingestion_events",
+            "block_search_entries",
+            "block_search_index",
+            "block_search_index_config",
+            "block_search_index_data",
+            "block_search_index_docsize",
+            "block_search_index_idx",
+            "rich_parse_attempts",
+            "rich_attempt_evidence",
+            "rich_accepted_representations",
+            "context_compilations",
+            "context_compilation_scopes",
+            "reconciliation_runs",
+            "block_lineages",
+            "block_lineage_members",
+            "reconciliation_relations",
+            "derivation_slots",
+            "derivation_nodes",
+            "derivation_dependencies",
+            "derivation_events",
+        }
+    ),
 }
 
 
@@ -256,7 +323,11 @@ class SQLiteCatalog:
         connection = self._connect()
         transaction_started = False
         try:
+            connection.execute("BEGIN")
+            transaction_started = True
             current = self._validate_history(connection)
+            connection.execute("COMMIT")
+            transaction_started = False
             self._configure_persistent_profile(connection)
             self._require_fts5_capability(connection)
             connection.execute("BEGIN EXCLUSIVE")
@@ -1679,6 +1750,296 @@ class SQLiteCatalog:
             recovered_at=now,
         )
 
+    def commit_reconciliation(
+        self,
+        plan: ReconciliationPlan,
+        *,
+        object_is_verified: Callable[[str], bool] | None = None,
+    ) -> ReconciliationResult:
+        """Atomically publish one complete lineage plan or converge exactly."""
+        created_at = encode_storage_datetime(plan.created_at)
+        with self._write_connection() as connection:
+            existing = self._load_reconciliation(connection, plan.run_id)
+            if existing is not None:
+                if existing.plan.result_fingerprint != plan.result_fingerprint:
+                    raise ReconciliationConflict("reconciliation run has conflicting facts")
+                stale_ids: tuple[str, ...] = ()
+                reactivated_ids: tuple[str, ...] = ()
+                head = self._required_document_head(
+                    connection, existing.plan.current_scope.document_id
+                )
+                if head.scope == existing.plan.current_scope:
+                    lifecycle_plan = existing.plan.model_copy(
+                        update={"created_at": plan.created_at}
+                    )
+                    stale_ids, reactivated_ids = self._apply_reconciliation_lifecycle(
+                        connection,
+                        lifecycle_plan,
+                        object_is_verified=object_is_verified,
+                    )
+                return ReconciliationResult(
+                    disposition=ReconciliationDisposition.CONVERGED,
+                    plan=existing.plan,
+                    stale_artifact_ids=stale_ids,
+                    reactivated_artifact_ids=reactivated_ids,
+                )
+            target = connection.execute(
+                "SELECT run_id FROM reconciliation_runs WHERE document_id = ? "
+                "AND current_version_id = ? AND current_representation_id = ?",
+                (
+                    str(plan.current_scope.document_id),
+                    plan.current_scope.version_id,
+                    plan.current_scope.representation_id,
+                ),
+            ).fetchone()
+            if target is not None:
+                raise ReconciliationConflict("reconciliation target already has different facts")
+            for scope in (plan.previous_scope, plan.current_scope):
+                aggregate = self._required_representation(connection, scope)
+                if aggregate.representation.state is not RepresentationState.READY:
+                    raise ReconciliationScopeError("reconciliation scope is not ready")
+            head = self._required_document_head(connection, plan.current_scope.document_id)
+            if head.scope != plan.current_scope:
+                raise ReconciliationScopeError("reconciliation target is not the current head")
+            connection.execute(
+                "INSERT INTO reconciliation_runs("
+                "run_id, document_id, previous_version_id, previous_representation_id, "
+                "current_version_id, current_representation_id, algorithm_version, "
+                "config_hash, result_fingerprint, matched_count, reusable_count, new_count, "
+                "ambiguous_count, comparison_count, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    plan.run_id,
+                    str(plan.current_scope.document_id),
+                    plan.previous_scope.version_id,
+                    plan.previous_scope.representation_id,
+                    plan.current_scope.version_id,
+                    plan.current_scope.representation_id,
+                    plan.algorithm_version,
+                    plan.config_hash,
+                    plan.result_fingerprint,
+                    plan.matched_count,
+                    plan.reusable_count,
+                    plan.new_count,
+                    plan.ambiguous_count,
+                    plan.comparison_count,
+                    created_at,
+                ),
+            )
+            self._fault_point("after_reconciliation_run")
+            for membership in (*plan.seed_memberships, *plan.memberships):
+                self._persist_lineage_membership(connection, membership, created_at=created_at)
+            self._fault_point("after_reconciliation_members")
+            for match in plan.matches:
+                self._register_object(connection, match.relation_object, registered_at=created_at)
+                connection.execute(
+                    "INSERT INTO reconciliation_relations("
+                    "relation_id, run_id, relation_object_id, method, confidence_ppm, reusable, "
+                    "document_id, previous_version_id, previous_representation_id, "
+                    "previous_block_id, current_version_id, current_representation_id, "
+                    "current_block_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        match.relation.relation_id,
+                        plan.run_id,
+                        match.relation_object.object_id,
+                        match.method.value,
+                        match.confidence_ppm,
+                        int(match.reusable),
+                        str(match.current.document_id),
+                        match.previous.version_id,
+                        match.previous.representation_id,
+                        str(match.previous.block_id),
+                        match.current.version_id,
+                        match.current.representation_id,
+                        str(match.current.block_id),
+                    ),
+                )
+                self._fault_point("after_reconciliation_relation")
+            stale_ids, reactivated_ids = self._apply_reconciliation_lifecycle(
+                connection,
+                plan,
+                object_is_verified=object_is_verified,
+            )
+            stored = self._load_reconciliation(connection, plan.run_id)
+            if stored is None or stored.plan.result_fingerprint != plan.result_fingerprint:
+                raise ReconciliationIntegrityError("reconciliation verification failed")
+            self._fault_point("before_reconciliation_commit")
+            return ReconciliationResult(
+                disposition=ReconciliationDisposition.COMMITTED,
+                plan=stored.plan,
+                stale_artifact_ids=stale_ids,
+                reactivated_artifact_ids=reactivated_ids,
+            )
+
+    def get_reconciliation(self, run_id: str) -> ReconciliationResult | None:
+        """Return one verified complete reconciliation without mutable side effects."""
+        with self._read_connection() as connection:
+            return self._load_reconciliation(connection, run_id)
+
+    def get_lineage(self, block: BlockReference) -> BlockLineageMembership | None:
+        """Return one exact lineage membership for a canonical block reference."""
+        with self._read_connection() as connection:
+            return self._load_lineage_membership(connection, block)
+
+    def publish_derivation(
+        self,
+        publication: DerivationPublication,
+    ) -> DerivationPublicationResult:
+        """Atomically publish one exact DAG node or converge without a new event."""
+        published_at = encode_storage_datetime(publication.published_at)
+        with self._write_connection() as connection:
+            existing = self._load_derivation(connection, publication.record.artifact_id)
+            if existing is not None:
+                if not self._derivation_publication_matches(existing, publication):
+                    raise DerivationConflict("derivation artifact has conflicting facts")
+                return DerivationPublicationResult(
+                    disposition=DerivationPublicationDisposition.CONVERGED,
+                    node=existing,
+                )
+            self._validate_derivation_dependencies(connection, publication)
+            self._register_object(connection, publication.record_object, registered_at=published_at)
+            if publication.output_object is not None:
+                self._register_object(
+                    connection, publication.output_object, registered_at=published_at
+                )
+            connection.execute(
+                "INSERT INTO derivation_slots("
+                "slot_id, namespace, subject_digest, purpose, current_artifact_id, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?) "
+                "ON CONFLICT(slot_id) DO NOTHING",
+                (
+                    publication.slot.slot_id,
+                    publication.slot.namespace,
+                    publication.slot.subject_digest,
+                    publication.slot.purpose,
+                    published_at,
+                    published_at,
+                ),
+            )
+            slot_row = connection.execute(
+                "SELECT * FROM derivation_slots WHERE slot_id = ?",
+                (publication.slot.slot_id,),
+            ).fetchone()
+            if slot_row is None or (
+                str(slot_row["namespace"]),
+                str(slot_row["subject_digest"]),
+                str(slot_row["purpose"]),
+            ) != (
+                publication.slot.namespace,
+                publication.slot.subject_digest,
+                publication.slot.purpose,
+            ):
+                raise DerivationConflict("derivation slot has conflicting identity facts")
+            self._fault_point("after_derivation_slot")
+            superseded: list[str] = []
+            if publication.output_object is not None:
+                prior_rows = connection.execute(
+                    "SELECT artifact_id FROM derivation_nodes WHERE slot_id = ? "
+                    "AND state IN ('CURRENT', 'STALE') ORDER BY artifact_id",
+                    (publication.slot.slot_id,),
+                ).fetchall()
+                for prior_row in prior_rows:
+                    prior_id = str(prior_row["artifact_id"])
+                    self._transition_derivation(
+                        connection,
+                        artifact_id=prior_id,
+                        to_state=DerivationLifecycleState.SUPERSEDED,
+                        reason=DerivationEventReason.SLOT_REPLACED,
+                        occurred_at=publication.published_at,
+                    )
+                    superseded.append(prior_id)
+            node = self._node_from_publication(publication)
+            record_json = canonical_json_bytes(publication.record.model_dump(mode="json")).decode(
+                "utf-8"
+            )
+            connection.execute(
+                "INSERT INTO derivation_nodes("
+                "artifact_id, slot_id, state, record_object_id, record_json, output_object_id, "
+                "generator_name, generator_version, generator_profile, model_id, config_hash, "
+                "prompt_hash, revision, record_created_at, record_completed_at, created_at, "
+                "updated_at, failure_code, row_fingerprint) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    node.artifact_id,
+                    node.slot.slot_id,
+                    node.state.value,
+                    node.record_object.object_id,
+                    record_json,
+                    node.output_object.object_id if node.output_object is not None else None,
+                    node.record.generator.name,
+                    node.record.generator.version,
+                    node.record.generator.profile,
+                    node.record.model_id,
+                    node.record.config_hash,
+                    node.record.prompt_hash,
+                    node.revision,
+                    encode_storage_datetime(node.record.created_at),
+                    encode_storage_datetime(cast(datetime, node.record.completed_at)),
+                    published_at,
+                    published_at,
+                    node.failure_code,
+                    node.row_fingerprint,
+                ),
+            )
+            self._fault_point("after_derivation_node")
+            for dependency in publication.dependencies:
+                connection.execute(
+                    "INSERT INTO derivation_dependencies("
+                    "artifact_id, ordinal, kind, input_digest, producer_artifact_id) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (
+                        node.artifact_id,
+                        dependency.ordinal,
+                        dependency.kind.value,
+                        dependency.input_digest,
+                        dependency.producer_artifact_id,
+                    ),
+                )
+                self._fault_point("after_derivation_dependency")
+            if node.state is DerivationLifecycleState.CURRENT:
+                connection.execute(
+                    "UPDATE derivation_slots SET current_artifact_id = ?, updated_at = ? "
+                    "WHERE slot_id = ?",
+                    (node.artifact_id, published_at, node.slot.slot_id),
+                )
+            reason = (
+                DerivationEventReason.GENERATION_FAILED
+                if node.state is DerivationLifecycleState.FAILED
+                else DerivationEventReason.PUBLISHED
+            )
+            self._append_derivation_event(
+                connection,
+                artifact_id=node.artifact_id,
+                from_state=None,
+                to_state=node.state,
+                reason=reason,
+                run_id=None,
+                occurred_at=published_at,
+            )
+            self._fault_point("after_derivation_event")
+            stored = self._load_derivation(connection, node.artifact_id)
+            if stored is None or stored != node:
+                raise DerivationIntegrityError("derivation publication verification failed")
+            self._fault_point("before_derivation_commit")
+            return DerivationPublicationResult(
+                disposition=DerivationPublicationDisposition.COMMITTED,
+                node=stored,
+                superseded_artifact_ids=tuple(superseded),
+            )
+
+    def get_derivation(self, artifact_id: str) -> DerivationNode | None:
+        """Return one verified derivation lifecycle projection or no result."""
+        with self._read_connection() as connection:
+            return self._load_derivation(connection, artifact_id)
+
+    def list_derivation_events(
+        self,
+        artifact_id: str,
+    ) -> tuple[DerivationLifecycleEvent, ...]:
+        """Return lifecycle evidence in deterministic sequence order."""
+        with self._read_connection() as connection:
+            return self._load_derivation_events(connection, artifact_id)
+
     def reference_snapshot(self, *, observed_at: datetime) -> ReferenceSnapshot:
         """Return sorted unique version, job and representation object roots."""
         with self._read_connection() as connection:
@@ -1700,6 +2061,10 @@ class SQLiteCatalog:
                 "UNION SELECT retrieval_object_id FROM rich_attempt_evidence "
                 "UNION SELECT receipt_object_id FROM context_compilations "
                 "UNION SELECT bundle_object_id FROM context_compilations "
+                "UNION SELECT relation_object_id FROM reconciliation_relations "
+                "UNION SELECT record_object_id FROM derivation_nodes "
+                "UNION SELECT output_object_id FROM derivation_nodes "
+                "WHERE output_object_id IS NOT NULL "
                 "ORDER BY object_id"
             ).fetchall()
             return ReferenceSnapshot(
@@ -2314,6 +2679,725 @@ class SQLiteCatalog:
             byte_length=int(row["byte_length"]),
             media_type=(str(row["media_type"]) if row["media_type"] is not None else None),
         )
+
+    def _persist_lineage_membership(
+        self,
+        connection: sqlite3.Connection,
+        membership: BlockLineageMembership,
+        *,
+        created_at: str,
+    ) -> None:
+        existing = self._load_lineage_membership(connection, membership.block)
+        if existing is not None:
+            if existing != membership:
+                raise ReconciliationConflict("block lineage membership has conflicting facts")
+            return
+        block = connection.execute(
+            "SELECT object_id FROM representation_blocks WHERE document_id = ? "
+            "AND version_id = ? AND representation_id = ? AND block_id = ?",
+            (
+                str(membership.block.document_id),
+                membership.block.version_id,
+                membership.block.representation_id,
+                str(membership.block.block_id),
+            ),
+        ).fetchone()
+        if block is None:
+            raise ReconciliationIntegrityError("lineage block is absent")
+        lineage = connection.execute(
+            "SELECT document_id FROM block_lineages WHERE lineage_id = ?",
+            (membership.lineage_id,),
+        ).fetchone()
+        if lineage is None:
+            connection.execute(
+                "INSERT INTO block_lineages("
+                "lineage_id, document_id, origin_version_id, origin_representation_id, "
+                "origin_block_id, introduced_by_run_id, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    membership.lineage_id,
+                    str(membership.block.document_id),
+                    membership.block.version_id,
+                    membership.block.representation_id,
+                    str(membership.block.block_id),
+                    membership.introduced_by_run_id,
+                    created_at,
+                ),
+            )
+            self._fault_point("after_reconciliation_lineage")
+        elif str(lineage["document_id"]) != str(membership.block.document_id):
+            raise ReconciliationConflict("lineage cannot cross logical documents")
+        connection.execute(
+            "INSERT INTO block_lineage_members("
+            "document_id, version_id, representation_id, block_id, lineage_id, "
+            "canonical_hash, binding_digest, introduced_by_run_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                str(membership.block.document_id),
+                membership.block.version_id,
+                membership.block.representation_id,
+                str(membership.block.block_id),
+                membership.lineage_id,
+                membership.canonical_hash,
+                membership.binding_digest,
+                membership.introduced_by_run_id,
+            ),
+        )
+
+    @staticmethod
+    def _membership_from_row(row: sqlite3.Row) -> BlockLineageMembership:
+        return BlockLineageMembership(
+            lineage_id=str(row["lineage_id"]),
+            block=BlockReference(
+                record_type="block",
+                document_id=UUID(str(row["document_id"])),
+                version_id=str(row["version_id"]),
+                representation_id=str(row["representation_id"]),
+                block_id=UUID(str(row["block_id"])),
+            ),
+            canonical_hash=str(row["canonical_hash"]),
+            binding_digest=str(row["binding_digest"]),
+            introduced_by_run_id=str(row["introduced_by_run_id"]),
+        )
+
+    def _load_lineage_membership(
+        self,
+        connection: sqlite3.Connection,
+        block: BlockReference,
+    ) -> BlockLineageMembership | None:
+        row = connection.execute(
+            "SELECT * FROM block_lineage_members WHERE document_id = ? AND version_id = ? "
+            "AND representation_id = ? AND block_id = ?",
+            (
+                str(block.document_id),
+                block.version_id,
+                block.representation_id,
+                str(block.block_id),
+            ),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            membership = self._membership_from_row(row)
+        except ValidationError as error:
+            raise ReconciliationIntegrityError("stored lineage membership is invalid") from error
+        if membership.block != block:
+            raise ReconciliationIntegrityError("stored lineage membership scope drifted")
+        return membership
+
+    def _load_reconciliation(
+        self,
+        connection: sqlite3.Connection,
+        run_id: str,
+    ) -> ReconciliationResult | None:
+        row = connection.execute(
+            "SELECT * FROM reconciliation_runs WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        document_id = UUID(str(row["document_id"]))
+        previous_scope = RepresentationScope(
+            document_id=document_id,
+            version_id=str(row["previous_version_id"]),
+            representation_id=str(row["previous_representation_id"]),
+        )
+        current_scope = RepresentationScope(
+            document_id=document_id,
+            version_id=str(row["current_version_id"]),
+            representation_id=str(row["current_representation_id"]),
+        )
+        membership_rows = connection.execute(
+            "SELECT m.* FROM block_lineage_members AS m "
+            "JOIN representation_blocks AS b ON b.document_id = m.document_id "
+            "AND b.version_id = m.version_id AND b.representation_id = m.representation_id "
+            "AND b.block_id = m.block_id WHERE m.document_id = ? AND m.version_id = ? "
+            "AND m.representation_id = ? ORDER BY b.ordinal",
+            (str(document_id), current_scope.version_id, current_scope.representation_id),
+        ).fetchall()
+        seed_rows = connection.execute(
+            "SELECT m.* FROM block_lineage_members AS m "
+            "JOIN representation_blocks AS b ON b.document_id = m.document_id "
+            "AND b.version_id = m.version_id AND b.representation_id = m.representation_id "
+            "AND b.block_id = m.block_id WHERE m.document_id = ? AND m.version_id = ? "
+            "AND m.representation_id = ? ORDER BY b.ordinal",
+            (str(document_id), previous_scope.version_id, previous_scope.representation_id),
+        ).fetchall()
+        memberships = tuple(self._membership_from_row(item) for item in membership_rows)
+        seeds = tuple(self._membership_from_row(item) for item in seed_rows)
+        ready = connection.execute(
+            "SELECT ready_at FROM document_representations WHERE document_id = ? "
+            "AND version_id = ? AND representation_id = ?",
+            (str(document_id), current_scope.version_id, current_scope.representation_id),
+        ).fetchone()
+        if ready is None or ready["ready_at"] is None:
+            raise ReconciliationIntegrityError("reconciliation target representation is absent")
+        relation_rows = connection.execute(
+            "SELECT r.*, o.byte_length, pm.lineage_id, pm.canonical_hash AS previous_hash, "
+            "cm.canonical_hash AS current_hash FROM reconciliation_relations AS r "
+            "JOIN objects AS o ON o.object_id = r.relation_object_id "
+            "JOIN block_lineage_members AS pm ON pm.document_id = r.document_id "
+            "AND pm.version_id = r.previous_version_id "
+            "AND pm.representation_id = r.previous_representation_id "
+            "AND pm.block_id = r.previous_block_id "
+            "JOIN block_lineage_members AS cm ON cm.document_id = r.document_id "
+            "AND cm.version_id = r.current_version_id "
+            "AND cm.representation_id = r.current_representation_id "
+            "AND cm.block_id = r.current_block_id "
+            "JOIN representation_blocks AS cb ON cb.document_id = r.document_id "
+            "AND cb.version_id = r.current_version_id "
+            "AND cb.representation_id = r.current_representation_id "
+            "AND cb.block_id = r.current_block_id "
+            "WHERE r.run_id = ? ORDER BY cb.ordinal",
+            (run_id,),
+        ).fetchall()
+        matches: list[ReconciliationMatch] = []
+        for relation_row in relation_rows:
+            previous = BlockReference(
+                record_type="block",
+                document_id=document_id,
+                version_id=str(relation_row["previous_version_id"]),
+                representation_id=str(relation_row["previous_representation_id"]),
+                block_id=UUID(str(relation_row["previous_block_id"])),
+            )
+            current = BlockReference(
+                record_type="block",
+                document_id=document_id,
+                version_id=str(relation_row["current_version_id"]),
+                representation_id=str(relation_row["current_representation_id"]),
+                block_id=UUID(str(relation_row["current_block_id"])),
+            )
+            confidence_ppm = int(relation_row["confidence_ppm"])
+            relation = Relation(
+                schema_version="0.1.0",
+                relation_id=str(relation_row["relation_id"]),
+                kind=RelationKind.SAME_LOGICAL_BLOCK_AS,
+                source=current,
+                target=previous,
+                confidence=confidence_ppm / 1_000_000,
+                algorithm_version=RECONCILIATION_ALGORITHM_VERSION,
+                provenance=GenerationProvenance(
+                    component=ComponentDescriptor(
+                        name="openardp-reconciliation",
+                        version=RECONCILIATION_ALGORITHM_VERSION,
+                        profile="conservative",
+                    ),
+                    created_at=decode_storage_datetime(str(ready["ready_at"])),
+                ),
+            )
+            matches.append(
+                ReconciliationMatch(
+                    previous=previous,
+                    current=current,
+                    lineage_id=str(relation_row["lineage_id"]),
+                    previous_canonical_hash=str(relation_row["previous_hash"]),
+                    current_canonical_hash=str(relation_row["current_hash"]),
+                    method=MatchMethod(str(relation_row["method"])),
+                    confidence_ppm=confidence_ppm,
+                    reusable=bool(relation_row["reusable"]),
+                    relation=relation,
+                    relation_object=StoredObject(
+                        object_id=str(relation_row["relation_object_id"]),
+                        byte_length=int(relation_row["byte_length"]),
+                    ),
+                )
+            )
+        previous_bindings = {item.binding_digest for item in seeds}
+        current_bindings = {item.binding_digest for item in memberships}
+        try:
+            plan = ReconciliationPlan(
+                run_id=str(row["run_id"]),
+                previous_scope=previous_scope,
+                current_scope=current_scope,
+                algorithm_version=str(row["algorithm_version"]),
+                config_hash=str(row["config_hash"]),
+                seed_memberships=seeds,
+                memberships=memberships,
+                matches=tuple(matches),
+                inactive_binding_digests=tuple(sorted(previous_bindings - current_bindings)),
+                matched_count=int(row["matched_count"]),
+                reusable_count=int(row["reusable_count"]),
+                new_count=int(row["new_count"]),
+                ambiguous_count=int(row["ambiguous_count"]),
+                comparison_count=int(row["comparison_count"]),
+                result_fingerprint=str(row["result_fingerprint"]),
+                created_at=decode_storage_datetime(str(row["created_at"])),
+            )
+        except (ValidationError, ValueError) as error:
+            raise ReconciliationIntegrityError("stored reconciliation is invalid") from error
+        return ReconciliationResult(
+            disposition=ReconciliationDisposition.COMMITTED,
+            plan=plan,
+        )
+
+    def _apply_reconciliation_lifecycle(
+        self,
+        connection: sqlite3.Connection,
+        plan: ReconciliationPlan,
+        *,
+        object_is_verified: Callable[[str], bool] | None,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        stale_ids: list[str] = []
+        if plan.inactive_binding_digests:
+            for artifact_id in self._invalidation_artifact_ids(
+                connection,
+                plan.inactive_binding_digests,
+            ):
+                self._transition_derivation(
+                    connection,
+                    artifact_id=artifact_id,
+                    to_state=DerivationLifecycleState.STALE,
+                    reason=DerivationEventReason.DEPENDENCY_INACTIVE,
+                    run_id=plan.run_id,
+                    occurred_at=plan.created_at,
+                )
+                stale_ids.append(artifact_id)
+
+        reactivated_ids: list[str] = []
+        made_progress = True
+        while made_progress:
+            made_progress = False
+            candidates = connection.execute(
+                "SELECT n.artifact_id, n.slot_id FROM derivation_nodes AS n "
+                "JOIN derivation_slots AS s ON s.slot_id = n.slot_id "
+                "WHERE n.state = 'STALE' AND s.current_artifact_id IS NULL "
+                "ORDER BY n.artifact_id"
+            ).fetchall()
+            for candidate in candidates:
+                artifact_id = str(candidate["artifact_id"])
+                slot_id = str(candidate["slot_id"])
+                if not self._derivation_dependencies_are_current(
+                    connection,
+                    artifact_id,
+                    object_is_verified=object_is_verified,
+                ):
+                    continue
+                connection.execute(
+                    "UPDATE derivation_slots SET current_artifact_id = ?, updated_at = ? "
+                    "WHERE slot_id = ? AND current_artifact_id IS NULL",
+                    (artifact_id, encode_storage_datetime(plan.created_at), slot_id),
+                )
+                if int(connection.execute("SELECT changes()").fetchone()[0]) != 1:
+                    continue
+                self._transition_derivation(
+                    connection,
+                    artifact_id=artifact_id,
+                    to_state=DerivationLifecycleState.CURRENT,
+                    reason=DerivationEventReason.REACTIVATED,
+                    run_id=plan.run_id,
+                    occurred_at=plan.created_at,
+                )
+                reactivated_ids.append(artifact_id)
+                made_progress = True
+        self._fault_point("after_reconciliation_lifecycle")
+        return tuple(stale_ids), tuple(reactivated_ids)
+
+    @staticmethod
+    def _invalidation_artifact_ids(
+        connection: sqlite3.Connection,
+        inactive_binding_digests: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        rows = connection.execute(
+            "WITH RECURSIVE affected(artifact_id) AS ("
+            "SELECT DISTINCT n.artifact_id FROM derivation_nodes AS n "
+            "JOIN derivation_dependencies AS d ON d.artifact_id = n.artifact_id "
+            "WHERE n.state = 'CURRENT' AND d.kind = 'EVIDENCE_BINDING' "
+            "AND d.input_digest IN (SELECT value FROM json_each(?)) "
+            "UNION SELECT n.artifact_id FROM derivation_nodes AS n "
+            "JOIN derivation_dependencies AS d ON d.artifact_id = n.artifact_id "
+            "JOIN affected AS a ON a.artifact_id = d.producer_artifact_id "
+            "WHERE n.state = 'CURRENT' AND d.kind = 'DERIVATION_OUTPUT') "
+            "SELECT artifact_id FROM affected ORDER BY artifact_id",
+            (json.dumps(inactive_binding_digests),),
+        ).fetchall()
+        return tuple(str(row["artifact_id"]) for row in rows)
+
+    @staticmethod
+    def _derivation_dependencies_are_current(
+        connection: sqlite3.Connection,
+        artifact_id: str,
+        *,
+        object_is_verified: Callable[[str], bool] | None,
+    ) -> bool:
+        dependencies = connection.execute(
+            "SELECT * FROM derivation_dependencies WHERE artifact_id = ? ORDER BY ordinal",
+            (artifact_id,),
+        ).fetchall()
+        for dependency in dependencies:
+            kind = DerivationDependencyKind(str(dependency["kind"]))
+            digest = str(dependency["input_digest"])
+            if kind is DerivationDependencyKind.EVIDENCE_BINDING:
+                active = connection.execute(
+                    "SELECT 1 FROM block_lineage_members AS m "
+                    "JOIN document_heads AS h ON h.document_id = m.document_id "
+                    "AND h.version_id = m.version_id "
+                    "AND h.representation_id = m.representation_id "
+                    "WHERE m.binding_digest = ? LIMIT 1",
+                    (digest,),
+                ).fetchone()
+                if active is None:
+                    return False
+            elif kind is DerivationDependencyKind.OBJECT:
+                if (
+                    connection.execute(
+                        "SELECT 1 FROM objects WHERE object_id = ?", (digest,)
+                    ).fetchone()
+                    is None
+                ):
+                    return False
+                if object_is_verified is None or not object_is_verified(digest):
+                    return False
+            else:
+                producer = connection.execute(
+                    "SELECT state, output_object_id FROM derivation_nodes WHERE artifact_id = ?",
+                    (str(dependency["producer_artifact_id"]),),
+                ).fetchone()
+                if (
+                    producer is None
+                    or str(producer["state"]) != DerivationLifecycleState.CURRENT.value
+                    or str(producer["output_object_id"]) != digest
+                ):
+                    return False
+                if object_is_verified is None or not object_is_verified(digest):
+                    return False
+        return True
+
+    @staticmethod
+    def _node_from_publication(publication: DerivationPublication) -> DerivationNode:
+        state = (
+            DerivationLifecycleState.CURRENT
+            if publication.output_object is not None
+            else DerivationLifecycleState.FAILED
+        )
+        skeleton = DerivationNode.model_construct(
+            artifact_id=publication.record.artifact_id,
+            slot=publication.slot,
+            state=state,
+            record=publication.record,
+            record_object=publication.record_object,
+            output_object=publication.output_object,
+            dependencies=publication.dependencies,
+            revision=1,
+            created_at=publication.published_at,
+            updated_at=publication.published_at,
+            failure_code=publication.failure_code,
+            row_fingerprint="sha256:" + "0" * 64,
+        )
+        return DerivationNode(
+            artifact_id=publication.record.artifact_id,
+            slot=publication.slot,
+            state=state,
+            record=publication.record,
+            record_object=publication.record_object,
+            output_object=publication.output_object,
+            dependencies=publication.dependencies,
+            revision=1,
+            created_at=publication.published_at,
+            updated_at=publication.published_at,
+            failure_code=publication.failure_code,
+            row_fingerprint=derivation_node_fingerprint(skeleton),
+        )
+
+    @staticmethod
+    def _derivation_publication_matches(
+        node: DerivationNode,
+        publication: DerivationPublication,
+    ) -> bool:
+        return (
+            node.record == publication.record
+            and node.record_object == publication.record_object
+            and node.output_object == publication.output_object
+            and node.dependencies == publication.dependencies
+            and node.slot == publication.slot
+            and node.failure_code == publication.failure_code
+        )
+
+    def _validate_derivation_dependencies(
+        self,
+        connection: sqlite3.Connection,
+        publication: DerivationPublication,
+    ) -> None:
+        artifact_id = publication.record.artifact_id
+        for dependency in publication.dependencies:
+            if dependency.kind is DerivationDependencyKind.EVIDENCE_BINDING:
+                available = connection.execute(
+                    "SELECT 1 FROM block_lineage_members AS m "
+                    "JOIN document_heads AS h ON h.document_id = m.document_id "
+                    "AND h.version_id = m.version_id "
+                    "AND h.representation_id = m.representation_id "
+                    "WHERE m.binding_digest = ? LIMIT 1",
+                    (dependency.input_digest,),
+                ).fetchone()
+                if available is None:
+                    raise DerivationDependencyError("evidence binding dependency is not active")
+            elif dependency.kind is DerivationDependencyKind.OBJECT:
+                available = connection.execute(
+                    "SELECT 1 FROM objects WHERE object_id = ?",
+                    (dependency.input_digest,),
+                ).fetchone()
+                if available is None:
+                    raise DerivationDependencyError("object dependency is absent")
+            else:
+                producer_id = cast(str, dependency.producer_artifact_id)
+                if producer_id == artifact_id:
+                    raise DerivationCycleError("derivation cannot depend on itself")
+                producer = connection.execute(
+                    "SELECT output_object_id, state FROM derivation_nodes WHERE artifact_id = ?",
+                    (producer_id,),
+                ).fetchone()
+                if (
+                    producer is None
+                    or str(producer["state"]) != DerivationLifecycleState.CURRENT.value
+                    or str(producer["output_object_id"]) != dependency.input_digest
+                ):
+                    raise DerivationDependencyError(
+                        "producer dependency is absent, inactive or output-mismatched"
+                    )
+                cycle = connection.execute(
+                    "WITH RECURSIVE ancestry(artifact_id) AS ("
+                    "SELECT producer_artifact_id FROM derivation_dependencies "
+                    "WHERE artifact_id = ? AND producer_artifact_id IS NOT NULL "
+                    "UNION SELECT d.producer_artifact_id FROM derivation_dependencies AS d "
+                    "JOIN ancestry AS a ON d.artifact_id = a.artifact_id "
+                    "WHERE d.producer_artifact_id IS NOT NULL) "
+                    "SELECT 1 FROM ancestry WHERE artifact_id = ? LIMIT 1",
+                    (producer_id, artifact_id),
+                ).fetchone()
+                if cycle is not None:
+                    raise DerivationCycleError("derivation dependency would create a cycle")
+
+    def _load_derivation(
+        self,
+        connection: sqlite3.Connection,
+        artifact_id: str,
+    ) -> DerivationNode | None:
+        row = connection.execute(
+            "SELECT n.*, ro.byte_length AS record_length, oo.byte_length AS output_length, "
+            "s.namespace, s.subject_digest, s.purpose, s.current_artifact_id "
+            "FROM derivation_nodes AS n "
+            "JOIN objects AS ro ON ro.object_id = n.record_object_id "
+            "LEFT JOIN objects AS oo ON oo.object_id = n.output_object_id "
+            "JOIN derivation_slots AS s ON s.slot_id = n.slot_id "
+            "WHERE n.artifact_id = ?",
+            (artifact_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        dependency_rows = connection.execute(
+            "SELECT * FROM derivation_dependencies WHERE artifact_id = ? ORDER BY ordinal",
+            (artifact_id,),
+        ).fetchall()
+        dependencies = tuple(
+            DerivationDependency(
+                ordinal=int(item["ordinal"]),
+                kind=DerivationDependencyKind(str(item["kind"])),
+                input_digest=str(item["input_digest"]),
+                producer_artifact_id=(
+                    str(item["producer_artifact_id"])
+                    if item["producer_artifact_id"] is not None
+                    else None
+                ),
+            )
+            for item in dependency_rows
+        )
+        try:
+            record = DerivationRecord.model_validate_json(str(row["record_json"]))
+            if (
+                str(row["generator_name"]) != record.generator.name
+                or str(row["generator_version"]) != record.generator.version
+                or (str(row["generator_profile"]) if row["generator_profile"] is not None else None)
+                != record.generator.profile
+                or (str(row["model_id"]) if row["model_id"] is not None else None)
+                != record.model_id
+                or str(row["config_hash"]) != record.config_hash
+                or (str(row["prompt_hash"]) if row["prompt_hash"] is not None else None)
+                != record.prompt_hash
+                or decode_storage_datetime(str(row["record_created_at"])) != record.created_at
+                or decode_storage_datetime(str(row["record_completed_at"])) != record.completed_at
+            ):
+                raise DerivationIntegrityError("stored derivation recipe columns drifted")
+            output_id = row["output_object_id"]
+            node = DerivationNode(
+                artifact_id=str(row["artifact_id"]),
+                slot=DerivationSlotKey(
+                    slot_id=str(row["slot_id"]),
+                    namespace=str(row["namespace"]),
+                    subject_digest=str(row["subject_digest"]),
+                    purpose=str(row["purpose"]),
+                ),
+                state=DerivationLifecycleState(str(row["state"])),
+                record=record,
+                record_object=StoredObject(
+                    object_id=str(row["record_object_id"]),
+                    byte_length=int(row["record_length"]),
+                ),
+                output_object=(
+                    StoredObject(
+                        object_id=str(output_id),
+                        byte_length=int(row["output_length"]),
+                    )
+                    if output_id is not None
+                    else None
+                ),
+                dependencies=dependencies,
+                revision=int(row["revision"]),
+                created_at=decode_storage_datetime(str(row["created_at"])),
+                updated_at=decode_storage_datetime(str(row["updated_at"])),
+                failure_code=(
+                    str(row["failure_code"]) if row["failure_code"] is not None else None
+                ),
+                row_fingerprint=str(row["row_fingerprint"]),
+            )
+            if (
+                node.state is DerivationLifecycleState.CURRENT
+                and str(row["current_artifact_id"]) != node.artifact_id
+            ):
+                raise DerivationIntegrityError("current derivation slot pointer drifted")
+        except (ValidationError, ValueError) as error:
+            raise DerivationIntegrityError("stored derivation node is invalid") from error
+        return node
+
+    def _transition_derivation(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        artifact_id: str,
+        to_state: DerivationLifecycleState,
+        reason: DerivationEventReason,
+        occurred_at: datetime,
+        run_id: str | None = None,
+    ) -> DerivationNode:
+        current = self._load_derivation(connection, artifact_id)
+        if current is None:
+            raise DerivationIntegrityError("derivation transition target is absent")
+        if current.state is to_state:
+            return current
+        skeleton = DerivationNode.model_construct(
+            artifact_id=current.artifact_id,
+            slot=current.slot,
+            state=to_state,
+            record=current.record,
+            record_object=current.record_object,
+            output_object=current.output_object,
+            dependencies=current.dependencies,
+            revision=current.revision + 1,
+            created_at=current.created_at,
+            updated_at=occurred_at,
+            failure_code=current.failure_code,
+            row_fingerprint="sha256:" + "0" * 64,
+        )
+        transitioned = DerivationNode(
+            artifact_id=current.artifact_id,
+            slot=current.slot,
+            state=to_state,
+            record=current.record,
+            record_object=current.record_object,
+            output_object=current.output_object,
+            dependencies=current.dependencies,
+            revision=current.revision + 1,
+            created_at=current.created_at,
+            updated_at=occurred_at,
+            failure_code=current.failure_code,
+            row_fingerprint=derivation_node_fingerprint(skeleton),
+        )
+        occurred_text = encode_storage_datetime(occurred_at)
+        connection.execute(
+            "UPDATE derivation_nodes SET state = ?, revision = ?, updated_at = ?, "
+            "row_fingerprint = ? WHERE artifact_id = ? AND revision = ?",
+            (
+                transitioned.state.value,
+                transitioned.revision,
+                occurred_text,
+                transitioned.row_fingerprint,
+                artifact_id,
+                current.revision,
+            ),
+        )
+        if current.state is DerivationLifecycleState.CURRENT:
+            connection.execute(
+                "UPDATE derivation_slots SET current_artifact_id = NULL, updated_at = ? "
+                "WHERE slot_id = ? AND current_artifact_id = ?",
+                (occurred_text, current.slot.slot_id, artifact_id),
+            )
+        self._append_derivation_event(
+            connection,
+            artifact_id=artifact_id,
+            from_state=current.state,
+            to_state=to_state,
+            reason=reason,
+            run_id=run_id,
+            occurred_at=occurred_text,
+        )
+        self._fault_point("after_derivation_state")
+        return transitioned
+
+    @staticmethod
+    def _append_derivation_event(
+        connection: sqlite3.Connection,
+        *,
+        artifact_id: str,
+        from_state: DerivationLifecycleState | None,
+        to_state: DerivationLifecycleState,
+        reason: DerivationEventReason,
+        run_id: str | None,
+        occurred_at: str,
+    ) -> None:
+        sequence = int(
+            connection.execute(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM derivation_events "
+                "WHERE artifact_id = ?",
+                (artifact_id,),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            "INSERT INTO derivation_events(artifact_id, sequence, from_state, to_state, "
+            "reason, run_id, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                artifact_id,
+                sequence,
+                from_state.value if from_state is not None else None,
+                to_state.value,
+                reason.value,
+                run_id,
+                occurred_at,
+            ),
+        )
+
+    def _load_derivation_events(
+        self,
+        connection: sqlite3.Connection,
+        artifact_id: str,
+    ) -> tuple[DerivationLifecycleEvent, ...]:
+        rows = connection.execute(
+            "SELECT * FROM derivation_events WHERE artifact_id = ? ORDER BY sequence",
+            (artifact_id,),
+        ).fetchall()
+        try:
+            events = tuple(
+                DerivationLifecycleEvent(
+                    artifact_id=str(row["artifact_id"]),
+                    sequence=int(row["sequence"]),
+                    from_state=(
+                        DerivationLifecycleState(str(row["from_state"]))
+                        if row["from_state"] is not None
+                        else None
+                    ),
+                    to_state=DerivationLifecycleState(str(row["to_state"])),
+                    reason=DerivationEventReason(str(row["reason"])),
+                    run_id=str(row["run_id"]) if row["run_id"] is not None else None,
+                    occurred_at=decode_storage_datetime(str(row["occurred_at"])),
+                )
+                for row in rows
+            )
+            for previous, current in pairwise(events):
+                if current.from_state is not previous.to_state:
+                    raise DerivationIntegrityError("derivation event chain drifted")
+            if events:
+                node = self._load_derivation(connection, artifact_id)
+                if node is None or events[-1].to_state is not node.state:
+                    raise DerivationIntegrityError("derivation event terminal state drifted")
+            return events
+        except (ValidationError, ValueError) as error:
+            raise DerivationIntegrityError("stored derivation event is invalid") from error
 
     def _register_object(
         self,

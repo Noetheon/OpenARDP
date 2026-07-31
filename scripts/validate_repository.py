@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import tomllib
@@ -441,6 +442,44 @@ def _validate_f005a_governance(root: Path) -> list[Diagnostic]:
     return diagnostics
 
 
+def _validate_mcp_fixtures(root: Path) -> list[Diagnostic]:
+    """Require canonical deterministic bytes for reviewed MCP golden fixtures."""
+    diagnostics: list[Diagnostic] = []
+    fixture_directory = root / "tests" / "fixtures" / "mcp"
+    if not fixture_directory.is_dir():
+        return diagnostics
+    for path in sorted(fixture_directory.glob("*.json")):
+        raw = path.read_bytes()
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV010",
+                    path.relative_to(root).as_posix(),
+                    "MCP golden fixture is not valid UTF-8 JSON",
+                )
+            )
+            continue
+        canonical = json.dumps(
+            parsed,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if raw != canonical and raw != canonical + b"\n":
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV010",
+                    path.relative_to(root).as_posix(),
+                    "MCP golden fixture is not canonical deterministic JSON",
+                )
+            )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -522,6 +561,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
                     )
                 )
     diagnostics.extend(_validate_f005a_governance(root))
+    diagnostics.extend(_validate_mcp_fixtures(root))
     return _sort_diagnostics(root, diagnostics)
 
 

@@ -45,6 +45,11 @@ projection; identity vectors live in `tests/fixtures/context/`. Both generations
 deterministic; the nine earlier schema files and both earlier vector files remain
 byte-identical.
 
+Feature 009 adds no interchange schema, identity vector or workspace migration. Its
+experimental `MCP interface 0.1.0` is an application contract documented under the
+feature and pinned by canonical protocol fixtures. All eleven generated schema files
+and all three identity-vector files therefore remain byte-identical to Feature 008.
+
 ## Compatibility policy
 
 - Readers accept exactly the explicitly installed schema release `0.1.0`; they do not guess compatibility from a shared minor number.

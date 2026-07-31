@@ -105,6 +105,23 @@ F007_VECTOR_HASHES = {
 F007_EVIDENCE_CORPUS_DIGEST = (
     "sha256:e5fd01bc89d49267cd3d113e76428f0c931f99ce43b10756ac3aafc6e31eaccb"
 )
+F008_ADDITIVE_SCHEMA_HASHES = {
+    "context-bundle-0.2.0.schema.json": (
+        "2a5c3c286456aae31fa558f8d43d7c9226b15affc6d96a6641d4666e886a3d9e"
+    ),
+    "selection-receipt.schema.json": (
+        "05c24f533da13b9705af4e6f25f0b96d5e41ee5d1d329756571a5c63a867d607"
+    ),
+}
+F008_ADDITIVE_VECTOR_HASHES = {
+    "tests/fixtures/context/canonicalization-vectors.json": (
+        "2e221ba1533ce53db389fffa37a25b633472ef49646e6f9f3be5c68ff752afad"
+    ),
+}
+F009_FROZEN_MANIFEST_HASHES = {
+    "pyproject.toml": "739c224eb4dbc41155a986c76f30c9074646748c95f4b13dbade356d7fa70736",
+    "uv.lock": "1540dd72ac6b4d9873f9502deff4b2ebce2b9df40cd339799fe5272caed2f8dc",
+}
 
 
 def _project_configuration(repository_root: Path) -> dict[str, Any]:
@@ -136,6 +153,31 @@ def test_f007_contract_bytes_remain_frozen(repository_root: Path) -> None:
         _tree_digest(repository_root / "conformance" / "evidence" / "v0.1.0")
         == F007_EVIDENCE_CORPUS_DIGEST
     )
+
+
+def test_f008_contract_bytes_remain_frozen(repository_root: Path) -> None:
+    """Prevent additive F009 work from changing any F008 public contract byte."""
+    combined_schemas = {**F007_SCHEMA_HASHES, **F008_ADDITIVE_SCHEMA_HASHES}
+    assert len(combined_schemas) == 11
+    for name, expected in combined_schemas.items():
+        actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
+        assert actual == expected
+    combined_vectors = {**F007_VECTOR_HASHES, **F008_ADDITIVE_VECTOR_HASHES}
+    assert len(combined_vectors) == 3
+    for relative, expected in combined_vectors.items():
+        actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
+        assert actual == expected
+    assert (
+        _tree_digest(repository_root / "conformance" / "evidence" / "v0.1.0")
+        == F007_EVIDENCE_CORPUS_DIGEST
+    )
+
+
+def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
+    """Prove F009 adds no MCP SDK, async framework or network dependency."""
+    for relative, expected in F009_FROZEN_MANIFEST_HASHES.items():
+        actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
+        assert actual == expected
 
 
 def test_required_repository_files_exist(repository_root: Path) -> None:

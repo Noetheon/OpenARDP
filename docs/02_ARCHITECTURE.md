@@ -1,6 +1,6 @@
 # Architecture
 
-**Status:** Canonical architecture. Sections distinguish delivered Features 001–005 from planned components in the
+**Status:** Canonical architecture. Sections distinguish delivered Features 001–009 from planned components in the
 [005A–017 feature map](../spec-kit/FEATURE_MAP.md). Feature 007 delivered the bounded
 Docling-native adapter; Feature 008 delivered the deterministic context compiler and
 selection receipts described below.
@@ -157,7 +157,8 @@ Output: immutable `ContextBundle` containing selected representations, provenanc
 ### Interfaces
 
 - CLI is authoritative for local behavior and test automation.
-- MCP wraps application services; it does not contain business logic.
+- The delivered read-only MCP stdio interface wraps the same query, search, evidence
+  and context-compiler services; it contains no business logic or path resolver.
 - HTTP API follows the same use cases after contracts stabilize.
 
 ## 3. Deployment profiles
@@ -170,9 +171,10 @@ SQLite + FTS5
 filesystem CAS
 bounded parser worker
 CLI
+read-only stdio MCP
 ```
 
-Watcher, read-only MCP and Docling are later bounded features. Run rich parsers in a worker process with explicit limits
+Watcher and HTTP remain later bounded features. Run rich parsers in a worker process with explicit limits
 and denied network where supported; this is defense in depth, not a universal strong sandbox.
 
 ### Team server

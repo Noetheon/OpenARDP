@@ -67,3 +67,27 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - Operational logs from `openardp.context_compiler` carry identifiers, counts and
   millisecond timings only; failure lines reduce to closed taxonomy codes. Receipts
   and default CLI output never contain task text, evidence bodies or source paths.
+
+## Feature 009 operating profile
+
+- Launch one local server per explicitly configured workspace with
+  `openardp mcp --store PATH`. Workspace selection is operator configuration; MCP tool
+  arguments cannot select paths, roots or URLs.
+- The server uses stdin/stdout exclusively for newline-delimited JSON-RPC, opens no
+  listener and exits cleanly on EOF. Keep stdout reserved for protocol messages;
+  diagnostics and body-free audit events use stderr/logging.
+- Defaults are a fixed 64 KiB inbound line, 64 pending non-cancellation frames, 1 MiB
+  serialized response and 30-second request deadline. Operators may set the response
+  cap from 64 KiB through 4 MiB and the deadline from 1 through 120 seconds at launch;
+  invalid values fail before stream access or workspace mutation. Pending-frame
+  overflow cancels active work and closes the session with a sanitized error.
+- The server opens revision-6 workspaces read-only except for the exact additive,
+  immutable F008 `compile_context` publication path. It never initializes, migrates,
+  repairs, ingests, reindexes, deletes or runs Docling.
+- Protocol errors and audit records contain fixed categories, identifiers or their
+  digests, counts and integer durations only. Queries, tasks, document bodies, source
+  paths and provider tracebacks are excluded by default and covered by hostile-input
+  regression tests.
+- An exclusive SQLite lock, corrupt catalog, missing marker or newer workspace revision
+  fails startup without repair or byte drift. Back up the workspace before upgrading
+  the application even though Feature 009 itself adds no migration.

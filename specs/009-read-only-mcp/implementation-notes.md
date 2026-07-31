@@ -325,7 +325,7 @@ all F001–F008 CLI/application behavior remain usable; additive MCP fixtures an
 can be removed without data conversion. Immutable context results created through the
 MCP compiler are ordinary valid F008 artifacts and do not require cleanup for rollback.
 
-#### Remote evidence placeholders
+#### Remote evidence
 
 Final Spec Kit analysis identified the real mid-flight cancellation, pending-frame
 memory-bound and unknown-ID lifecycle gaps as two high and one medium finding. Their
@@ -335,10 +335,18 @@ mapping covers all 27 functional requirements, 12 success criteria, four user st
 and 75 completed tasks with zero unresolved critical/high findings and no further task
 to append.
 
-- Pull request: pending publication.
-- PR-head Ubuntu/macOS/Windows workflow: pending publication.
-- Squash merge commit: pending publication.
-- Post-merge `main` Ubuntu/macOS/Windows workflow: pending publication.
+- Pull request [#12](https://github.com/Noetheon/OpenARDP/pull/12) reviewed the exact
+  feature head `f02fa9a07f04d622f1ac6d790fc6620edf4eb7a5`.
+- PR-head workflow
+  [30649553804](https://github.com/Noetheon/OpenARDP/actions/runs/30649553804)
+  passed Ubuntu (3m46s), macOS (3m02s) and Windows (6m07s).
+- The PR squash-merged to `main` as
+  [`ca0a20d40b8f28d986e7af77e2c0ceefcee24997`](https://github.com/Noetheon/OpenARDP/commit/ca0a20d40b8f28d986e7af77e2c0ceefcee24997).
+- Post-merge `main` workflow
+  [30650000034](https://github.com/Noetheon/OpenARDP/actions/runs/30650000034)
+  passed Ubuntu (3m57s), macOS (2m54s) and Windows (10m07s). Every platform ran the
+  locked sync, pre-commit validation, lint, formatting, strict mypy, all 843 offline
+  tests, distribution build and tracked-file drift check.
 
 ### Known environment note
 

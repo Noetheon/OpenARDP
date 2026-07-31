@@ -269,8 +269,20 @@ index drift, every published resource cap, privacy scans and byte-for-byte non-m
 startup failures. The server opens no listener, accepts no client source path and never
 constructs ingestion, reindex or provider services. Exact final gate counts, frozen
 hashes, isolated-wheel probes and external workflow references are maintained in the
-feature notes; external cross-platform validation remains pending until the feature is
-published.
+feature notes.
+
+## Feature 009 external verification completed
+
+[Pull request #12](https://github.com/Noetheon/OpenARDP/pull/12) merged F009 as
+[`ca0a20d40b8f28d986e7af77e2c0ceefcee24997`](https://github.com/Noetheon/OpenARDP/commit/ca0a20d40b8f28d986e7af77e2c0ceefcee24997).
+The PR-head workflow
+[30649553804](https://github.com/Noetheon/OpenARDP/actions/runs/30649553804) and
+post-merge `main` workflow
+[30650000034](https://github.com/Noetheon/OpenARDP/actions/runs/30650000034) both
+passed the complete locked gate on Ubuntu, macOS and Windows. Every job ran Ruff,
+formatting, strict mypy, all 843 network-blocked tests, distribution builds and
+tracked-file drift verification. This closes F009's cross-platform publication and
+final Spec Kit convergence boundary.
 
 ## Corrective environment verification
 

@@ -176,3 +176,19 @@ not synthesize deletion authority. Backup manifests and paths are untrusted inpu
 restore validates canonical relative paths, complete inventory, hashes and catalog
 history before publishing to a fresh disjoint directory. This is logical removal, not a
 secure-erasure claim.
+
+## Delivered Feature 015 release-security controls
+
+- The frozen security-control manifest maps every control to exact pytest node IDs;
+  missing, renamed, failed, skipped or unallowlisted results fail the suite.
+- Instruction-shaped source and metadata fixtures remain untrusted data with zero tool
+  authority. Malformed OOXML/archive input is bounded and reduced to stable body-free
+  failure categories.
+- Evidence roots, source inventories, wheels, sdists and nested privacy scans reject
+  traversal, links, excess members/bytes, duplicate JSON keys and cleartext canaries.
+- Platform bundles and the release decision use canonical SHA-256 identities. All
+  mandatory clauses are evaluated in fixed order and the CLI exposes no waiver,
+  force, ignore or warning-only path.
+- These checks are regression evidence, not proof of universal security, strong
+  sandboxing or vulnerability absence. The current candidate remains `NO-GO` while
+  required security/supply-chain/reproduction evidence is incomplete.

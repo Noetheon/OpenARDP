@@ -1,0 +1,95 @@
+{
+  "bootstrap_resamples": 10000,
+  "maximum_selected_native_ratio": 0.5,
+  "maximum_vulnerability_age_days": 30,
+  "minimum_correctness_ratio": 1.0,
+  "minimum_coverage_ratio": 1.0,
+  "minimum_timing_samples": 7,
+  "policy_id": "sha256:6c4100c13332cb6c27b43bcf1e7c88a8b074c79a6484bfcad110e710f93fbe16",
+  "policy_version": "0.1.0",
+  "required_baselines": [
+    "raw_reparse",
+    "native_reuse",
+    "native_retrieval",
+    "openardp_retrieval",
+    "openardp_compiler"
+  ],
+  "required_checks": {
+    "correctness": [
+      "anchor-correctness-complete",
+      "evaluator-abstention-explicit",
+      "precision-complete",
+      "recall-complete",
+      "reciprocal-rank-complete",
+      "stale-rejection-complete",
+      "three-budget-coverage"
+    ],
+    "fresh_install": [
+      "candidate-artifacts-inspected",
+      "cli-schema-smoke",
+      "offline-wheel-install"
+    ],
+    "performance": [
+      "baseline-native_retrieval",
+      "baseline-native_reuse",
+      "baseline-openardp_compiler",
+      "baseline-openardp_retrieval",
+      "baseline-raw_reparse",
+      "deterministic-replay",
+      "lifecycle-cold",
+      "lifecycle-update",
+      "lifecycle-warm",
+      "storage-overhead"
+    ],
+    "platform_reproduction": [
+      "platform-semantic-reproduction"
+    ],
+    "privacy": [
+      "privacy-body",
+      "privacy-credential",
+      "privacy-exception",
+      "privacy-path",
+      "privacy-query"
+    ],
+    "security": [
+      "sec-artifact-traversal",
+      "sec-content-zero-authority",
+      "sec-evidence-path-boundary",
+      "sec-interface-zero-authority",
+      "sec-parser-isolation",
+      "sec-release-gate-no-waiver",
+      "sec-source-edit-invalidation",
+      "sec-stale-drift",
+      "sec-test-manifest-completeness"
+    ],
+    "supply_chain": [
+      "critical-high-vulnerabilities-resolved",
+      "lower-vulnerabilities-reviewed",
+      "sbom-component-completeness",
+      "sbom-dependency-graph-completeness",
+      "sbom-license-completeness",
+      "vulnerability-snapshot-current"
+    ],
+    "upgrade_recovery": [
+      "backup-upgrade-restore",
+      "previous-workspace-open",
+      "revision-nine-migration"
+    ]
+  },
+  "required_platforms": [
+    "linux",
+    "macos",
+    "windows"
+  ],
+  "required_suites": [
+    "performance",
+    "correctness",
+    "security",
+    "privacy",
+    "supply_chain",
+    "fresh_install",
+    "upgrade_recovery",
+    "platform_reproduction"
+  ],
+  "schema_version": "0.1.0"
+}

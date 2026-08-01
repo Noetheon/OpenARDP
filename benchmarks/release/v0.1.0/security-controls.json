@@ -1,0 +1,97 @@
+{
+  "controls": [
+    {
+      "control_id": "sec-artifact-traversal",
+      "invariant": "archive-members-never-escape",
+      "test_nodes": [
+        "tests/integration/test_release_reproduction.py::test_artifact_inspection_rejects_traversal_and_privacy_canary",
+        "tests/security/test_interchange_boundaries.py::test_payload_digest_conflict_is_integrity_invalid"
+      ],
+      "threat": "artifact-path-or-privacy-injection"
+    },
+    {
+      "control_id": "sec-content-zero-authority",
+      "invariant": "instruction-shaped-content-remains-data",
+      "test_nodes": [
+        "tests/security/test_mcp_boundaries.py::test_injection_shaped_queries_are_inert_and_never_echoed",
+        "tests/security/test_mcp_boundaries.py::test_injection_shaped_tasks_stay_digested_and_handle_first",
+        "tests/security/test_release_injection.py::test_hostile_document_cannot_initiate_tool_authority",
+        "tests/security/test_visual_interpretation_boundaries.py::test_prompt_like_low_confidence_output_stays_untrusted_and_keeps_crop"
+      ],
+      "threat": "prompt-injection"
+    },
+    {
+      "control_id": "sec-evidence-path-boundary",
+      "invariant": "evidence-links-and-traversal-rejected",
+      "test_nodes": [
+        "tests/security/test_local_source_boundaries.py::test_source_change_during_snapshot_is_rejected",
+        "tests/security/test_release_boundaries.py::test_source_tree_rejects_traversal_and_symlinks"
+      ],
+      "threat": "filesystem-escape"
+    },
+    {
+      "control_id": "sec-interface-zero-authority",
+      "invariant": "mcp-surface-remains-read-only-and-bounded",
+      "test_nodes": [
+        "tests/integration/test_cli_mcp.py::test_mcp_launch_serves_exact_golden_tools_and_does_not_mutate",
+        "tests/integration/test_mcp_server.py::test_tools_list_matches_contract_surface",
+        "tests/security/test_mcp_boundaries.py::test_every_tool_family_enforces_its_published_cap"
+      ],
+      "threat": "interface-authority-expansion"
+    },
+    {
+      "control_id": "sec-parser-isolation",
+      "invariant": "malformed-hanging-crashing-oversized-and-networked-providers-fail-bounded",
+      "test_nodes": [
+        "tests/security/test_release_parser_isolation.py::test_malformed_archive_is_bounded_and_body_free",
+        "tests/security/test_visual_interpretation_boundaries.py::test_provider_network_attempt_fails_without_output_or_trust_promotion",
+        "tests/unit/test_isolated_docling.py::test_isolated_adapter_denies_network_before_selected_worker_behavior",
+        "tests/unit/test_isolated_docling.py::test_isolated_adapter_times_out_crashes_and_enforces_source_limit",
+        "tests/unit/test_isolated_docling.py::test_ipc_close_input_failure_cancellation_and_worker_details_are_sanitized",
+        "tests/unit/test_isolated_docling.py::test_worker_decoder_rejects_every_unreviewed_shape"
+      ],
+      "threat": "parser-crash-hang-network-or-partial-output"
+    },
+    {
+      "control_id": "sec-release-gate-no-waiver",
+      "invariant": "all-failed-clauses-remain-blockers",
+      "test_nodes": [
+        "tests/integration/test_release_gate.py::test_missing_platform_and_baseline_produce_no_go"
+      ],
+      "threat": "release-policy-bypass"
+    },
+    {
+      "control_id": "sec-source-edit-invalidation",
+      "invariant": "edited-source-invalidates-reuse",
+      "test_nodes": [
+        "tests/integration/test_ingestion_service.py::test_changed_source_and_a_to_b_to_a_reuse_immutable_versions",
+        "tests/integration/test_release_benchmarks.py::test_source_edit_invalidation_requires_explicit_prepare"
+      ],
+      "threat": "stale-derived-state"
+    },
+    {
+      "control_id": "sec-stale-drift",
+      "invariant": "stale-corrupt-capacity-interruption-and-migration-fail-closed",
+      "test_nodes": [
+        "tests/integration/test_backup_restore.py::test_backup_capacity_rejection_cleans_only_owned_staging",
+        "tests/integration/test_backup_restore.py::test_backup_interruption_before_publication_leaves_no_destination",
+        "tests/integration/test_backup_restore.py::test_explicit_revision_nine_migration_publishes_verified_rollback",
+        "tests/integration/test_context_compiler.py::test_cancellation_at_bounded_phases_leaves_no_partial_state",
+        "tests/integration/test_f010_catalog.py::test_head_changes_stale_exact_transitive_closure_and_reactivate_a_b_a",
+        "tests/integration/test_f010_catalog.py::test_reconciliation_faults_expose_no_partial_catalog_rows",
+        "tests/integration/test_ingestion_service.py::test_corrupt_ready_block_fails_explicitly_without_automatic_reparse",
+        "tests/security/test_context_boundaries.py::test_corrupted_cas_objects_fail_closed_at_compile_and_load"
+      ],
+      "threat": "stale-or-corrupt-evidence"
+    },
+    {
+      "control_id": "sec-test-manifest-completeness",
+      "invariant": "missing-skipped-or-renamed-node-fails",
+      "test_nodes": [
+        "tests/security/test_release_boundaries.py::test_security_manifest_requires_every_exact_passing_node"
+      ],
+      "threat": "silent-control-omission"
+    }
+  ],
+  "manifest_version": "0.1.0"
+}

@@ -1,0 +1,57 @@
+{
+  "baselines": [
+    "raw_reparse",
+    "native_reuse",
+    "native_retrieval",
+    "openardp_retrieval",
+    "openardp_compiler"
+  ],
+  "bootstrap_resamples": 10000,
+  "confidence_level": 0.95,
+  "invalid_sample_policy": "retain_and_fail_sufficiency",
+  "minimum_timing_samples": 7,
+  "metrics": {
+    "anchor_correctness": "ratio",
+    "correctness": "ratio",
+    "coverage": "ratio",
+    "latency": "ns",
+    "native_bytes": "bytes",
+    "parser_invocations": "count",
+    "precision": "ratio",
+    "recall": "ratio",
+    "reciprocal_rank": "ratio",
+    "replay_match": "ratio",
+    "selected_bytes": "bytes",
+    "stale_rejection": "ratio",
+    "storage_bytes": "bytes"
+  },
+  "phases": [
+    "cold",
+    "warm",
+    "update",
+    "retrieval",
+    "compile",
+    "replay"
+  ],
+  "protocol_version": "0.1.0",
+  "rejected_sample_reasons": [
+    "clock-invalid",
+    "resource-limit",
+    "source-drift",
+    "treatment-unavailable"
+  ],
+  "resource_limits": {
+    "archive_members": 2000,
+    "expanded_xml_bytes": 33554432,
+    "source_bytes": 16777216
+  },
+  "rounding": "half_even_6",
+  "statistics": [
+    "median",
+    "median_absolute_deviation",
+    "deterministic_percentile_bootstrap"
+  ],
+  "timing_clock": "monotonic_ns",
+  "timing_unit": "ns",
+  "warmup_repetitions": 1
+}

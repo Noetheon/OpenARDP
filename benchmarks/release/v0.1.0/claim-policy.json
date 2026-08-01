@@ -1,0 +1,18 @@
+{
+  "always_allowed": [
+    "evidence-preserving",
+    "experimental-contracts",
+    "local-first"
+  ],
+  "always_prohibited": [
+    "enterprise-performance",
+    "third-party-reproduced",
+    "universal-security"
+  ],
+  "go_only": [
+    "measured-parser-reuse",
+    "three-platform-supported",
+    "v0.1-release-ready"
+  ],
+  "policy_version": "0.1.0"
+}

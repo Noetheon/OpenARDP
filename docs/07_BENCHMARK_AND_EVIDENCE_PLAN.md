@@ -1,6 +1,8 @@
 # Benchmark and evidence plan
 
-**Status:** Planned evidence protocol. This document contains no benchmark result or performance claim.
+**Status:** Feature 015 implements the frozen evidence protocol and fail-closed gate. The
+current committed candidate decision is `NO-GO`; this document makes no release or
+general performance claim.
 
 ## Fair baselines
 
@@ -39,3 +41,28 @@ E. OpenARDP context compiler with receipts and optional derivations.
 - Report failures and confidence intervals.
 - Separate mechanical efficiency from downstream model quality.
 - Do not generalize from synthetic microbenchmarks to enterprise workloads.
+
+## Feature 015 frozen protocol
+
+The normative inputs are under `benchmarks/release/v0.1.0/`. They fix five baseline
+identities, three judged document families, three byte budgets, seven retained timing
+samples after one warm-up and 10,000 deterministic percentile-bootstrap resamples.
+Raw observations retain failures and unavailable treatments. Mechanical correctness is
+computed only from committed exact terms, evidence identities and anchors; no model
+evaluator result is implied when `model_evaluator` is `unavailable`.
+
+The committed local reference capture contains 4,222 raw observations across all five
+baselines, three document families and three budgets. Exact mechanical quality passes;
+the selected/native ratio does not meet the predeclared `0.5` ceiling. This unfavorable
+result is a binding blocker, not a hidden or relabelled success.
+
+Only one explicitly declared reference environment may supply binding timing evidence.
+Shared CI supplies platform semantics but is not silently treated as an idle reference
+machine. Operational value requires the OpenARDP retrieval upper confidence bound to
+remain below the raw-reparse lower bound, zero warm parser calls, exact judged quality
+and selected bytes at most half the direct-native bytes.
+
+The authoritative result is
+[`release/evidence/v0.1.0/decision.json`](../release/evidence/v0.1.0/decision.json).
+Its report and claim map are generated projections. Current missing evidence remains a
+release blocker; it is not a benchmark failure hidden behind narrative wording.

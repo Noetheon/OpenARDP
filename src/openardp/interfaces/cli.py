@@ -8,13 +8,14 @@ import os
 import sqlite3
 import stat
 import sys
+import tempfile
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import BinaryIO, NoReturn, cast
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, JsonValue
 
 from openardp.adapters.bagit_interchange import LocalAssetSource
 from openardp.adapters.context_candidates import (
@@ -43,6 +44,14 @@ from openardp.adapters.local_workspace import (
     WorkspaceError,
     WorkspaceIncompatible,
 )
+from openardp.adapters.release_benchmarks import (
+    NativeRetrievalTreatment,
+    NativeReuseTreatment,
+    OpenArdpCompilerTreatment,
+    OpenArdpRetrievalTreatment,
+    RawReparseTreatment,
+)
+from openardp.adapters.release_evidence import LocalReleaseEvidenceStore
 from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
 from openardp.domain.common import SCHEMA_VERSION, Sensitivity
 from openardp.domain.context import ContextMode
@@ -51,9 +60,18 @@ from openardp.domain.context_compilation import (
     ContextCompileRequest,
     ContextSelectionPolicy,
 )
+from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import RichMediaType
 from openardp.domain.interchange import AssetDisposition, InterchangeLimits, InterchangePackage
 from openardp.domain.maintenance import InventoryLimits, ReclamationPlan, RetentionPolicy
+from openardp.domain.release import (
+    EvidenceCheck,
+    EvidenceMalformed,
+    ReleaseDecision,
+    ReleaseEvidenceError,
+    ReleaseGatePolicy,
+    SuiteName,
+)
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
@@ -103,6 +121,7 @@ from openardp.ports.interchange import (
 from openardp.ports.maintenance import InsufficientSpace, MaintenanceError
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
+from openardp.ports.release import ReleaseEvidenceConflict, ReleaseEvidenceStoreError
 from openardp.ports.visual import (
     UnsupportedVisualMedia,
     VisualConflict,
@@ -126,6 +145,17 @@ from openardp.services.interchange import InterchangeService
 from openardp.services.maintenance import (
     IRREVERSIBLE_ACKNOWLEDGEMENT,
     MaintenanceService,
+)
+from openardp.services.release_benchmarks import (
+    ReleaseCorpusMalformed,
+    build_platform_evidence,
+    load_benchmark_cases,
+    run_benchmarks,
+)
+from openardp.services.release_gate import (
+    build_claim_map,
+    evaluate_release,
+    render_release_report,
 )
 from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
@@ -168,6 +198,9 @@ _COMMANDS = {
     "package-export",
     "package-verify",
     "package-import",
+    "release-evidence",
+    "release-gate",
+    "release-report",
 }
 
 _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
@@ -355,6 +388,36 @@ def _parser() -> _ArgumentParser:
     package_import.add_argument("--destination", type=Path, required=True)
     _interchange_limit_options(package_import)
     package_import.add_argument("--json", action="store_true", dest="json_output")
+
+    release_evidence = subparsers.add_parser(
+        "release-evidence",
+        help="generate one immutable body-free platform evidence bundle",
+    )
+    release_evidence.add_argument("--corpus", type=Path, required=True)
+    release_evidence.add_argument("--output", type=Path, required=True)
+    release_evidence.add_argument("--source-root", type=Path, required=True)
+    release_evidence.add_argument("--suite-results", type=Path)
+    release_evidence.add_argument("--reference-timing", action="store_true")
+    release_evidence.add_argument("--json", action="store_true", dest="json_output")
+
+    release_gate = subparsers.add_parser(
+        "release-gate",
+        help="evaluate all frozen release clauses without waivers",
+    )
+    release_gate.add_argument("--policy", type=Path, required=True)
+    release_gate.add_argument("--evidence", type=Path, action="append", required=True)
+    release_gate.add_argument("--output", type=Path, required=True)
+    release_gate.add_argument("--decision-at", required=True)
+    release_gate.add_argument("--json", action="store_true", dest="json_output")
+
+    release_report = subparsers.add_parser(
+        "release-report",
+        help="write or drift-check human and claim projections",
+    )
+    release_report.add_argument("--decision", type=Path, required=True)
+    release_report.add_argument("--output", type=Path, required=True)
+    release_report.add_argument("--check", action="store_true")
+    release_report.add_argument("--json", action="store_true", dest="json_output")
 
     list_parser = subparsers.add_parser("list", help="list body-free document summaries")
     _common_options(list_parser)
@@ -845,6 +908,191 @@ def _read_bounded_regular(path: Path, *, max_bytes: int) -> bytes:
             os.close(descriptor)
 
 
+def _release_evidence(arguments: argparse.Namespace) -> dict[str, object]:
+    """Generate and immutably publish one local platform evidence bundle."""
+    repository_root = Path(arguments.source_root)
+    corpus = Path(arguments.corpus)
+    cases = load_benchmark_cases(repository_root, corpus)
+    treatments = (
+        RawReparseTreatment(),
+        NativeReuseTreatment(),
+        NativeRetrievalTreatment(),
+        OpenArdpRetrievalTreatment(),
+        OpenArdpCompilerTreatment(),
+    )
+    observations = run_benchmarks(cases, treatments, repetitions=7, warmups=1)
+    evidence = build_platform_evidence(
+        repository_root=repository_root,
+        corpus=corpus,
+        observations=observations,
+        suite_results=_load_suite_results(arguments.suite_results),
+        reference_timing=bool(arguments.reference_timing),
+    )
+    destination = Path(arguments.output)
+    LocalReleaseEvidenceStore().publish(destination, evidence)
+    return {
+        "evidence_id": evidence.evidence_id,
+        "platform_id": evidence.environment.platform_id,
+        "reference_timing": evidence.environment.reference_timing,
+        "observation_count": len(evidence.observations),
+        "suite_status": {suite.name.value: suite.status.value for suite in evidence.suites},
+        "output": str(destination),
+    }
+
+
+def _release_gate(arguments: argparse.Namespace) -> dict[str, object]:
+    """Load exact platform bundles and publish one exhaustive release decision."""
+    policy_payload = _strict_json_object(
+        _read_bounded_regular(Path(arguments.policy), max_bytes=1_048_576)
+    )
+    policy = ReleaseGatePolicy.model_validate_json(
+        canonical_json_bytes(cast(JsonValue, policy_payload))
+    )
+    store = LocalReleaseEvidenceStore()
+    evidence = tuple(store.load(Path(path)) for path in arguments.evidence)
+    decision = evaluate_release(
+        policy=policy,
+        evidence=evidence,
+        decision_at=_parse_release_time(str(arguments.decision_at)),
+    )
+    output = _release_output_directory(Path(arguments.output))
+    decision_path = output / "decision.json"
+    _publish_exact_file(
+        decision_path,
+        canonical_json_bytes(decision.model_dump(mode="json")) + b"\n",
+    )
+    return {
+        "decision_id": decision.decision_id,
+        "status": decision.status.value,
+        "blockers": decision.blockers,
+        "output": str(decision_path),
+    }
+
+
+def _release_report(arguments: argparse.Namespace) -> dict[str, object]:
+    """Generate or check byte-stable human and claim projections."""
+    decision_payload = _strict_json_object(
+        _read_bounded_regular(Path(arguments.decision), max_bytes=8_388_608)
+    )
+    decision = ReleaseDecision.model_validate_json(
+        canonical_json_bytes(cast(JsonValue, decision_payload))
+    )
+    decision.verify_identity()
+    output = _release_output_directory(Path(arguments.output))
+    projections = {
+        output / "report.md": render_release_report(decision),
+        output / "claim-map.json": canonical_json_bytes(build_claim_map(decision)) + b"\n",
+    }
+    if bool(arguments.check):
+        drift = tuple(
+            path.name
+            for path, expected in projections.items()
+            if not path.is_file() or _read_bounded_regular(path, max_bytes=8_388_608) != expected
+        )
+        if drift:
+            raise ReleaseEvidenceConflict("release report projection drift")
+    else:
+        for path, expected in projections.items():
+            _publish_exact_file(path, expected)
+    return {
+        "decision_id": decision.decision_id,
+        "status": decision.status.value,
+        "checked": bool(arguments.check),
+        "outputs": tuple(str(path) for path in projections),
+    }
+
+
+def _load_suite_results(path: Path | None) -> dict[SuiteName, tuple[EvidenceCheck, ...]]:
+    if path is None:
+        return {}
+    payload = _strict_json_object(_read_bounded_regular(path, max_bytes=4_194_304))
+    if set(payload) != {"schema_version", "suites"} or payload["schema_version"] != "0.1.0":
+        raise _UsageError("suite result root is invalid")
+    raw_suites = payload["suites"]
+    if not isinstance(raw_suites, dict):
+        raise _UsageError("suite results must be an object")
+    results: dict[SuiteName, tuple[EvidenceCheck, ...]] = {}
+    try:
+        for name, raw_checks in raw_suites.items():
+            suite = SuiteName(name)
+            if suite in {SuiteName.PERFORMANCE, SuiteName.CORRECTNESS}:
+                raise _UsageError("derived benchmark suites cannot be supplied")
+            if not isinstance(raw_checks, list):
+                raise _UsageError("suite checks must be an array")
+            results[suite] = tuple(
+                EvidenceCheck.model_validate_json(canonical_json_bytes(item)) for item in raw_checks
+            )
+    except (TypeError, ValueError) as error:
+        if isinstance(error, _UsageError):
+            raise
+        raise _UsageError("suite result is invalid") from error
+    return results
+
+
+def _strict_json_object(data: bytes) -> dict[str, object]:
+    try:
+        value = json.loads(data, object_pairs_hook=_unique_json_pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise _UsageError("JSON input is invalid") from error
+    if not isinstance(value, dict):
+        raise _UsageError("JSON input must be an object")
+    return cast(dict[str, object], value)
+
+
+def _unique_json_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    value: dict[str, object] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("duplicate JSON key")
+        value[key] = item
+    return value
+
+
+def _parse_release_time(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise _UsageError("decision-at must be RFC 3339") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise _UsageError("decision-at must include a UTC offset")
+    return parsed.astimezone(UTC)
+
+
+def _release_output_directory(path: Path) -> Path:
+    target = path.expanduser().absolute()
+    try:
+        target.mkdir(mode=0o700, parents=True, exist_ok=True)
+        metadata = target.lstat()
+    except OSError as error:
+        raise ReleaseEvidenceConflict("release output directory is unavailable") from error
+    if target.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+        raise ReleaseEvidenceConflict("release output directory is unsafe")
+    return target
+
+
+def _publish_exact_file(path: Path, data: bytes) -> None:
+    if path.exists():
+        if _read_bounded_regular(path, max_bytes=8_388_608) == data:
+            return
+        raise ReleaseEvidenceConflict("release output conflicts")
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if _read_bounded_regular(path, max_bytes=8_388_608) != data:
+                raise ReleaseEvidenceConflict("release output conflicts") from None
+    except OSError as error:
+        raise ReleaseEvidenceConflict("release output publication failed") from error
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def _interchange_limits(arguments: argparse.Namespace) -> InterchangeLimits:
     """Construct one closed hostile-package limit policy from CLI integers."""
     return InterchangeLimits(
@@ -1014,6 +1262,12 @@ def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
 
 def _execute(arguments: argparse.Namespace) -> object:
     command = str(arguments.command)
+    if command == "release-evidence":
+        return _release_evidence(arguments)
+    if command == "release-gate":
+        return _release_gate(arguments)
+    if command == "release-report":
+        return _release_report(arguments)
     if command == "package-export":
         request = _load_package_export_request(Path(arguments.request))
         return InterchangeService().export(
@@ -1461,6 +1715,10 @@ def _safe_text(value: str) -> str:
 def _classification(error: Exception) -> tuple[int, str, str]:
     if isinstance(error, _UsageError):
         return 2, "invalid_usage", "command usage is invalid"
+    if isinstance(error, ReleaseCorpusMalformed):
+        return 4, "release_input_rejected", "release input was rejected"
+    if isinstance(error, (ReleaseEvidenceStoreError, ReleaseEvidenceError, EvidenceMalformed)):
+        return 6, "release_evidence_invalid", "release evidence is invalid or conflicts"
     interchange_codes: tuple[tuple[type[InterchangeError], str], ...] = (
         (UnsupportedInterchangeVersion, "unsupported_version"),
         (InterchangeResourceExceeded, "resource_exhausted"),

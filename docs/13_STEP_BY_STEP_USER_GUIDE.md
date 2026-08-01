@@ -97,6 +97,41 @@ uv run python scripts/generate_interchange_vectors.py --check
 
 Only explicitly permitted synthetic or redistributable assets should be included. The
 snapshot is not a live workspace, integrity is not authenticity/license verification,
-and no package command fetches references or accepts document-driven execution. Feature
-015 benchmark/security/release evidence is the next dependency-ordered work package.
+and no package command fetches references or accepts document-driven execution.
+
+Feature 015 adds the local release-evidence workflow:
+
+```bash
+uv run python scripts/generate_release_corpus.py --check
+uv run python scripts/run_release_security_controls.py \
+  --controls benchmarks/release/v0.1.0/security-controls.json \
+  --junit /tmp/openardp-security-junit.xml
+uv build
+uv venv /tmp/openardp-release-venv --python 3.12
+uv pip install --python /tmp/openardp-release-venv --offline \
+  dist/openardp-0.1.0rc1-py3-none-any.whl
+uv run python scripts/generate_ci_suite_results.py \
+  --output /tmp/openardp-suite-results.json \
+  --junit /tmp/openardp-security-junit.xml \
+  --artifacts dist --install-environment /tmp/openardp-release-venv
+uv run openardp release-evidence \
+  --corpus benchmarks/release/v0.1.0 --source-root . \
+  --suite-results /tmp/openardp-suite-results.json --reference-timing \
+  --output /tmp/openardp-platform-evidence --json
+uv run openardp release-gate \
+  --policy benchmarks/release/v0.1.0/gate-policy.json \
+  --evidence /tmp/openardp-platform-evidence \
+  --output /tmp/openardp-decision \
+  --decision-at 2026-08-01T00:00:00Z --json
+uv run openardp release-report \
+  --decision /tmp/openardp-decision/decision.json \
+  --output /tmp/openardp-decision --json
+```
+
+Use a non-symlinked output parent. Mark `--reference-timing` on exactly one qualified
+environment; ordinary platform jobs omit it. One local bundle still produces `NO-GO`
+because the binding policy requires all three platforms, and current supply-chain/value
+checks also fail. That result is successful evaluation, not permission to publish. Validate committed
+evidence with `scripts/validate_release_evidence.py`; do not edit generated reports,
+claim maps, checksums or blockers. Features 016 and 017 are the remaining design spikes.
 Do not reuse the pre-v3.1 numbering.

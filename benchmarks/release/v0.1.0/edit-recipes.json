@@ -1,0 +1,10 @@
+{
+  "edit_version": "0.1.0",
+  "operations": [
+    {
+      "from_case_id": "text-evidence",
+      "operation": "replace-source",
+      "to_case_id": "text-evidence-edit"
+    }
+  ]
+}

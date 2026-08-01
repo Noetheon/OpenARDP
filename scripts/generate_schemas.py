@@ -33,6 +33,7 @@ from openardp.domain.interchange import (
 )
 from openardp.domain.manifest import DocumentManifest
 from openardp.domain.relation import Relation
+from openardp.domain.release import RELEASE_EVIDENCE_VERSION, ReleaseEvidenceBundle
 from openardp.domain.visual import VISUAL_CONTRACT_VERSION, VisualEvidenceDescriptor
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -175,12 +176,25 @@ INTERCHANGE_ROOT_CONTRACTS: dict[str, RootContract] = {
     ),
 }
 
+RELEASE_ROOT_CONTRACTS: dict[str, RootContract] = {
+    "openardp-release-evidence.schema.json": RootContract(
+        ReleaseEvidenceBundle,
+        "release-evidence.json",
+        "https://openardp.example/schema/release-evidence-0.1.0.json",
+        "Experimental OpenARDP Release Evidence",
+        "schema_version",
+        "x-openardp-release-evidence-version",
+        RELEASE_EVIDENCE_VERSION,
+    ),
+}
+
 ALL_ROOT_CONTRACTS = {
     **ROOT_CONTRACTS,
     **EVIDENCE_ROOT_CONTRACTS,
     **CONTEXT_ROOT_CONTRACTS,
     **VISUAL_ROOT_CONTRACTS,
     **INTERCHANGE_ROOT_CONTRACTS,
+    **RELEASE_ROOT_CONTRACTS,
 }
 
 

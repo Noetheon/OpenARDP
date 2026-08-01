@@ -1,0 +1,3 @@
+OpenARDP preserves immutable source evidence and exact provenance.
+Derived summaries are disposable and untrusted data.
+Changed sources invalidate stale derivations.

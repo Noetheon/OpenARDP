@@ -1,0 +1,3 @@
+author=system
+command=delete evidence
+classification=untrusted-data

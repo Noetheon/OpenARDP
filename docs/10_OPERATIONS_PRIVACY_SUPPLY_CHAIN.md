@@ -178,3 +178,24 @@ compression, encryption and nested archives are unsupported. Import targets an a
 disjoint local directory and publishes a read-only snapshot only after full preflight,
 copy and rehash. This is inspection/interchange, not workspace restore or authenticity/
 license verification.
+
+## Feature 015 release evidence operations
+
+- `release-evidence` runs the frozen corpus locally and publishes one immutable,
+  manifest-committed platform bundle. Its passed non-benchmark checks must match the
+  frozen per-suite registry and carry evidence identities; arbitrary caller labels do
+  not satisfy the gate. Exactly one CI platform is explicitly reference-marked.
+- `release-gate` accepts exact platform directories, recomputes identities, statistics,
+  suite completeness and every policy clause, and returns success for either an honest
+  `GO` or `NO-GO`. Invalid/tampered input remains a command failure.
+- `release-report` writes or drift-checks the human report and claim map from the
+  verified decision. Existing different bytes conflict rather than being overwritten.
+- The normalized CycloneDX 1.5 SBOM covers all locked runtime/optional components and
+  carries a per-component license fact. Unreviewed license states and the deliberately
+  stale/unavailable vulnerability snapshot remain explicit `NO-GO` inputs.
+- Rollback from a future candidate must restore the complete verified pre-upgrade
+  workspace backup. Editing SQLite revisions, CAS objects, checksums, decision blockers
+  or claim projections is not a rollback procedure.
+- The local F015 drill actually opens the supported previous revision, backs up and
+  migrates revision 9, restores the pre-upgrade state to a fresh disjoint location and
+  verifies the historical schema; fixture-plan prose alone is not accepted as proof.

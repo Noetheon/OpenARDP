@@ -1,7 +1,7 @@
 # Operations, privacy and supply-chain baseline
 
-**Status:** Active policy and future acceptance requirements. Feature 013 owns retention/recovery implementation and
-Feature 015 owns release evidence; this document does not claim they are already delivered.
+**Status:** Active policy and future acceptance requirements. Feature 013 delivers the
+local retention/recovery controls described below; Feature 015 owns release evidence.
 
 ## v0.1 deployment boundary
 
@@ -154,3 +154,12 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
   immutable CAS objects or ingestion facts already committed before a checkpoint.
   Delete/tombstone handling likewise performs no reclamation; F013 owns dry-run,
   quarantine, restore and physical collection.
+# Feature 013 recovery operations
+
+Operators should run `storage-inventory` and `storage-plan` before quarantine, retain the
+exact plan value, and prefer `storage-restore` during the grace period. `storage-commit`
+is irreversible logical removal and requires the named batch plus
+`--acknowledge-irreversible-removal`; no timer, startup, low-space or recovery path calls
+it. Run `workspace-backup` before risky work and periodically drill a
+`workspace-restore` to a fresh disjoint path. Diagnostics and audit output contain only
+opaque identifiers, closed states, counts, bytes and UTC times.

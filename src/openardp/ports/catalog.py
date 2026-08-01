@@ -88,6 +88,10 @@ class MigrationFailed(CatalogError):
     """Raised after a pending migration transaction rolls back."""
 
 
+class MaintenanceRecoveryRequired(CatalogError):
+    """Raised when durable maintenance intent fences ordinary catalog writes."""
+
+
 class DocumentConflict(CatalogError):
     """Raised when stable document identity is reused inconsistently."""
 
@@ -484,6 +488,20 @@ class Catalog(Protocol):
         now: datetime,
     ) -> int:
         """Atomically replace one READY scope's index rows with verified entries."""
+        ...
+
+    def replace_global_index(
+        self,
+        entries: tuple[SearchIndexEntry, ...],
+        texts: tuple[str, ...],
+        *,
+        now: datetime,
+    ) -> int:
+        """Atomically replace the complete READY-corpus lexical accelerator."""
+        ...
+
+    def search_index_diagnostics(self) -> tuple[int, int]:
+        """Return exact mapping-row count and logical indexed UTF-8 bytes."""
         ...
 
     def list_ready_scopes(

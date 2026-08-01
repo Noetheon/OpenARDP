@@ -9,7 +9,7 @@ import sqlite3
 import stat
 import sys
 from collections.abc import Callable, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import BinaryIO, NoReturn, cast
 from uuid import UUID
@@ -51,6 +51,7 @@ from openardp.domain.context_compilation import (
     ContextSelectionPolicy,
 )
 from openardp.domain.ingestion import RichMediaType
+from openardp.domain.maintenance import InventoryLimits, ReclamationPlan, RetentionPolicy
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
@@ -85,6 +86,7 @@ from openardp.ports.context import (
     ContextLimitExceeded,
     ContextNotFound,
 )
+from openardp.ports.maintenance import InsufficientSpace, MaintenanceError
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
 from openardp.ports.visual import (
@@ -106,6 +108,10 @@ from openardp.ports.watcher import (
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
+from openardp.services.maintenance import (
+    IRREVERSIBLE_ACKNOWLEDGEMENT,
+    MaintenanceService,
+)
 from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
@@ -131,6 +137,19 @@ _COMMANDS = {
     "watch",
     "jobs",
     "job-cancel",
+    "storage-hold",
+    "storage-hold-release",
+    "storage-diagnostics",
+    "storage-inventory",
+    "storage-plan",
+    "storage-quarantine",
+    "storage-commit",
+    "storage-recover",
+    "storage-restore",
+    "index-rebuild",
+    "workspace-backup",
+    "workspace-migrate",
+    "workspace-restore",
 }
 
 _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
@@ -194,6 +213,96 @@ def _parser() -> _ArgumentParser:
     job_cancel = subparsers.add_parser("job-cancel", help="cancel one durable local job")
     job_cancel.add_argument("job_id")
     _common_options(job_cancel)
+
+    for name, help_text in (
+        ("storage-inventory", "explain bounded local retention state"),
+        ("storage-plan", "create a read-only exact reclamation plan"),
+    ):
+        maintenance = subparsers.add_parser(name, help=help_text)
+        maintenance.add_argument("--max-entries", type=int, default=100_000)
+        maintenance.add_argument("--max-bytes", type=int, default=1_099_511_627_776)
+        maintenance.add_argument("--candidate-min-age-hours", type=int, default=24)
+        maintenance.add_argument("--quarantine-grace-hours", type=int, default=168)
+        maintenance.add_argument("--reserve-bytes", type=int, default=67_108_864)
+        _common_options(maintenance)
+
+    storage_hold = subparsers.add_parser(
+        "storage-hold",
+        help="protect one exact managed object",
+    )
+    storage_hold.add_argument("object_id")
+    storage_hold.add_argument("--reason", default="operator_hold")
+    storage_hold.add_argument("--expires-hours", type=int)
+    _common_options(storage_hold)
+
+    storage_hold_release = subparsers.add_parser(
+        "storage-hold-release",
+        help="release one exact retention hold",
+    )
+    storage_hold_release.add_argument("hold_id")
+    _common_options(storage_hold_release)
+
+    storage_quarantine = subparsers.add_parser(
+        "storage-quarantine",
+        help="quarantine one exact supplied reclamation plan",
+    )
+    storage_quarantine.add_argument("--plan", type=Path, required=True)
+    _common_options(storage_quarantine)
+
+    storage_restore = subparsers.add_parser(
+        "storage-restore",
+        help="restore one named quarantine batch",
+    )
+    storage_restore.add_argument("--batch", required=True)
+    _common_options(storage_restore)
+
+    storage_recover = subparsers.add_parser(
+        "storage-recover",
+        help="recover one already-persisted maintenance intent",
+    )
+    _common_options(storage_recover)
+
+    storage_commit = subparsers.add_parser(
+        "storage-commit",
+        help="irreversibly commit one expired named quarantine batch",
+    )
+    storage_commit.add_argument("--batch", required=True)
+    storage_commit.add_argument(
+        "--acknowledge-irreversible-removal",
+        action="store_true",
+        dest="acknowledge_irreversible_removal",
+    )
+    _common_options(storage_commit)
+
+    for name, help_text in (
+        ("storage-diagnostics", "report exact local storage and reserve facts"),
+        ("index-rebuild", "atomically rebuild the complete disposable lexical index"),
+    ):
+        operation = subparsers.add_parser(name, help=help_text)
+        operation.add_argument("--reserve-bytes", type=int, default=67_108_864)
+        _common_options(operation)
+
+    workspace_backup = subparsers.add_parser(
+        "workspace-backup",
+        help="create one verified internal workspace backup",
+    )
+    workspace_backup.add_argument("--destination", type=Path, required=True)
+    _common_options(workspace_backup)
+
+    workspace_restore = subparsers.add_parser(
+        "workspace-restore",
+        help="restore one verified backup to a fresh workspace",
+    )
+    workspace_restore.add_argument("--backup", type=Path, required=True)
+    workspace_restore.add_argument("--destination", type=Path, required=True)
+    workspace_restore.add_argument("--json", action="store_true", dest="json_output")
+
+    workspace_migrate = subparsers.add_parser(
+        "workspace-migrate",
+        help="back up then explicitly migrate one supported older workspace",
+    )
+    workspace_migrate.add_argument("--backup-destination", type=Path, required=True)
+    _common_options(workspace_migrate)
 
     list_parser = subparsers.add_parser("list", help="list body-free document summaries")
     _common_options(list_parser)
@@ -567,6 +676,48 @@ def _load_model_manifest(path: Path) -> ModelBundleManifest:
             os.close(descriptor)
 
 
+def _load_reclamation_plan(path: Path) -> ReclamationPlan:
+    """Load one bounded regular exact plan without following links."""
+    selected = path.expanduser().absolute()
+    descriptor: int | None = None
+    try:
+        metadata = selected.lstat()
+        if selected.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError
+        if metadata.st_size > 16_777_216:
+            raise ValueError
+        flags = os.O_RDONLY
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_BINARY"):
+            flags |= os.O_BINARY
+        descriptor = os.open(selected, flags)
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or opened.st_nlink != 1
+            or (metadata.st_dev, metadata.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            raise ValueError
+        chunks: list[bytes] = []
+        observed = 0
+        while chunk := os.read(descriptor, 1_048_576):
+            observed += len(chunk)
+            if observed > 16_777_216:
+                raise ValueError
+            chunks.append(chunk)
+        if observed != metadata.st_size:
+            raise ValueError
+        return ReclamationPlan.model_validate_json(b"".join(chunks))
+    except (OSError, ValueError):
+        raise ValueError("reclamation plan is invalid") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 class _CliWatchRunner:
     """Reuse configured ingestion services behind the watcher runner contract."""
 
@@ -670,6 +821,24 @@ def _job_summary(job: Job) -> dict[str, object]:
     }
 
 
+def _maintenance_service(workspace: LocalWorkspace) -> MaintenanceService:
+    """Compose only the explicit local maintenance boundaries."""
+    return MaintenanceService(workspace.maintenance_store, workspace.catalog)
+
+
+def _retention_policy(arguments: argparse.Namespace) -> RetentionPolicy:
+    """Build one trusted bounded CLI policy using exact integer units."""
+    return RetentionPolicy(
+        candidate_min_age_seconds=int(arguments.candidate_min_age_hours) * 3_600,
+        quarantine_grace_seconds=int(arguments.quarantine_grace_hours) * 3_600,
+        reserve_bytes=int(arguments.reserve_bytes),
+        limits=InventoryLimits(
+            max_entries=int(arguments.max_entries),
+            max_bytes=int(arguments.max_bytes),
+        ),
+    )
+
+
 def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
     """Project a cycle without exposing its private root authority or locators."""
     reconciliation = result.reconciliation
@@ -704,6 +873,12 @@ def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
 
 def _execute(arguments: argparse.Namespace) -> object:
     command = str(arguments.command)
+    if command == "workspace-restore":
+        return LocalWorkspace.restore(
+            Path(arguments.backup),
+            Path(arguments.destination),
+            now=_utc_now(),
+        )
     store = Path(arguments.store)
     if command == "init":
         workspace = LocalWorkspace.initialize(store, now=_utc_now())
@@ -711,8 +886,20 @@ def _execute(arguments: argparse.Namespace) -> object:
             "catalog_schema_version": workspace.catalog.schema_version(),
             "root": str(workspace.root),
         }
+    if command == "workspace-migrate":
+        migrated = LocalWorkspace.migrate(
+            store,
+            Path(arguments.backup_destination),
+            now=_utc_now(),
+        )
+        return {
+            "catalog_schema_version": migrated.catalog.schema_version(),
+            "root": str(migrated.root),
+        }
 
     workspace = LocalWorkspace.open(store)
+    if command == "workspace-backup":
+        return workspace.backup(Path(arguments.destination), now=_utc_now())
     if command == "watch":
         service = _watch_service(workspace, arguments)
         config = _watch_config(arguments)
@@ -736,6 +923,81 @@ def _execute(arguments: argparse.Namespace) -> object:
             now=_utc_now(),
         )
         return _job_summary(job)
+    if command == "storage-inventory":
+        return _maintenance_service(workspace).inventory(
+            policy=_retention_policy(arguments),
+            now=_utc_now(),
+        )
+    if command == "storage-diagnostics":
+        return _maintenance_service(workspace).diagnostics(
+            policy=RetentionPolicy(
+                reserve_bytes=int(arguments.reserve_bytes),
+                limits=InventoryLimits(max_entries=1_000_000, max_bytes=9_007_199_254_740_991),
+            ),
+            now=_utc_now(),
+        )
+    if command == "index-rebuild":
+        _ingestion, _query, search = _services(workspace)
+
+        def admit(required_bytes: int) -> None:
+            report = workspace.maintenance_store.capacity(
+                required_bytes,
+                int(arguments.reserve_bytes),
+            )
+            if not report.admitted:
+                raise InsufficientSpace("insufficient capacity for index rebuild")
+
+        return search.rebuild_global(admit=admit)
+    if command == "storage-plan":
+        return _maintenance_service(workspace).plan(
+            policy=_retention_policy(arguments),
+            now=_utc_now(),
+        )
+    if command == "storage-hold":
+        now = _utc_now()
+        expires_hours = (
+            int(arguments.expires_hours) if arguments.expires_hours is not None else None
+        )
+        return _maintenance_service(workspace).add_hold(
+            str(arguments.object_id),
+            reason=str(arguments.reason),
+            now=now,
+            expires_at=(
+                now + timedelta(hours=expires_hours) if expires_hours is not None else None
+            ),
+        )
+    if command == "storage-hold-release":
+        return _maintenance_service(workspace).release_hold(
+            str(arguments.hold_id),
+            now=_utc_now(),
+        )
+    if command == "storage-quarantine":
+        return _maintenance_service(workspace).quarantine(
+            _load_reclamation_plan(Path(arguments.plan)),
+            now=_utc_now(),
+        )
+    if command == "storage-restore":
+        return _maintenance_service(workspace).restore(
+            _parse_uuid(str(arguments.batch)),
+            now=_utc_now(),
+        )
+    if command == "storage-recover":
+        recovered = _maintenance_service(workspace).recover(now=_utc_now())
+        return {
+            "recovered": recovered is not None,
+            "operation_id": str(recovered.operation_id) if recovered is not None else None,
+            "kind": recovered.kind.value if recovered is not None else None,
+        }
+    if command == "storage-commit":
+        return _maintenance_service(workspace).commit(
+            _parse_uuid(str(arguments.batch)),
+            acknowledgement=(
+                IRREVERSIBLE_ACKNOWLEDGEMENT
+                if bool(arguments.acknowledge_irreversible_removal)
+                else ""
+            ),
+            now=_utc_now(),
+        )
     if command == "ingest":
         source = Path(arguments.path)
         media_type = LocalSource(source).media_type
@@ -1038,6 +1300,8 @@ def _safe_text(value: str) -> str:
 def _classification(error: Exception) -> tuple[int, str, str]:
     if isinstance(error, _UsageError):
         return 2, "invalid_usage", "command usage is invalid"
+    if isinstance(error, MaintenanceError):
+        return 5, "maintenance_rejected", "maintenance operation was rejected"
     if isinstance(error, ContextNotFound):
         return 3, "not_found", "requested evidence was not found"
     if isinstance(error, VisualTargetUnavailable):

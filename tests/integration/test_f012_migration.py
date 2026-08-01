@@ -36,7 +36,7 @@ def test_migration_nine_upgrades_populated_revision_eight_without_job_drift(
         )
     )
 
-    current = SQLiteCatalog(path)
+    current = SQLiteCatalog(path, migrations=MIGRATIONS[:9])
     assert current.initialize(now=NOW) == 9
     after = current.get_job(JOB_ID)
     assert after is not None
@@ -100,7 +100,7 @@ def test_migration_nine_is_append_only_after_released_checksums() -> None:
     """Freeze every prior migration while adding one exact new revision."""
     assert MIGRATION_9.version == 9
     assert MIGRATION_9.name == "local-watcher-and-cancellable-jobs"
-    assert len({item.checksum for item in MIGRATIONS}) == 9
+    assert len({item.checksum for item in MIGRATIONS[:9]}) == 9
 
 
 def test_twenty_initializers_converge_on_one_revision_nine_upgrade(tmp_path: Path) -> None:
@@ -109,7 +109,7 @@ def test_twenty_initializers_converge_on_one_revision_nine_upgrade(tmp_path: Pat
     SQLiteCatalog(path, migrations=MIGRATIONS[:8]).initialize(now=NOW)
 
     def initialize(_: int) -> int:
-        return SQLiteCatalog(path).initialize(now=NOW)
+        return SQLiteCatalog(path, migrations=MIGRATIONS[:9]).initialize(now=NOW)
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         revisions = tuple(executor.map(initialize, range(20)))
@@ -124,7 +124,7 @@ def test_twenty_initializers_converge_on_one_revision_nine_upgrade(tmp_path: Pat
 def test_revision_nine_reader_rejects_future_history_without_mutation(tmp_path: Path) -> None:
     """Fail closed when a future migration is present and retain its exact history."""
     path = tmp_path / "future.sqlite3"
-    catalog = SQLiteCatalog(path)
+    catalog = SQLiteCatalog(path, migrations=MIGRATIONS[:9])
     assert catalog.initialize(now=NOW) == 9
     with sqlite3.connect(path) as connection:
         connection.execute(
@@ -178,5 +178,6 @@ def test_every_migration_nine_statement_boundary_rolls_back_and_retries_cleanly(
     with sqlite3.connect(path) as connection:
         assert tuple(connection.iterdump()) == before
     assert SQLiteCatalog(path, migrations=MIGRATIONS[:8]).schema_version() == 8
-    assert SQLiteCatalog(path).initialize(now=NOW) == 9
-    assert SQLiteCatalog(path).get_job(JOB_ID) is not None
+    prior = SQLiteCatalog(path, migrations=MIGRATIONS[:9])
+    assert prior.initialize(now=NOW) == 9
+    assert prior.get_job(JOB_ID) is not None

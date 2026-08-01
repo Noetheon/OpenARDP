@@ -13,9 +13,15 @@ from pathlib import Path
 from pydantic import JsonValue
 
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
+from openardp.adapters.filesystem_maintenance import (
+    FilesystemMaintenanceStore,
+    backup_workspace,
+    restore_workspace,
+)
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
 from openardp.adapters.sqlite_migrations import CURRENT_SCHEMA_VERSION
 from openardp.domain.identity import canonical_json_bytes
+from openardp.domain.maintenance import BackupReport, RestoreReport
 from openardp.ports.catalog import CatalogIncompatible, CatalogTooNew, MigrationFailed
 
 _MARKER_NAME = ".openardp-workspace.json"
@@ -33,6 +39,7 @@ _BOOTSTRAP_ENTRIES = {
     f"{_CATALOG_NAME}-shm",
     f"{_CATALOG_NAME}-wal",
     "objects",
+    "quarantine",
     "staging",
 }
 
@@ -56,11 +63,13 @@ class LocalWorkspace:
         self,
         root: Path,
         object_store: FilesystemObjectStore,
+        maintenance_store: FilesystemMaintenanceStore,
         catalog: SQLiteCatalog,
     ) -> None:
         """Construct only from the validated class factories."""
         self._root = root
         self._object_store = object_store
+        self._maintenance_store = maintenance_store
         self._catalog = catalog
 
     @property
@@ -78,13 +87,29 @@ class LocalWorkspace:
         """Return the validated local catalog."""
         return self._catalog
 
+    @property
+    def maintenance_store(self) -> FilesystemMaintenanceStore:
+        """Return the isolated exact-object maintenance adapter."""
+        return self._maintenance_store
+
     @classmethod
     def initialize(cls, root: Path, *, now: datetime) -> LocalWorkspace:
-        """Create or explicitly upgrade one compatible workspace idempotently."""
+        """Create a current workspace or validate an already-current workspace."""
         canonical = _prepare_root(root)
         marker = canonical / _MARKER_NAME
         if _lexists(marker):
             _validate_marker(marker)
+            _validate_existing_layout(canonical, require_quarantine=True)
+            try:
+                object_store = FilesystemObjectStore(canonical, create=False)
+                maintenance_store = FilesystemMaintenanceStore(canonical)
+                catalog = SQLiteCatalog(canonical / _CATALOG_NAME)
+                revision = catalog.initialize_current(now=now)
+            except (CatalogIncompatible, CatalogTooNew, MigrationFailed) as error:
+                raise WorkspaceIncompatible("workspace is incompatible") from error
+            if revision != CURRENT_SCHEMA_VERSION:
+                raise WorkspaceIncompatible("workspace is incompatible")
+            return cls(canonical, object_store, maintenance_store, catalog)
         else:
             foreign = {entry.name for entry in canonical.iterdir()} - _BOOTSTRAP_ENTRIES
             if foreign:
@@ -92,8 +117,9 @@ class LocalWorkspace:
 
         try:
             object_store = FilesystemObjectStore(canonical)
+            maintenance_store = FilesystemMaintenanceStore(canonical, create=True)
             catalog = SQLiteCatalog(canonical / _CATALOG_NAME)
-            revision = catalog.initialize(now=now)
+            revision = catalog.initialize_current(now=now)
         except (CatalogIncompatible, CatalogTooNew, MigrationFailed) as error:
             raise WorkspaceIncompatible("workspace is incompatible") from error
         if revision != CURRENT_SCHEMA_VERSION:
@@ -101,7 +127,85 @@ class LocalWorkspace:
         if not _lexists(marker):
             _publish_marker(marker)
         _validate_marker(marker)
-        return cls(canonical, object_store, catalog)
+        return cls(canonical, object_store, maintenance_store, catalog)
+
+    def backup(
+        self,
+        destination: Path,
+        *,
+        now: datetime,
+        reserve_bytes: int = 64 * 1024 * 1024,
+    ) -> BackupReport:
+        """Create one verified internal backup at a fresh disjoint destination."""
+        return backup_workspace(
+            self._root,
+            self._catalog,
+            self._maintenance_store,
+            destination,
+            now=now,
+            reserve_bytes=reserve_bytes,
+        )
+
+    @classmethod
+    def restore(
+        cls,
+        backup: Path,
+        destination: Path,
+        *,
+        now: datetime,
+        reserve_bytes: int = 64 * 1024 * 1024,
+    ) -> RestoreReport:
+        """Verify and restore one internal backup to a fresh disjoint destination."""
+        return restore_workspace(
+            backup,
+            destination,
+            now=now,
+            reserve_bytes=reserve_bytes,
+        )
+
+    @classmethod
+    def migrate(
+        cls,
+        root: Path,
+        backup_destination: Path,
+        *,
+        now: datetime,
+    ) -> LocalWorkspace:
+        """Back up then atomically migrate one supported older workspace."""
+        raw = root.expanduser().absolute()
+        if not _lexists(raw):
+            raise WorkspaceMissing("workspace is not initialized")
+        canonical = _validate_root(raw)
+        marker = canonical / _MARKER_NAME
+        if not _lexists(marker):
+            raise WorkspaceMissing("workspace is not initialized")
+        _validate_marker(marker)
+        _validate_existing_layout(canonical, require_quarantine=False)
+        catalog = SQLiteCatalog(canonical / _CATALOG_NAME)
+        try:
+            current = catalog.schema_version()
+        except (CatalogIncompatible, CatalogTooNew, MigrationFailed) as error:
+            raise WorkspaceIncompatible("workspace is incompatible") from error
+        if current >= CURRENT_SCHEMA_VERSION or current != CURRENT_SCHEMA_VERSION - 1:
+            raise WorkspaceIncompatible("workspace is incompatible")
+        try:
+            FilesystemObjectStore(canonical, create=False)
+            maintenance_store = FilesystemMaintenanceStore(
+                canonical,
+                allow_missing_quarantine=True,
+            )
+            backup_workspace(
+                canonical,
+                catalog,
+                maintenance_store,
+                backup_destination,
+                now=now,
+                migrate_at_exit=True,
+                expected_revision=current,
+            )
+        except (CatalogIncompatible, CatalogTooNew, MigrationFailed) as error:
+            raise WorkspaceIncompatible("workspace is incompatible") from error
+        return cls.open(canonical)
 
     @classmethod
     def open(cls, root: Path) -> LocalWorkspace:
@@ -114,15 +218,16 @@ class LocalWorkspace:
         if not _lexists(marker):
             raise WorkspaceMissing("workspace is not initialized")
         _validate_marker(marker)
-        _validate_existing_layout(canonical)
-        object_store = FilesystemObjectStore(canonical)
+        _validate_existing_layout(canonical, require_quarantine=True)
+        object_store = FilesystemObjectStore(canonical, create=False)
+        maintenance_store = FilesystemMaintenanceStore(canonical)
         catalog = SQLiteCatalog(canonical / _CATALOG_NAME)
         try:
             if catalog.schema_version() != CURRENT_SCHEMA_VERSION:
                 raise WorkspaceIncompatible("workspace is incompatible")
         except (CatalogIncompatible, CatalogTooNew, MigrationFailed) as error:
             raise WorkspaceIncompatible("workspace is incompatible") from error
-        return cls(canonical, object_store, catalog)
+        return cls(canonical, object_store, maintenance_store, catalog)
 
 
 def _prepare_root(root: Path) -> Path:
@@ -165,12 +270,15 @@ def _validate_marker(marker: Path) -> None:
         raise WorkspaceIncompatible("workspace is incompatible")
 
 
-def _validate_existing_layout(root: Path) -> None:
-    for name, expected_directory in (
+def _validate_existing_layout(root: Path, *, require_quarantine: bool) -> None:
+    required = [
         (_CATALOG_NAME, False),
         ("objects", True),
         ("staging", True),
-    ):
+    ]
+    if require_quarantine:
+        required.append(("quarantine", True))
+    for name, expected_directory in required:
         path = root / name
         try:
             metadata = path.lstat()

@@ -40,7 +40,9 @@ the least-privilege stdio interface in
 plus explicit visual escalation in
 [`011-visual-evidence-escalation`](specs/011-visual-evidence-escalation/spec.md) and the
 foreground local watcher in
-[`012-local-watcher-and-jobs`](specs/012-local-watcher-and-jobs/spec.md):
+[`012-local-watcher-and-jobs`](specs/012-local-watcher-and-jobs/spec.md), followed by
+verified retention and recovery in
+[`013-retention-recovery-migrations`](specs/013-retention-recovery-migrations/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -96,12 +98,21 @@ foreground local watcher in
   path-addressed tombstones, redacted rename hints and deterministic backpressure;
 - foreground `watch`, body-free `jobs` and fenced `job-cancel` CLI operations that
   reuse the existing text/rich ingestion services and open no listener.
+- checksummed workspace revision 10 with complete retention roots, operator holds,
+  content-identified dry runs, reversible quarantine, explicit grace-gated commit and
+  restart-persistent maintenance intent;
+- paired verified internal backup, fresh disjoint restore and explicit revision-9 to
+  revision-10 migration with a recorded pre-upgrade manifest;
+- body-free storage diagnostics, exact reserve admission and an all-or-prior global
+  lexical-index rebuild derived from verified READY evidence.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. F012 watching is a
 foreground polling process over one explicitly supplied local root; it is not a daemon,
-does not guarantee remote/network filesystems and adds no MCP mutation. There is no
-cloud connector, automatic garbage collection, HTTP transport or stable custom export
+does not guarantee remote/network filesystems and adds no MCP mutation. F013 never
+deletes automatically: irreversible removal requires a named expired quarantine batch
+and a separate acknowledgement. There is no cloud connector, scheduled garbage
+collection, HTTP transport or stable custom export
 format yet. PDF is the only concrete F011 visual renderer; DOCX/PPTX page rendering,
 built-in OCR/caption models and automatic materialization remain unsupported. F010 also
 does not schedule reconciliation or execute generators; callers explicitly supply two
@@ -146,6 +157,10 @@ openardp visual-evidence <visual-evidence-sha256> --store .openardp
 openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
 openardp jobs --store .openardp --limit 50 --json
 openardp job-cancel <job-uuid> --store .openardp --json
+openardp storage-inventory --store .openardp --json
+openardp storage-diagnostics --store .openardp --json
+openardp workspace-backup --store .openardp --destination ../openardp-backup
+openardp index-rebuild --store .openardp --json
 openardp mcp --store .openardp
 ```
 

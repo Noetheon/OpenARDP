@@ -10,6 +10,8 @@ DAG lifecycle, followed by Feature 011's explicit bounded PDF visual-evidence
 materialization and handle-only context integration.
 Feature 012 adds explicit bounded local polling, durable stability observations and
 cancellable foreground ingestion jobs without a daemon or MCP write surface.
+Feature 013 adds conservative retention explanation, reversible quarantine, separately
+acknowledged reclamation, paired recovery, explicit migration and atomic index rebuild.
 
 ## 1. Read the authoritative rules
 
@@ -70,6 +72,9 @@ openardp visual-materialize <document-uuid> <projection-sha256> \
 openardp visual-evidence <visual-evidence-sha256> --store .openardp --json
 openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
 openardp jobs --store .openardp --limit 50 --json
+openardp storage-inventory --store .openardp --json
+openardp storage-diagnostics --store .openardp --json
+openardp workspace-backup --store .openardp --destination ../openardp-backup --json
 openardp mcp --store .openardp
 ```
 
@@ -99,6 +104,13 @@ stability while existing ingestion still hashes exact bytes. Deletes create watc
 tombstones, queue pressure requests a later rescan, and job retry/cancellation remain
 durable and fenced across restart.
 
+Feature 013 treats every catalog reference as a conservative live root. A reclamation
+plan is read-only and must be supplied unchanged to quarantine. Quarantine is reversible;
+commit is the only irreversible command and requires an expired named batch plus
+`--acknowledge-irreversible-removal`. Backups use a verified internal manifest, restores
+target only fresh disjoint paths, and older supported workspaces migrate only through
+`workspace-migrate` after a paired pre-upgrade backup.
+
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
 identity. Context compilation applies the same rule: accelerator hits are reverified
@@ -111,8 +123,8 @@ The optional Docling extra provides bounded DOCX/PPTX parsing and PDF parsing on
 with reviewed local assets. Feature 008 provides deterministic local context
 compilation, body-free receipts and replay. Feature 009 exposes the same verified
 application services through a bounded read-only stdio MCP server. The current
-implementation does not yet provide a watcher daemon, network-share correctness,
-retention/garbage collection,
+implementation does not provide a watcher daemon, network-share correctness, scheduled
+or automatic garbage collection,
 HTTP transport, stable export or Microsoft Graph access. The
 [005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
 outcomes individually.
@@ -138,6 +150,7 @@ preserving complete provider-native output.
 - [F010 quickstart](specs/010-reconciliation-derivation-dag/quickstart.md)
 - [F011 quickstart](specs/011-visual-evidence-escalation/quickstart.md)
 - [F012 quickstart](specs/012-local-watcher-and-jobs/quickstart.md)
+- [F013 quickstart](specs/013-retention-recovery-migrations/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

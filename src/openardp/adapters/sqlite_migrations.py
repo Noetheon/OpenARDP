@@ -1254,6 +1254,153 @@ MIGRATION_9 = Migration(
     ),
 )
 
+MIGRATION_10 = Migration(
+    version=10,
+    name="retention-recovery-maintenance",
+    statements=(
+        """
+        CREATE TABLE retention_holds (
+            hold_id TEXT PRIMARY KEY CHECK (
+                length(hold_id) = 71 AND substr(hold_id, 1, 7) = 'sha256:'
+                AND substr(hold_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            object_id TEXT NOT NULL CHECK (
+                length(object_id) = 71 AND substr(object_id, 1, 7) = 'sha256:'
+                AND substr(object_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            reason TEXT NOT NULL CHECK (length(reason) BETWEEN 1 AND 64),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            expires_at TEXT NULL CHECK (expires_at IS NULL OR length(expires_at) = 27),
+            released_at TEXT NULL CHECK (released_at IS NULL OR length(released_at) = 27),
+            CHECK (expires_at IS NULL OR expires_at > created_at),
+            CHECK (released_at IS NULL OR released_at >= created_at)
+        ) STRICT
+        """,
+        "CREATE INDEX retention_holds_active_idx "
+        "ON retention_holds(object_id, expires_at, hold_id) WHERE released_at IS NULL",
+        """
+        CREATE TABLE quarantine_batches (
+            batch_id TEXT PRIMARY KEY CHECK (length(batch_id) = 36),
+            plan_id TEXT NOT NULL UNIQUE CHECK (
+                length(plan_id) = 71 AND substr(plan_id, 1, 7) = 'sha256:'
+                AND substr(plan_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            policy_id TEXT NOT NULL CHECK (length(policy_id) = 71),
+            root_snapshot_id TEXT NOT NULL CHECK (length(root_snapshot_id) = 71),
+            inventory_id TEXT NOT NULL CHECK (length(inventory_id) = 71),
+            state TEXT NOT NULL CHECK (state IN (
+                'PREPARED', 'QUARANTINED', 'PARTIALLY_RESTORED', 'RESTORED',
+                'COMMITTING', 'COMMITTED', 'BLOCKED'
+            )),
+            quarantined_at TEXT NOT NULL CHECK (length(quarantined_at) = 27),
+            not_before TEXT NOT NULL CHECK (length(not_before) = 27),
+            entry_count INTEGER NOT NULL CHECK (entry_count >= 0),
+            byte_count INTEGER NOT NULL CHECK (byte_count >= 0),
+            terminal_at TEXT NULL CHECK (terminal_at IS NULL OR length(terminal_at) = 27),
+            CHECK (not_before >= quarantined_at)
+        ) STRICT
+        """,
+        """
+        CREATE TABLE quarantine_entries (
+            batch_id TEXT NOT NULL,
+            object_id TEXT NOT NULL,
+            byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+            reason TEXT NOT NULL CHECK (length(reason) BETWEEN 1 AND 64),
+            state TEXT NOT NULL CHECK (state IN (
+                'PLANNED', 'QUARANTINED', 'RESTORED', 'COMMITTED_REMOVED',
+                'CONFLICT_RETAINED'
+            )),
+            quarantined_at TEXT NULL CHECK (
+                quarantined_at IS NULL OR length(quarantined_at) = 27
+            ),
+            restored_at TEXT NULL CHECK (restored_at IS NULL OR length(restored_at) = 27),
+            committed_at TEXT NULL CHECK (committed_at IS NULL OR length(committed_at) = 27),
+            PRIMARY KEY (batch_id, object_id),
+            FOREIGN KEY (batch_id) REFERENCES quarantine_batches(batch_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE UNIQUE INDEX quarantine_entries_one_recoverable_idx "
+        "ON quarantine_entries(object_id) WHERE state IN ('PLANNED', 'QUARANTINED')",
+        """
+        CREATE TABLE maintenance_operations (
+            operation_id TEXT PRIMARY KEY CHECK (length(operation_id) = 36),
+            kind TEXT NOT NULL CHECK (kind IN (
+                'QUARANTINE', 'RESTORE', 'COMMIT', 'BACKUP', 'MIGRATE', 'INDEX_REBUILD'
+            )),
+            subject_id TEXT NOT NULL CHECK (
+                length(subject_id) = 71 AND substr(subject_id, 1, 7) = 'sha256:'
+                AND substr(subject_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            state TEXT NOT NULL CHECK (state IN (
+                'PREPARED', 'APPLYING', 'SUCCEEDED', 'FAILED', 'BLOCKED'
+            )),
+            acknowledgement_digest TEXT NULL CHECK (
+                acknowledgement_digest IS NULL OR length(acknowledgement_digest) = 71
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            updated_at TEXT NOT NULL CHECK (length(updated_at) = 27),
+            terminal_at TEXT NULL CHECK (terminal_at IS NULL OR length(terminal_at) = 27),
+            failure_code TEXT NULL CHECK (
+                failure_code IS NULL OR length(failure_code) BETWEEN 1 AND 64
+            ),
+            CHECK (updated_at >= created_at),
+            CHECK ((state IN ('PREPARED', 'APPLYING')) = (terminal_at IS NULL))
+        ) STRICT
+        """,
+        "CREATE UNIQUE INDEX maintenance_operations_one_active_idx "
+        "ON maintenance_operations((1)) WHERE state IN ('PREPARED', 'APPLYING')",
+        """
+        CREATE TABLE maintenance_operation_entries (
+            operation_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            object_id TEXT NOT NULL CHECK (length(object_id) = 71),
+            byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+            action TEXT NOT NULL CHECK (action IN (
+                'MOVE_TO_QUARANTINE', 'MOVE_TO_ACTIVE', 'DELETE', 'RESTORE_CONFLICT', 'COPY'
+            )),
+            source_state TEXT NOT NULL CHECK (source_state IN ('ACTIVE', 'QUARANTINE', 'NONE')),
+            destination_state TEXT NOT NULL CHECK (
+                destination_state IN ('ACTIVE', 'QUARANTINE', 'NONE')
+            ),
+            outcome TEXT NULL CHECK (
+                outcome IS NULL OR outcome IN ('MOVED', 'REMOVED', 'RETAINED', 'COPIED')
+            ),
+            PRIMARY KEY (operation_id, sequence),
+            UNIQUE (operation_id, object_id),
+            FOREIGN KEY (operation_id)
+                REFERENCES maintenance_operations(operation_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        CREATE TABLE maintenance_events (
+            operation_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 64),
+            object_id TEXT NULL CHECK (object_id IS NULL OR length(object_id) = 71),
+            entry_count INTEGER NOT NULL CHECK (entry_count >= 0),
+            byte_count INTEGER NOT NULL CHECK (byte_count >= 0),
+            occurred_at TEXT NOT NULL CHECK (length(occurred_at) = 27),
+            PRIMARY KEY (operation_id, sequence),
+            FOREIGN KEY (operation_id)
+                REFERENCES maintenance_operations(operation_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        CREATE TABLE migration_backups (
+            target_revision INTEGER PRIMARY KEY CHECK (target_revision >= 1),
+            source_revision INTEGER NOT NULL CHECK (source_revision >= 1),
+            manifest_id TEXT NOT NULL UNIQUE CHECK (
+                length(manifest_id) = 71 AND substr(manifest_id, 1, 7) = 'sha256:'
+                AND substr(manifest_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            verified INTEGER NOT NULL CHECK (verified = 1),
+            CHECK (target_revision > source_revision)
+        ) STRICT
+        """,
+    ),
+)
+
 MIGRATIONS = (
     MIGRATION_1,
     MIGRATION_2,
@@ -1264,6 +1411,7 @@ MIGRATIONS = (
     MIGRATION_7,
     MIGRATION_8,
     MIGRATION_9,
+    MIGRATION_10,
 )
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
@@ -1279,5 +1427,6 @@ __all__ = [
     "MIGRATION_7",
     "MIGRATION_8",
     "MIGRATION_9",
+    "MIGRATION_10",
     "Migration",
 ]

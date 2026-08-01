@@ -1,7 +1,8 @@
 # Operational and enterprise requirements
 
-**Status:** Future operational acceptance requirements, not current service-level claims. Feature 013 owns
-retention/recovery implementation; Feature 015 owns release evidence; Feature 017 is mock-only Graph design.
+**Status:** Operational acceptance requirements, not service-level claims. Feature 013
+delivers local retention/recovery mechanics; Feature 015 owns release evidence and
+Feature 017 is mock-only Graph design.
 
 ## SLO candidates for a pilot
 
@@ -103,3 +104,15 @@ For enterprise mode:
 - cache hit dashboards;
 - cancellation/supersession of obsolete jobs;
 - provider spend alerts.
+# Feature 013 operational controls
+
+- Retention classification is bounded, deterministic and conservative across every
+  delivered catalog object-reference family.
+- Maintenance writes honor an explicit free-space reserve and never trigger hidden
+  deletion or policy relaxation.
+- Backup/restore are local-filesystem recovery operations; shared/network-filesystem
+  correctness and remote backup transport remain unsupported.
+- Disposable lexical indexes can be rebuilt globally with all-or-prior visibility from
+  verified READY evidence without changing evidence identities.
+- Recovery drills, manifest verification and paired migration receipts are required
+  evidence for restoration and upgrade claims.

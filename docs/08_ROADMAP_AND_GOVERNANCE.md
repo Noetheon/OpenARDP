@@ -8,9 +8,9 @@
 OpenARDP develops useful, measurable open-source software before considering a separate neutral specification. Public
 contracts are experimental interoperability candidates, not an announced industry standard.
 
-The runtime has converged remotely through Feature 011; Feature 012 local watching and
-stable jobs are locally converged pending publication. Features 013–017
-then proceed strictly in dependency order:
+The runtime has converged through Feature 012; Feature 013 retention, recovery and
+migrations are the active locally implemented package. Features 014–017 then proceed
+strictly in dependency order:
 
 1. evidence contracts before the rich-parser adapter;
 2. Docling-native preservation plus thin evidence projection;
@@ -60,3 +60,9 @@ One work package must converge and merge before its successor begins.
 - Retention, quarantine, recovery and explicit operator-driven reclamation precede automatic deletion.
 - Multi-tenant services, permission-aware enterprise retrieval and production Graph access are not current v0.1 behavior.
 - Content equality must never leak document existence across authorization boundaries.
+# Feature 013 completion boundary
+
+Feature 013 implements local retention, quarantine, explicit reclamation, recovery,
+paired migration and disposable-index rebuilding. Feature 014 remains solely responsible
+for export/interchange experimentation; this internal backup format is not promoted as a
+portable public contract.

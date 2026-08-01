@@ -5,6 +5,17 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 013 — retention, recovery and migrations
+
+- Added SQLite revision 10 maintenance intent, complete retention roots, operator holds,
+  deterministic dry-run plans, reversible quarantine/restore and explicit grace-gated
+  reclamation with crash recovery.
+- Added verified internal backup manifests, fresh disjoint restore, explicit paired
+  revision-9 migration, exact storage diagnostics/reserve checks and transactional global
+  lexical-index rebuild.
+- Added body-free CLI operations and offline integration/security evidence across backup,
+  restore, migration, capacity, commit and index-rebuild failure boundaries.
+
 ### Added
 
 - Foreground `watch`, body-free `jobs` and fenced `job-cancel` CLI commands over one

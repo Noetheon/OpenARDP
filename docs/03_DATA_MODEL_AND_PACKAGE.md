@@ -1,7 +1,7 @@
 # Data model and package specification
 
-**Status:** Canonical data-model guidance. Feature 012 adds internal watcher and job
-records without changing the twelve public roots. Export packaging is an experiment owned
+**Status:** Canonical data-model guidance. Feature 013 adds internal maintenance,
+retention and recovery records without changing the twelve public roots. Export packaging is an experiment owned
 by Feature 014, not a current stable format.
 
 ## 1. Design goals
@@ -367,3 +367,11 @@ Do not claim formal compliance initially. Design mappings for:
 - W3C PROV for entity/activity/agent provenance;
 - RO-Crate profile for packaging and contextual metadata;
 - SPDX/CycloneDX for the software/model bill of materials of the implementation, not as the document content schema.
+# Feature 013 maintenance state
+
+Workspace revision 10 adds retention holds, quarantine batches/entries, durable
+maintenance operations/events and verified migration-backup receipts. These records name
+only canonical object identities, closed reasons, counts, byte lengths and UTC times.
+They do not make derived indexes authoritative and do not weaken immutable source or CAS
+identity. The internal `openardp-backup-v1` manifest is a recovery artifact, not a public
+interchange schema.

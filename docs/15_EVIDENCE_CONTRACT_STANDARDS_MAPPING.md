@@ -59,5 +59,28 @@ integrity remain explicit OpenARDP concerns.
   are outside F006.
 - An optional mapping must preserve exact OpenARDP contract identities or declare a
   lossy/export-only relationship.
-- Feature 016 must use an independent producer or consumer to determine whether this
-  mapping surface is genuinely provider-neutral.
+- Feature 016 tested both directions with an isolated standard-library consumer and a
+  non-Docling TXT/CSV producer. The complete F006 fixture corpus and all six identity
+  vectors passed independently; the reference implementation accepted the alternate
+  text, page-region, table-cell and opaque-pointer record sets.
+
+## F016 bounded decision
+
+The result supports provider neutrality only for the measured thin contract surface:
+identity, source/native binding, navigation anchors, retrieval handles, trust and lifecycle
+metadata. No Docling-named field or value leaked into alternate records.
+
+Observed friction remains explicit:
+
+- JSON Schema cannot express all identity, scope, trust and record-set invariants, so an
+  independent consumer must implement both structural and semantic validation layers.
+- Purpose-specific RFC 8785 identity allowlists must be reproduced exactly. The current
+  golden evidence covers the contract's integer/string/no-float identity domain, not a
+  general-purpose numeric JCS implementation.
+- Page geometry is provider-declared, while table and provider pointers remain opaque and
+  profile-scoped. Matching shapes do not prove equivalent parser semantics.
+
+No contract change is required by the spike. Contract `0.1.0` remains experimental because
+an internal independent process is not external adoption and no breaking-contract migration
+practice has yet been demonstrated. The canonical machine decision is
+`conformance/alternate-parser/v0.1.0/expected/decision.json`.

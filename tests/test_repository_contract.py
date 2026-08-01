@@ -204,12 +204,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f015_governance_and_prior_contracts_are_present_and_frozen(
+def test_f016_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active release governance, accepted ADRs and frozen prior contracts."""
+    """Require active conformance governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/015-benchmark-security-release-gate"
+    assert active["feature_directory"] == "specs/016-alternate-parser-conformance-spike"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -254,6 +254,12 @@ def test_f015_governance_and_prior_contracts_are_present_and_frozen(
     assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 14
     assert (repository_root / "schemas/openardp-release-evidence.schema.json").is_file()
     assert (repository_root / "release/evidence/v0.1.0/decision.json").is_file()
+    assert (
+        repository_root / "conformance/alternate-parser/v0.1.0/expected/decision.json"
+    ).is_file()
+    assert (
+        repository_root / "conformance/alternate-parser/v0.1.0/expected/alternate-record-set.json"
+    ).is_file()
     migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
         encoding="utf-8"
     )

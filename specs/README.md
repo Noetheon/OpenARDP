@@ -40,7 +40,8 @@ refine those decisions but may not silently contradict them.
 | `012-local-watcher-and-jobs` | Bounded explicit local polling, durable stability/tombstones and cancellable ingestion jobs | Converged, merged and remotely verified |
 | `013-retention-recovery-migrations` | Verified backups, revision-9 migration, retention, quarantine, restore and explicit reclamation | Converged, merged and remotely verified |
 | `014-export-interchange-experiment` | Deterministic bounded BagIt exchange profile, hostile verification and fresh read-only import | Converged, merged and remotely verified |
-| `015-benchmark-security-release-gate` | Frozen benchmarks, security/supply-chain/reproduction evidence and fail-closed v0.1 gate | Implemented; current candidate decision `NO-GO` |
+| `015-benchmark-security-release-gate` | Frozen benchmarks, security/supply-chain/reproduction evidence and fail-closed v0.1 gate | Converged, merged and remotely verified; candidate remains `NO-GO` |
+| `016-alternate-parser-conformance-spike` | Isolated independent evidence consumer, non-Docling TXT/CSV producer and bounded neutrality decision | Implemented; scoped claim supported, contract remains experimental |
 
 ## Release evidence registry
 

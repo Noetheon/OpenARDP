@@ -335,8 +335,44 @@ Ruff, formatting, strict mypy over 56 source files, build, all twelve generated 
 F006 conformance validation, repository validation and pre-commit passed before
 publication. Pull request [#16](https://github.com/Noetheon/OpenARDP/pull/16) run
 [30677502891](https://github.com/Noetheon/OpenARDP/actions/runs/30677502891) then passed
-the complete locked gate on macOS, Ubuntu and Windows. The evidence-only amendment is
-subject to the same matrix, and F012 remains blocked until post-merge `main` CI passes.
+the complete locked gate on macOS, Ubuntu and Windows. The final PR-head workflow
+[30678039837](https://github.com/Noetheon/OpenARDP/actions/runs/30678039837) and
+post-merge `main` workflow
+[30678547188](https://github.com/Noetheon/OpenARDP/actions/runs/30678547188) also passed
+the complete locked gate on all three platforms. F011 is therefore remotely converged.
+
+## Feature 012 local evidence
+
+Feature `012-local-watcher-and-jobs` adds explicit foreground local polling, durable
+metadata stability/tombstones, exact watcher job targets, delayed eligibility and
+fenced cooperative cancellation in checksummed workspace revision 9. It adds no public
+schema, dependency, lockfile change, daemon, listener, cloud call or MCP mutation.
+
+The locally observed network-blocked suite passed all 1,148 tests with 86.51 percent
+branch-aware coverage against the 85 percent gate. The 121-test focused feature suite
+covers canonical disjoint root admission, all-entry/depth/device bounds, directory and
+source races, 100-repeat/20-client job convergence, exact stability/retry boundaries,
+queued/running cancellation races, restart recovery, backpressure, rename/delete/
+reappearance, path/body/token redaction, every watcher transaction outcome and all 28
+before/after positions around migration 9's 27 SQL statements. The exact SC-003 root
+overflow fixture produces zero partial state at 1,001/1,000 and converges all 1,000
+remaining supported files after reduction.
+
+Ruff and formatting over 169 files and strict mypy over 60 source files pass. All twelve
+public schemas, F006 conformance/vector evidence, MCP/context/domain fixtures,
+`pyproject.toml` and `uv.lock` remain byte-unchanged from F011. Build, schema, evidence,
+repository, pre-commit and `git diff --check` pass after the final documentation update.
+A fresh isolated offline wheel installed exactly seven core packages with no Docling,
+then completed revision-9 init, `watch --once` text ingestion and body-free job
+inspection. Linux, macOS and Windows PR-head plus post-merge `main` workflows remain
+mandatory before F013 begins.
+
+Superseded PR-head run `30682261668` found a Linux inode-reuse assumption in one test,
+and run `30682726438` then passed Ubuntu/macOS while exposing Windows' zero-valued
+cached `DirEntry.stat()` identities. The scanner now uses fresh no-follow `os.stat()`
+metadata for portable device/file identity checks, with a regression test that forbids
+the cached call. These failed runs are retained as corrective evidence and are not
+treated as publication success.
 
 ## Corrective environment verification
 

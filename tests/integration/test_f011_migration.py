@@ -24,7 +24,7 @@ def test_migration_eight_is_append_only_checksummed_strict_and_indexed(tmp_path:
         MIGRATION_8.checksum
         == "sha256:40fd396f436933a84727cb1ef05344bfa05665c2c7f29bfda181a7cb91c45700"
     )
-    catalog = SQLiteCatalog(tmp_path / "catalog.sqlite3")
+    catalog = SQLiteCatalog(tmp_path / "catalog.sqlite3", migrations=MIGRATIONS[:8])
     assert catalog.initialize(now=NOW) == 8
     with sqlite3.connect(catalog.path) as connection:
         tables = {
@@ -53,13 +53,13 @@ def test_migration_eight_is_append_only_checksummed_strict_and_indexed(tmp_path:
 def test_revision_seven_upgrades_without_rewriting_history(tmp_path: Path) -> None:
     """Apply only the pending migration and preserve every prior checksum."""
     path = tmp_path / "catalog.sqlite3"
-    old = SQLiteCatalog(path, migrations=MIGRATIONS[:-1])
+    old = SQLiteCatalog(path, migrations=MIGRATIONS[:7])
     assert old.initialize(now=NOW) == 7
     with sqlite3.connect(path) as connection:
         before = connection.execute(
             "SELECT version, name, checksum FROM schema_migrations ORDER BY version"
         ).fetchall()
-    current = SQLiteCatalog(path)
+    current = SQLiteCatalog(path, migrations=MIGRATIONS[:8])
     assert current.initialize(now=NOW) == 8
     with sqlite3.connect(path) as connection:
         after = connection.execute(
@@ -74,15 +74,15 @@ def test_revision_eight_failure_rolls_back_and_twenty_initializers_converge(
 ) -> None:
     """Preserve revision 7 on statement failure and serialize concurrent upgrade."""
     failed_path = tmp_path / "failed.sqlite3"
-    assert SQLiteCatalog(failed_path, migrations=MIGRATIONS[:-1]).initialize(now=NOW) == 7
+    assert SQLiteCatalog(failed_path, migrations=MIGRATIONS[:7]).initialize(now=NOW) == 7
     broken = Migration(
         version=8,
         name="visual-evidence",
         statements=(MIGRATION_8.statements[0], "INVALID VISUAL MIGRATION SQL"),
     )
     with pytest.raises(MigrationFailed):
-        SQLiteCatalog(failed_path, migrations=(*MIGRATIONS[:-1], broken)).initialize(now=NOW)
-    assert SQLiteCatalog(failed_path, migrations=MIGRATIONS[:-1]).schema_version() == 7
+        SQLiteCatalog(failed_path, migrations=(*MIGRATIONS[:7], broken)).initialize(now=NOW)
+    assert SQLiteCatalog(failed_path, migrations=MIGRATIONS[:7]).schema_version() == 7
     with sqlite3.connect(failed_path) as connection:
         assert (
             connection.execute(
@@ -92,11 +92,13 @@ def test_revision_eight_failure_rolls_back_and_twenty_initializers_converge(
         )
 
     concurrent_path = tmp_path / "concurrent.sqlite3"
-    assert SQLiteCatalog(concurrent_path, migrations=MIGRATIONS[:-1]).initialize(now=NOW) == 7
+    assert SQLiteCatalog(concurrent_path, migrations=MIGRATIONS[:7]).initialize(now=NOW) == 7
     with ThreadPoolExecutor(max_workers=10) as executor:
         revisions = tuple(
             executor.map(
-                lambda _: SQLiteCatalog(concurrent_path).initialize(now=NOW),
+                lambda _: SQLiteCatalog(concurrent_path, migrations=MIGRATIONS[:8]).initialize(
+                    now=NOW
+                ),
                 range(20),
             )
         )
@@ -110,7 +112,7 @@ def test_revision_eight_failure_rolls_back_and_twenty_initializers_converge(
 def test_too_new_revision_is_rejected_without_mutation(tmp_path: Path) -> None:
     """Keep downgrade behavior explicit after a future visual schema appears."""
     path = tmp_path / "future.sqlite3"
-    catalog = SQLiteCatalog(path)
+    catalog = SQLiteCatalog(path, migrations=MIGRATIONS[:8])
     assert catalog.initialize(now=NOW) == 8
     with sqlite3.connect(path) as connection:
         connection.execute(

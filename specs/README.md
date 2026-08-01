@@ -37,6 +37,7 @@ refine those decisions but may not silently contradict them.
 | `009-read-only-mcp` | Least-privilege read-only MCP stdio server, nine object-scoped tools, versioned error taxonomy and `mcp` CLI verb | Converged, merged and remotely verified |
 | `010-reconciliation-derivation-dag` | Conservative lineages, exact reuse bindings and transactional derivation invalidation/reactivation | Converged, merged and remotely verified |
 | `011-visual-evidence-escalation` | Explicit bounded PDF raster/crop evidence, handle-only context and optional untrusted interpretation | Converged; three-platform PR CI verified |
+| `012-local-watcher-and-jobs` | Bounded explicit local polling, durable stability/tombstones and cancellable ingestion jobs | Converged locally; publication pending |
 
 The active-feature locator is `.specify/feature.json`. A later work package must not be started by adding behavior to an
 earlier feature directory.

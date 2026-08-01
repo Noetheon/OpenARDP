@@ -16,6 +16,7 @@ from openardp.services.reconciliation import ReconciliationService
 from openardp.services.rich_evidence import RetrievedRichEvidence, RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
+from openardp.services.watcher import WatcherService
 
 __all__ = [
     "ContextCompilerService",
@@ -29,6 +30,7 @@ __all__ = [
     "RichEvidenceService",
     "RichIngestionService",
     "SearchService",
+    "WatcherService",
     "candidate_total_order_key",
     "classify_candidates",
     "context_algorithm_identity",

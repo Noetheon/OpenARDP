@@ -8,7 +8,7 @@ import os
 import sqlite3
 import stat
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import BinaryIO, NoReturn, cast
@@ -32,9 +32,11 @@ from openardp.adapters.isolated_visual import IsolatedVisualRenderer
 from openardp.adapters.local_source import (
     InvalidSourcePath,
     LocalSource,
+    SourceChangedDuringSnapshot,
     SourceNotFound,
     SourceTooLarge,
 )
+from openardp.adapters.local_watch import LocalWatchScanner
 from openardp.adapters.local_workspace import (
     LocalWorkspace,
     WorkspaceError,
@@ -51,6 +53,8 @@ from openardp.domain.context_compilation import (
 from openardp.domain.ingestion import RichMediaType
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
+from openardp.domain.storage import Job, JobState
+from openardp.domain.watcher import WatchConfig, WatchCycleResult
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
@@ -60,6 +64,10 @@ from openardp.ports.catalog import (
     CatalogIncompatible,
     CatalogTooNew,
     DocumentNotFound,
+    InvalidJobTransition,
+    JobConflict,
+    JobNotFound,
+    LeaseConflict,
     RepresentationBusy,
     RepresentationConflict,
     RepresentationIntegrityError,
@@ -78,7 +86,7 @@ from openardp.ports.context import (
     ContextNotFound,
 )
 from openardp.ports.object_store import ObjectStoreError
-from openardp.ports.parser import ParserError, UnsupportedTextMedia
+from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
 from openardp.ports.visual import (
     UnsupportedVisualMedia,
     VisualConflict,
@@ -87,6 +95,14 @@ from openardp.ports.visual import (
     VisualResourceLimitExceeded,
     VisualTargetUnavailable,
 )
+from openardp.ports.watcher import (
+    WatchCancellationObserved,
+    WatchPermanentIngestion,
+    WatchRetryableIngestion,
+    WatchRootInvalid,
+    WatchRootOverlap,
+    WatchRootUnsupported,
+)
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
@@ -94,6 +110,7 @@ from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
 from openardp.services.visual_evidence import VisualEvidenceService
+from openardp.services.watcher import WatcherService
 
 _COMMANDS = {
     "init",
@@ -111,6 +128,9 @@ _COMMANDS = {
     "visual-materialize",
     "visual-evidence",
     "mcp",
+    "watch",
+    "jobs",
+    "job-cancel",
 }
 
 _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
@@ -145,6 +165,35 @@ def _parser() -> _ArgumentParser:
     ingest.add_argument("--docling-model-root", type=Path)
     ingest.add_argument("--docling-model-manifest", type=Path)
     _common_options(ingest)
+
+    watch = subparsers.add_parser("watch", help="watch one explicit local root in foreground")
+    watch.add_argument("root", type=Path)
+    watch.add_argument("--once", action="store_true")
+    watch.add_argument("--non-recursive", action="store_true", dest="non_recursive")
+    watch.add_argument("--max-depth", type=int, default=32, dest="max_depth")
+    watch.add_argument("--stability-ms", type=int, default=5_000, dest="stability_ms")
+    watch.add_argument("--poll-ms", type=int, default=2_000, dest="poll_ms")
+    watch.add_argument("--max-entries", type=int, default=10_000, dest="max_entries")
+    watch.add_argument("--max-active-jobs", type=int, default=1_000, dest="max_active_jobs")
+    watch.add_argument("--max-jobs-per-cycle", type=int, default=1, dest="max_jobs_per_cycle")
+    watch.add_argument("--max-attempts", type=int, default=3, dest="max_attempts")
+    watch.add_argument("--retry-base-ms", type=int, default=1_000, dest="retry_base_ms")
+    watch.add_argument("--retry-max-ms", type=int, default=60_000, dest="retry_max_ms")
+    watch.add_argument("--profile")
+    watch.add_argument("--rich-profile")
+    watch.add_argument("--docling-model-root", type=Path)
+    watch.add_argument("--docling-model-manifest", type=Path)
+    _common_options(watch)
+
+    jobs = subparsers.add_parser("jobs", help="list body-free durable job state")
+    jobs.add_argument("--state", choices=tuple(state.value for state in JobState))
+    jobs.add_argument("--kind")
+    jobs.add_argument("--limit", type=int, default=100)
+    _common_options(jobs)
+
+    job_cancel = subparsers.add_parser("job-cancel", help="cancel one durable local job")
+    job_cancel.add_argument("job_id")
+    _common_options(job_cancel)
 
     list_parser = subparsers.add_parser("list", help="list body-free document summaries")
     _common_options(list_parser)
@@ -518,6 +567,141 @@ def _load_model_manifest(path: Path) -> ModelBundleManifest:
             os.close(descriptor)
 
 
+class _CliWatchRunner:
+    """Reuse configured ingestion services behind the watcher runner contract."""
+
+    def __init__(
+        self,
+        text: IngestionService,
+        rich: RichIngestionService | None,
+    ) -> None:
+        self._text = text
+        self._rich = rich
+
+    def ingest(
+        self,
+        path: Path,
+        *,
+        profile: str,
+        cancelled: Callable[[], bool],
+    ) -> object:
+        """Route one safe target and translate failures to stable watcher classes."""
+        if cancelled():
+            raise WatchCancellationObserved("watch cancellation observed")
+        try:
+            media_type = LocalSource(path).media_type
+            result: object
+            if isinstance(media_type, RichMediaType):
+                if self._rich is None:
+                    raise WatchPermanentIngestion("rich parser is unavailable")
+                result = self._rich.ingest(path, profile=profile)
+            else:
+                result = self._text.ingest(path, profile=profile)
+        except WatchPermanentIngestion:
+            raise
+        except (SourceNotFound, SourceChangedDuringSnapshot, ParserTimedOut, RepresentationBusy):
+            raise WatchRetryableIngestion("watch ingestion is retryable") from None
+        except (InvalidSourcePath, SourceTooLarge, UnsupportedTextMedia, ParserError, ValueError):
+            raise WatchPermanentIngestion("watch ingestion is not retryable") from None
+        if cancelled():
+            raise WatchCancellationObserved("watch cancellation observed")
+        return result
+
+
+def _watch_config(arguments: argparse.Namespace) -> WatchConfig:
+    """Construct one closed trusted watcher policy from explicit CLI values."""
+    recursive = not bool(arguments.non_recursive)
+    return WatchConfig(
+        recursive=recursive,
+        max_depth=int(arguments.max_depth) if recursive else 0,
+        stability_ms=int(arguments.stability_ms),
+        poll_ms=int(arguments.poll_ms),
+        max_entries=int(arguments.max_entries),
+        max_active_jobs=int(arguments.max_active_jobs),
+        max_jobs_per_cycle=int(arguments.max_jobs_per_cycle),
+        max_attempts=int(arguments.max_attempts),
+        retry_base_ms=int(arguments.retry_base_ms),
+        retry_max_ms=int(arguments.retry_max_ms),
+        text_profile=str(arguments.profile or "default"),
+        rich_profile=str(arguments.rich_profile or "openardp-docling-offline-v1"),
+    )
+
+
+def _watch_service(workspace: LocalWorkspace, arguments: argparse.Namespace) -> WatcherService:
+    """Compose foreground watching from explicit local capabilities only."""
+    text_ingestion, _query, _search = _services(workspace)
+    rich: RichIngestionService | None = None
+    if arguments.docling_model_root is not None or arguments.docling_model_manifest is not None:
+        rich, _evidence = _rich_services(
+            workspace,
+            model_root=(
+                Path(arguments.docling_model_root)
+                if arguments.docling_model_root is not None
+                else None
+            ),
+            model_manifest_path=(
+                Path(arguments.docling_model_manifest)
+                if arguments.docling_model_manifest is not None
+                else None
+            ),
+        )
+    return WatcherService(
+        workspace.catalog,
+        LocalWatchScanner(),
+        _CliWatchRunner(text_ingestion, rich),
+        workspace_root=workspace.root,
+    )
+
+
+def _job_summary(job: Job) -> dict[str, object]:
+    """Project one job onto a body/path/owner/key-free local control surface."""
+    return {
+        "job_id": str(job.job_id),
+        "kind": job.kind,
+        "state": job.state.value,
+        "attempt_count": job.attempt_count,
+        "max_attempts": job.max_attempts,
+        "revision": job.revision,
+        "available_at": job.model_dump(mode="json")["available_at"],
+        "cancellation_requested": job.cancellation_requested_at is not None,
+        "created_at": job.model_dump(mode="json")["created_at"],
+        "updated_at": job.model_dump(mode="json")["updated_at"],
+        "terminal_at": job.model_dump(mode="json")["terminal_at"],
+    }
+
+
+def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
+    """Project a cycle without exposing its private root authority or locators."""
+    reconciliation = result.reconciliation
+    return {
+        "root_id": reconciliation.root.authority.root_id,
+        "generation": reconciliation.root.generation,
+        "complete": reconciliation.complete,
+        "rescan_required": reconciliation.root.rescan_required,
+        "counts": {
+            "entries": reconciliation.entry_count,
+            "candidates": reconciliation.candidate_count,
+            "stable": reconciliation.stable_count,
+            "scheduled": len(reconciliation.scheduled_job_ids),
+            "tombstoned": reconciliation.tombstone_count,
+            "recovered_requeued": len(result.recovery.requeued_job_ids),
+            "recovered_failed": len(result.recovery.failed_job_ids),
+            "recovered_cancelled": len(result.recovery.cancelled_job_ids),
+            "succeeded": len(result.succeeded_job_ids),
+            "retried": len(result.retried_job_ids),
+            "failed": len(result.failed_job_ids),
+            "cancelled": len(result.cancelled_job_ids),
+        },
+        "jobs": {
+            "scheduled": tuple(str(value) for value in reconciliation.scheduled_job_ids),
+            "succeeded": tuple(str(value) for value in result.succeeded_job_ids),
+            "retried": tuple(str(value) for value in result.retried_job_ids),
+            "failed": tuple(str(value) for value in result.failed_job_ids),
+            "cancelled": tuple(str(value) for value in result.cancelled_job_ids),
+        },
+    }
+
+
 def _execute(arguments: argparse.Namespace) -> object:
     command = str(arguments.command)
     store = Path(arguments.store)
@@ -529,6 +713,29 @@ def _execute(arguments: argparse.Namespace) -> object:
         }
 
     workspace = LocalWorkspace.open(store)
+    if command == "watch":
+        service = _watch_service(workspace, arguments)
+        config = _watch_config(arguments)
+        root = Path(arguments.root)
+        if bool(arguments.once):
+            return _watch_cycle_summary(service.run_cycle(root, config=config))
+        service.run_forever(root, config=config, stop=lambda: False)
+        return {"stopped": True}
+    if command == "jobs":
+        return tuple(
+            _job_summary(job)
+            for job in workspace.catalog.list_jobs(
+                state=str(arguments.state) if arguments.state is not None else None,
+                kind=str(arguments.kind) if arguments.kind is not None else None,
+                limit=int(arguments.limit),
+            )
+        )
+    if command == "job-cancel":
+        job = workspace.catalog.request_job_cancellation(
+            _parse_uuid(str(arguments.job_id)),
+            now=_utc_now(),
+        )
+        return _job_summary(job)
     if command == "ingest":
         source = Path(arguments.path)
         media_type = LocalSource(source).media_type
@@ -792,6 +999,32 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
         print(f"projection={converted['evidence_projection_id']}")
         print(f"crop={crop['object_id']} ({crop['byte_length']} bytes)")
         print(f"usage={policy['scope']} export={str(policy['export_allowed']).lower()}")
+    elif command == "watch":
+        assert isinstance(converted, dict)
+        counts = converted["counts"]
+        assert isinstance(counts, dict)
+        print(
+            f"root={converted['root_id']} generation={converted['generation']} "
+            f"complete={str(converted['complete']).lower()} "
+            f"rescan={str(converted['rescan_required']).lower()}"
+        )
+        print(
+            f"entries={counts['entries']} candidates={counts['candidates']} "
+            f"stable={counts['stable']} scheduled={counts['scheduled']} "
+            f"succeeded={counts['succeeded']} retried={counts['retried']} "
+            f"failed={counts['failed']} cancelled={counts['cancelled']}"
+        )
+    elif command == "jobs":
+        assert isinstance(converted, list)
+        for item in converted:
+            assert isinstance(item, dict)
+            print(
+                f"{item['job_id']}\t{item['kind']}\t{item['state']}\t"
+                f"attempts={item['attempt_count']}/{item['max_attempts']}"
+            )
+    elif command == "job-cancel":
+        assert isinstance(converted, dict)
+        print(f"{converted['job_id']}\t{converted['state']}")
     else:
         print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
 
@@ -817,7 +1050,7 @@ def _classification(error: Exception) -> tuple[int, str, str]:
         return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"
     if isinstance(
         error,
-        (SourceNotFound, DocumentNotFound, RepresentationNotFound, BlockNotFound),
+        (SourceNotFound, DocumentNotFound, RepresentationNotFound, BlockNotFound, JobNotFound),
     ):
         return 3, "not_found", "requested evidence was not found"
     if isinstance(
@@ -831,6 +1064,9 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             UnsupportedVisualMedia,
             VisualDependencyUnavailable,
             VisualResourceLimitExceeded,
+            WatchRootInvalid,
+            WatchRootOverlap,
+            WatchRootUnsupported,
             ValueError,
         ),
     ):
@@ -841,6 +1077,9 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             RepresentationBusy,
             RepresentationConflict,
             RepresentationLeaseConflict,
+            InvalidJobTransition,
+            JobConflict,
+            LeaseConflict,
             AmbiguousBlock,
             VisualConflict,
         ),
@@ -905,6 +1144,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     except SystemExit as error:
         return error.code if isinstance(error.code, int) else 1
+    except KeyboardInterrupt:
+        return 130
     except Exception as error:
         return _failure(command, error, json_output=json_requested)
 

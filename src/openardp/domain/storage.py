@@ -192,6 +192,7 @@ class JobState(StrEnum):
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class JobSpec(DomainModel):
@@ -202,11 +203,14 @@ class JobSpec(DomainModel):
     deduplication_key: DeduplicationKey
     max_attempts: int = Field(ge=1, le=100)
     references: tuple[ObjectReference, ...] = ()
+    available_at: UtcDatetime | None = None
     created_at: UtcDatetime
 
     @model_validator(mode="after")
     def _references_are_unambiguous(self) -> JobSpec:
         _ensure_unique_reference_slots(self.references)
+        if self.available_at is not None and self.available_at < self.created_at:
+            raise ValueError("available_at must not precede created_at")
         return self
 
 
@@ -220,8 +224,10 @@ class Job(DomainModel):
     attempt_count: int = Field(ge=0)
     max_attempts: int = Field(ge=1, le=100)
     revision: int = Field(ge=0)
+    available_at: UtcDatetime
     active_owner_id: OwnerId | None = None
     lease_expires_at: UtcDatetime | None = None
+    cancellation_requested_at: UtcDatetime | None = None
     last_failure_code: MachineToken | None = None
     created_at: UtcDatetime
     updated_at: UtcDatetime
@@ -234,16 +240,24 @@ class Job(DomainModel):
             raise ValueError("attempt_count must not exceed max_attempts")
         if self.updated_at < self.created_at:
             raise ValueError("updated_at must not precede created_at")
+        if self.available_at < self.created_at:
+            raise ValueError("available_at must not precede created_at")
         _ensure_unique_reference_slots(self.references)
         if self.state is JobState.RUNNING:
             if self.active_owner_id is None or self.lease_expires_at is None:
                 raise ValueError("RUNNING job requires an owner and lease expiry")
             if self.terminal_at is not None:
                 raise ValueError("RUNNING job must not have terminal_at")
+            if self.cancellation_requested_at is not None and not (
+                self.created_at <= self.cancellation_requested_at <= self.updated_at
+            ):
+                raise ValueError("cancellation request time is inconsistent")
         else:
             if self.active_owner_id is not None or self.lease_expires_at is not None:
                 raise ValueError("non-RUNNING job must not retain an active lease")
-        if self.state in {JobState.SUCCEEDED, JobState.FAILED}:
+            if self.cancellation_requested_at is not None:
+                raise ValueError("cancellation request requires a RUNNING job")
+        if self.state in {JobState.SUCCEEDED, JobState.FAILED, JobState.CANCELLED}:
             if self.terminal_at is None:
                 raise ValueError("terminal job requires terminal_at")
             if self.terminal_at < self.created_at:
@@ -279,6 +293,8 @@ class JobEventType(StrEnum):
     FAILED = "FAILED"
     LEASE_RECOVERED = "LEASE_RECOVERED"
     LEASE_EXHAUSTED = "LEASE_EXHAUSTED"
+    CANCEL_REQUESTED = "CANCEL_REQUESTED"
+    CANCELLED = "CANCELLED"
 
 
 class JobEvent(DomainModel):
@@ -296,21 +312,32 @@ class JobEvent(DomainModel):
 
     @model_validator(mode="after")
     def _classification_matches_transition(self) -> JobEvent:
-        transitions = {
-            JobEventType.ENQUEUED: (None, JobState.QUEUED),
-            JobEventType.CLAIMED: (JobState.QUEUED, JobState.RUNNING),
-            JobEventType.RENEWED: (JobState.RUNNING, JobState.RUNNING),
-            JobEventType.COMPLETED: (JobState.RUNNING, JobState.SUCCEEDED),
-            JobEventType.RETRY_QUEUED: (JobState.RUNNING, JobState.QUEUED),
-            JobEventType.FAILED: (JobState.RUNNING, JobState.FAILED),
-            JobEventType.LEASE_RECOVERED: (JobState.RUNNING, JobState.QUEUED),
-            JobEventType.LEASE_EXHAUSTED: (JobState.RUNNING, JobState.FAILED),
+        transitions: dict[JobEventType, set[tuple[JobState | None, JobState]]] = {
+            JobEventType.ENQUEUED: {(None, JobState.QUEUED)},
+            JobEventType.CLAIMED: {(JobState.QUEUED, JobState.RUNNING)},
+            JobEventType.RENEWED: {(JobState.RUNNING, JobState.RUNNING)},
+            JobEventType.COMPLETED: {(JobState.RUNNING, JobState.SUCCEEDED)},
+            JobEventType.RETRY_QUEUED: {(JobState.RUNNING, JobState.QUEUED)},
+            JobEventType.FAILED: {(JobState.RUNNING, JobState.FAILED)},
+            JobEventType.LEASE_RECOVERED: {(JobState.RUNNING, JobState.QUEUED)},
+            JobEventType.LEASE_EXHAUSTED: {(JobState.RUNNING, JobState.FAILED)},
+            JobEventType.CANCEL_REQUESTED: {(JobState.RUNNING, JobState.RUNNING)},
+            JobEventType.CANCELLED: {
+                (JobState.QUEUED, JobState.CANCELLED),
+                (JobState.RUNNING, JobState.CANCELLED),
+            },
         }
-        if (self.from_state, self.to_state) != transitions[self.event_type]:
+        if (self.from_state, self.to_state) not in transitions[self.event_type]:
             raise ValueError("job event classification does not match transition")
+        queued_cancellation = (
+            self.event_type is JobEventType.CANCELLED and self.from_state is JobState.QUEUED
+        )
         if self.event_type is JobEventType.ENQUEUED:
             if self.attempt_count != 0 or self.owner_id is not None:
-                raise ValueError("enqueue event must have attempt zero and no owner")
+                raise ValueError("unclaimed job event must have attempt zero and no owner")
+        elif queued_cancellation:
+            if self.owner_id is not None:
+                raise ValueError("queued cancellation event must not have an owner")
         elif self.attempt_count < 1 or self.owner_id is None:
             raise ValueError("job transition event requires an attempt and owner")
         failure_events = {
@@ -329,16 +356,21 @@ class RecoveryResult(DomainModel):
 
     requeued_job_ids: tuple[CanonicalUuid, ...]
     failed_job_ids: tuple[CanonicalUuid, ...]
+    cancelled_job_ids: tuple[CanonicalUuid, ...] = ()
     recovered_at: UtcDatetime
 
     @model_validator(mode="after")
     def _job_ids_are_sorted_and_disjoint(self) -> RecoveryResult:
         requeued = tuple(str(item) for item in self.requeued_job_ids)
         failed = tuple(str(item) for item in self.failed_job_ids)
+        cancelled = tuple(str(item) for item in self.cancelled_job_ids)
         if (
             requeued != tuple(sorted(set(requeued)))
             or failed != tuple(sorted(set(failed)))
+            or cancelled != tuple(sorted(set(cancelled)))
             or set(requeued) & set(failed)
+            or set(requeued) & set(cancelled)
+            or set(failed) & set(cancelled)
         ):
             raise ValueError("recovery job identities must be sorted and disjoint")
         return self

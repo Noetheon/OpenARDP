@@ -133,3 +133,24 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - Resource isolation is bounded defense in depth. Native decoder risk, platform
   resource-limit variance and imperfect proprietary-viewer parity are explicit
   residual risks, not sandbox or fidelity guarantees.
+
+## Feature 012 operating profile
+
+- `openardp watch ROOT --store WORKSPACE` is a foreground polling loop; `--once`
+  executes one deterministic cycle for automation. It installs no service, opens no
+  listener and grants no MCP mutation.
+- Root and workspace must be existing disjoint local directories. Links/junctions,
+  recognizable UNC/device paths and cross-device traversal are rejected. Remote POSIX
+  mounts cannot be identified portably and receive no correctness guarantee.
+- Defaults bound depth, entries, active jobs, jobs per cycle, stability, polling,
+  attempts and retry delay. An incomplete/overflowed scan publishes no partial absence;
+  queue pressure persists `rescan_required` for later convergence.
+- `jobs` and `job-cancel` expose only UUIDs, kinds, states, attempts, revisions and UTC
+  times. Watch events omit paths, filenames, document bodies, errors, owners and tokens.
+- Back up a revision-8 workspace before opening it with F012. Migration 9 atomically
+  replaces job constraints and adds watcher tables. Live downgrade is unsupported;
+  stop the foreground loop and restore the complete paired backup.
+- Cancellation is cooperative. It prevents stale job transitions but does not undo
+  immutable CAS objects or ingestion facts already committed before a checkpoint.
+  Delete/tombstone handling likewise performs no reclamation; F013 owns dry-run,
+  quarantine, restore and physical collection.

@@ -1001,6 +1001,259 @@ MIGRATION_8 = Migration(
     ),
 )
 
+MIGRATION_9 = Migration(
+    version=9,
+    name="local-watcher-and-cancellable-jobs",
+    statements=(
+        "DROP INDEX jobs_queue_idx",
+        "DROP INDEX jobs_lease_idx",
+        "DROP INDEX jobs_active_lease_token_idx",
+        "DROP INDEX job_object_references_object_id_idx",
+        "ALTER TABLE job_events RENAME TO job_events_v2",
+        "ALTER TABLE job_object_references RENAME TO job_object_references_v2",
+        "ALTER TABLE jobs RENAME TO jobs_v2",
+        """
+        CREATE TABLE jobs (
+            job_id TEXT PRIMARY KEY CHECK (length(job_id) = 36),
+            kind TEXT NOT NULL CHECK (length(kind) BETWEEN 1 AND 128),
+            deduplication_key TEXT NOT NULL CHECK (
+                length(deduplication_key) BETWEEN 1 AND 1024
+            ),
+            state TEXT NOT NULL CHECK (
+                state IN ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED')
+            ),
+            attempt_count INTEGER NOT NULL CHECK (attempt_count >= 0),
+            max_attempts INTEGER NOT NULL CHECK (max_attempts BETWEEN 1 AND 100),
+            revision INTEGER NOT NULL CHECK (revision >= 0),
+            available_at TEXT NOT NULL CHECK (length(available_at) = 27),
+            active_owner_id TEXT NULL CHECK (
+                active_owner_id IS NULL OR length(active_owner_id) BETWEEN 1 AND 255
+            ),
+            active_lease_token_hash TEXT NULL CHECK (
+                active_lease_token_hash IS NULL OR (
+                    length(active_lease_token_hash) = 71
+                    AND substr(active_lease_token_hash, 1, 7) = 'sha256:'
+                    AND substr(active_lease_token_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ),
+            lease_expires_at TEXT NULL CHECK (
+                lease_expires_at IS NULL OR length(lease_expires_at) = 27
+            ),
+            cancellation_requested_at TEXT NULL CHECK (
+                cancellation_requested_at IS NULL OR length(cancellation_requested_at) = 27
+            ),
+            last_transition_token_hash TEXT NULL CHECK (
+                last_transition_token_hash IS NULL OR (
+                    length(last_transition_token_hash) = 71
+                    AND substr(last_transition_token_hash, 1, 7) = 'sha256:'
+                    AND substr(last_transition_token_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ),
+            last_failure_code TEXT NULL CHECK (
+                last_failure_code IS NULL OR length(last_failure_code) BETWEEN 1 AND 128
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            updated_at TEXT NOT NULL CHECK (length(updated_at) = 27),
+            terminal_at TEXT NULL CHECK (terminal_at IS NULL OR length(terminal_at) = 27),
+            UNIQUE (kind, deduplication_key),
+            CHECK (attempt_count <= max_attempts),
+            CHECK (available_at >= created_at),
+            CHECK (
+                cancellation_requested_at IS NULL OR (
+                    state = 'RUNNING' AND cancellation_requested_at >= created_at
+                    AND cancellation_requested_at <= updated_at
+                )
+            ),
+            CHECK (
+                (state = 'RUNNING' AND active_owner_id IS NOT NULL
+                    AND active_lease_token_hash IS NOT NULL AND lease_expires_at IS NOT NULL
+                    AND terminal_at IS NULL)
+                OR
+                (state = 'QUEUED' AND active_owner_id IS NULL
+                    AND active_lease_token_hash IS NULL AND lease_expires_at IS NULL
+                    AND cancellation_requested_at IS NULL AND terminal_at IS NULL)
+                OR
+                (state IN ('SUCCEEDED', 'FAILED', 'CANCELLED')
+                    AND active_owner_id IS NULL AND active_lease_token_hash IS NULL
+                    AND lease_expires_at IS NULL AND cancellation_requested_at IS NULL
+                    AND terminal_at IS NOT NULL)
+            )
+        ) STRICT
+        """,
+        """
+        INSERT INTO jobs(
+            job_id, kind, deduplication_key, state, attempt_count, max_attempts, revision,
+            available_at, active_owner_id, active_lease_token_hash, lease_expires_at,
+            cancellation_requested_at, last_transition_token_hash, last_failure_code,
+            created_at, updated_at, terminal_at
+        ) SELECT
+            job_id, kind, deduplication_key, state, attempt_count, max_attempts, revision,
+            created_at, active_owner_id, active_lease_token_hash, lease_expires_at,
+            NULL, last_transition_token_hash, last_failure_code, created_at, updated_at,
+            terminal_at
+        FROM jobs_v2
+        """,
+        """
+        CREATE TABLE job_events (
+            job_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 64),
+            from_state TEXT NULL CHECK (
+                from_state IS NULL OR from_state IN (
+                    'QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED'
+                )
+            ),
+            to_state TEXT NOT NULL CHECK (
+                to_state IN ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED')
+            ),
+            occurred_at TEXT NOT NULL CHECK (length(occurred_at) = 27),
+            attempt_count INTEGER NOT NULL CHECK (attempt_count >= 0),
+            owner_id TEXT NULL CHECK (owner_id IS NULL OR length(owner_id) BETWEEN 1 AND 255),
+            failure_code TEXT NULL CHECK (
+                failure_code IS NULL OR length(failure_code) BETWEEN 1 AND 128
+            ),
+            PRIMARY KEY (job_id, sequence),
+            FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        INSERT INTO job_events(
+            job_id, sequence, event_type, from_state, to_state, occurred_at,
+            attempt_count, owner_id, failure_code
+        ) SELECT job_id, sequence, event_type, from_state, to_state, occurred_at,
+            attempt_count, owner_id, failure_code FROM job_events_v2
+        """,
+        """
+        CREATE TABLE job_object_references (
+            job_id TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (length(role) BETWEEN 1 AND 64 AND role GLOB '[a-z]*'),
+            ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+            object_id TEXT NOT NULL,
+            media_type TEXT NULL CHECK (
+                media_type IS NULL OR length(media_type) BETWEEN 1 AND 255
+            ),
+            PRIMARY KEY (job_id, role, ordinal),
+            FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE RESTRICT,
+            FOREIGN KEY (object_id) REFERENCES objects(object_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        INSERT INTO job_object_references(job_id, role, ordinal, object_id, media_type)
+        SELECT job_id, role, ordinal, object_id, media_type FROM job_object_references_v2
+        """,
+        "DROP TABLE job_events_v2",
+        "DROP TABLE job_object_references_v2",
+        "DROP TABLE jobs_v2",
+        "CREATE INDEX jobs_queue_idx ON jobs(state, available_at, created_at, job_id)",
+        "CREATE INDEX jobs_lease_idx ON jobs(state, lease_expires_at, job_id)",
+        "CREATE UNIQUE INDEX jobs_active_lease_token_idx ON jobs(active_lease_token_hash) "
+        "WHERE active_lease_token_hash IS NOT NULL",
+        "CREATE INDEX job_object_references_object_id_idx ON job_object_references(object_id)",
+        """
+        CREATE TABLE watch_roots (
+            root_id TEXT PRIMARY KEY CHECK (
+                length(root_id) = 71 AND substr(root_id, 1, 7) = 'sha256:'
+                AND substr(root_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            root_path TEXT NOT NULL CHECK (length(root_path) BETWEEN 1 AND 8192),
+            root_path_digest TEXT NOT NULL CHECK (
+                length(root_path_digest) = 71 AND substr(root_path_digest, 1, 7) = 'sha256:'
+                AND substr(root_path_digest, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            device_id TEXT NOT NULL CHECK (length(device_id) BETWEEN 1 AND 128),
+            file_id TEXT NOT NULL CHECK (length(file_id) BETWEEN 1 AND 128),
+            config_json TEXT NOT NULL CHECK (length(config_json) BETWEEN 2 AND 65536),
+            config_hash TEXT NOT NULL CHECK (
+                length(config_hash) = 71 AND substr(config_hash, 1, 7) = 'sha256:'
+                AND substr(config_hash, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            generation INTEGER NOT NULL CHECK (generation >= 0),
+            rescan_required INTEGER NOT NULL CHECK (rescan_required IN (0, 1)),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            updated_at TEXT NOT NULL CHECK (length(updated_at) = 27)
+        ) STRICT
+        """,
+        """
+        CREATE TABLE watch_observations (
+            root_id TEXT NOT NULL,
+            locator_digest TEXT NOT NULL CHECK (
+                length(locator_digest) = 71 AND substr(locator_digest, 1, 7) = 'sha256:'
+                AND substr(locator_digest, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            relative_locator TEXT NOT NULL CHECK (length(relative_locator) BETWEEN 1 AND 8192),
+            state TEXT NOT NULL CHECK (state IN ('CANDIDATE', 'STABLE', 'TOMBSTONED')),
+            fingerprint_json TEXT NULL CHECK (
+                fingerprint_json IS NULL OR length(fingerprint_json) BETWEEN 2 AND 4096
+            ),
+            first_observed_at TEXT NOT NULL CHECK (length(first_observed_at) = 27),
+            last_observed_at TEXT NOT NULL CHECK (length(last_observed_at) = 27),
+            stable_since TEXT NULL CHECK (stable_since IS NULL OR length(stable_since) = 27),
+            last_generation INTEGER NOT NULL CHECK (last_generation >= 0),
+            last_scheduled_key TEXT NULL CHECK (
+                last_scheduled_key IS NULL OR (
+                    length(last_scheduled_key) = 71
+                    AND substr(last_scheduled_key, 1, 7) = 'sha256:'
+                    AND substr(last_scheduled_key, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ),
+            revision INTEGER NOT NULL CHECK (revision >= 1),
+            row_fingerprint TEXT NOT NULL CHECK (
+                length(row_fingerprint) = 71 AND substr(row_fingerprint, 1, 7) = 'sha256:'
+                AND substr(row_fingerprint, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            PRIMARY KEY (root_id, locator_digest),
+            UNIQUE (root_id, relative_locator),
+            FOREIGN KEY (root_id) REFERENCES watch_roots(root_id) ON DELETE RESTRICT,
+            CHECK ((state = 'TOMBSTONED') = (fingerprint_json IS NULL))
+        ) STRICT
+        """,
+        """
+        CREATE TABLE watch_job_targets (
+            job_id TEXT PRIMARY KEY CHECK (length(job_id) = 36),
+            root_id TEXT NOT NULL,
+            locator_digest TEXT NOT NULL,
+            relative_locator TEXT NOT NULL CHECK (length(relative_locator) BETWEEN 1 AND 8192),
+            fingerprint_json TEXT NOT NULL CHECK (length(fingerprint_json) BETWEEN 2 AND 4096),
+            parser_profile TEXT NOT NULL CHECK (length(parser_profile) BETWEEN 1 AND 255),
+            deduplication_key TEXT NOT NULL UNIQUE CHECK (
+                length(deduplication_key) = 71
+                AND substr(deduplication_key, 1, 7) = 'sha256:'
+                AND substr(deduplication_key, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE RESTRICT,
+            FOREIGN KEY (root_id, locator_digest)
+                REFERENCES watch_observations(root_id, locator_digest) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        CREATE TABLE watch_events (
+            root_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 64),
+            locator_digest TEXT NULL CHECK (
+                locator_digest IS NULL OR (
+                    length(locator_digest) = 71 AND substr(locator_digest, 1, 7) = 'sha256:'
+                    AND substr(locator_digest, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ),
+            job_id TEXT NULL CHECK (job_id IS NULL OR length(job_id) = 36),
+            generation INTEGER NOT NULL CHECK (generation >= 0),
+            occurred_at TEXT NOT NULL CHECK (length(occurred_at) = 27),
+            entry_count INTEGER NOT NULL CHECK (entry_count >= 0),
+            scheduled_count INTEGER NOT NULL CHECK (scheduled_count >= 0),
+            tombstone_count INTEGER NOT NULL CHECK (tombstone_count >= 0),
+            PRIMARY KEY (root_id, sequence),
+            FOREIGN KEY (root_id) REFERENCES watch_roots(root_id) ON DELETE RESTRICT,
+            FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE INDEX watch_observations_state_idx ON watch_observations(root_id, state)",
+        "CREATE INDEX watch_job_targets_root_idx ON watch_job_targets(root_id, created_at, job_id)",
+        "CREATE INDEX watch_events_job_idx ON watch_events(job_id) WHERE job_id IS NOT NULL",
+    ),
+)
+
 MIGRATIONS = (
     MIGRATION_1,
     MIGRATION_2,
@@ -1010,6 +1263,7 @@ MIGRATIONS = (
     MIGRATION_6,
     MIGRATION_7,
     MIGRATION_8,
+    MIGRATION_9,
 )
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
@@ -1024,5 +1278,6 @@ __all__ = [
     "MIGRATION_6",
     "MIGRATION_7",
     "MIGRATION_8",
+    "MIGRATION_9",
     "Migration",
 ]

@@ -1,7 +1,7 @@
 # Data model and package specification
 
-**Status:** Canonical data-model guidance. Feature 011 adds one experimental visual
-descriptor alongside the earlier public roots. Export packaging is an experiment owned
+**Status:** Canonical data-model guidance. Feature 012 adds internal watcher and job
+records without changing the twelve public roots. Export packaging is an experiment owned
 by Feature 014, not a current stable format.
 
 ## 1. Design goals
@@ -84,6 +84,15 @@ additionally binds the accepted F006 reference/projection/anchor, resolved geome
 raster, exact crop object, pixel transform and trusted usage policy. Creation time and
 extension data are excluded; page and crop bytes keep their direct CAS SHA-256 identities.
 
+### `watch_root_id`, `locator_digest` and watcher job key
+
+F012 uses separate version-1 RFC 8785/SHA-256 domains. Root identity binds the private
+canonical path digest, directory device/file identity and complete semantic watch
+configuration. A locator digest binds one exact path string without exposing it in
+events. The watcher job key binds root/config identity, relative locator digest, full
+metadata observation and parser profile; time, worker, lease and absolute path text are
+excluded. Metadata schedules work only and never replaces the exact source-byte hash.
+
 ### Canonicalization and identity governance
 
 All structured identity envelopes use RFC 8785 without Unicode normalization. Values outside the interoperable JSON
@@ -130,7 +139,9 @@ OCR may be necessary to expose scanned content, but it remains a derived asserti
 - `DocumentVersion`: immutable source-version fact whose `version_id` equals its source object's identity, plus typed,
   ordered object references carrying verified byte lengths.
 - `Job` and `JobEvent`: durable queued/running/terminal projection, bounded attempts, revision fencing, lease ownership and
-  sanitized append-only transition evidence. Raw lease tokens are capabilities and are not records.
+  sanitized append-only transition evidence. Revision 9 adds persisted eligibility,
+  running cancellation request time and truthful terminal `CANCELLED`. Raw lease tokens
+  are capabilities and are not records.
 - `ReferenceSnapshot` and `ReachabilityReport`: deterministic read-only views of all historical version/job roots,
   verified objects, complete candidates and integrity/layout inconsistencies.
 - `DocumentRepresentation`: fenced `STAGING`, `FAILED` or immutable complete `READY` projection for one document, source
@@ -183,6 +194,23 @@ changes never rewrite the canonical record or output objects.
 The descriptor is the twelfth public schema. Existing eleven schemas and all earlier
 identity projections remain byte-compatible. OCR/caption output stays separate as a
 model-derived F010 derivation of the exact crop object.
+
+### Feature 012 watcher records
+
+- `WatchRoot` stores one admitted private root authority, semantic configuration,
+  generation and rescan state.
+- `WatchObservation` stores one relative path digest, exact metadata fingerprint,
+  candidate/stable/tombstoned lifecycle, stability times, generation, schedule key,
+  revision and recomputed row fingerprint.
+- `WatchJobTarget` immutably binds a generic job to root, relative locator, metadata
+  fingerprint and parser profile; the worker revalidates these facts before ingestion.
+- `WatchEvent` stores only closed classifications, opaque ids, generations, counts and
+  UTC times. Raw paths, filenames, bodies, errors, owners and tokens are absent.
+- `WatchCycleResult` reports recovery/reconciliation and disjoint job outcome handles.
+
+These are internal revision-9 contracts and add no thirteenth public schema. Deletion
+creates a watcher tombstone but does not delete source, version, representation,
+derivation, context or visual records; F013 owns retention and physical reclamation.
 
 ### Feature 006 evidence contracts
 

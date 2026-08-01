@@ -38,7 +38,9 @@ the least-privilege stdio interface in
 [`009-read-only-mcp`](specs/009-read-only-mcp/spec.md) and the provider-free lifecycle in
 [`010-reconciliation-derivation-dag`](specs/010-reconciliation-derivation-dag/spec.md),
 plus explicit visual escalation in
-[`011-visual-evidence-escalation`](specs/011-visual-evidence-escalation/spec.md):
+[`011-visual-evidence-escalation`](specs/011-visual-evidence-escalation/spec.md) and the
+foreground local watcher in
+[`012-local-watcher-and-jobs`](specs/012-local-watcher-and-jobs/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -88,9 +90,17 @@ plus explicit visual escalation in
   handle-only VISUAL context candidates; compilation never invokes the renderer;
 - provider-neutral OCR/caption orchestration with no default provider; accepted output
   remains model-derived untrusted data and depends exactly on the retained crop.
+- checksummed workspace revision 9 with persisted watcher roots/observations/targets,
+  job eligibility, delayed retry and terminal fenced cancellation;
+- explicit disjoint-root polling with bounded complete rescans, metadata stability,
+  path-addressed tombstones, redacted rename hints and deterministic backpressure;
+- foreground `watch`, body-free `jobs` and fenced `job-cancel` CLI operations that
+  reuse the existing text/rich ingestion services and open no listener.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
-an explicit optional extra and remains local/offline by default. There is no watcher,
+an explicit optional extra and remains local/offline by default. F012 watching is a
+foreground polling process over one explicitly supplied local root; it is not a daemon,
+does not guarantee remote/network filesystems and adds no MCP mutation. There is no
 cloud connector, automatic garbage collection, HTTP transport or stable custom export
 format yet. PDF is the only concrete F011 visual renderer; DOCX/PPTX page rendering,
 built-in OCR/caption models and automatic materialization remain unsupported. F010 also
@@ -133,6 +143,9 @@ openardp context "Which exact controls are documented?" \
   --replay <receipt-sha256> --store .openardp
 openardp visual-materialize <document-uuid> <projection-sha256> --store .openardp
 openardp visual-evidence <visual-evidence-sha256> --store .openardp
+openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
+openardp jobs --store .openardp --limit 50 --json
+openardp job-cancel <job-uuid> --store .openardp --json
 openardp mcp --store .openardp
 ```
 

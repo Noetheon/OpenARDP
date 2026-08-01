@@ -84,6 +84,49 @@ def evaluate_release(
     decision_at: datetime,
 ) -> ReleaseDecision:
     """Verify evidence and apply every frozen gate clause without a waiver path."""
+    platform_ids = _validate_release_evidence(policy, evidence)
+    first = evidence[0]
+    checks: list[GateCheck] = []
+    _append_evidence_completeness_checks(policy, evidence, platform_ids, checks)
+    reference = _append_reference_check(evidence, checks)
+    _append_timing_checks(policy, reference, checks)
+    _append_ratio_check(
+        policy,
+        reference,
+        checks,
+        metric=BenchmarkMetric.CORRECTNESS,
+        baselines=(Baseline.OPENARDP_RETRIEVAL, Baseline.OPENARDP_COMPILER),
+        minimum=policy.minimum_correctness_ratio,
+        check_id="correctness-threshold",
+        success_reason="correctness-threshold-met",
+        fail_reason="correctness-threshold-not-met",
+    )
+    _append_ratio_check(
+        policy,
+        reference,
+        checks,
+        metric=BenchmarkMetric.COVERAGE,
+        baselines=(Baseline.OPENARDP_COMPILER,),
+        minimum=policy.minimum_coverage_ratio,
+        check_id="coverage-threshold",
+        success_reason="coverage-threshold-met",
+        fail_reason="coverage-threshold-not-met",
+    )
+    _append_bounded_context_check(policy, reference, checks)
+    return _build_release_decision(
+        policy=policy,
+        evidence=evidence,
+        first=first,
+        checks=checks,
+        decision_at=decision_at,
+    )
+
+
+def _validate_release_evidence(
+    policy: ReleaseGatePolicy,
+    evidence: Sequence[PlatformEvidence],
+) -> tuple[str, ...]:
+    """Validate exact policy/evidence identities before evaluating any gate."""
     policy.verify_identity()
     if not evidence:
         raise EvidenceMalformed("at least one platform evidence bundle is required")
@@ -106,11 +149,18 @@ def evaluate_release(
     platform_ids = tuple(item.environment.platform_id for item in evidence)
     if len(set(platform_ids)) != len(platform_ids):
         raise EvidenceMalformed("platform evidence identifiers must be unique")
+    return platform_ids
 
+
+def _append_evidence_completeness_checks(
+    policy: ReleaseGatePolicy,
+    evidence: Sequence[PlatformEvidence],
+    platform_ids: tuple[str, ...],
+    checks: list[GateCheck],
+) -> None:
+    """Append platform, identity, baseline and suite completeness checks."""
     first = evidence[0]
     evidence_ids = tuple(item.evidence_id for item in evidence)
-    checks: list[GateCheck] = []
-
     expected_platforms = set(policy.required_platforms)
     observed_platforms = set(platform_ids)
     _append_check(
@@ -123,7 +173,6 @@ def evaluate_release(
         observed=len(observed_platforms),
         expected=len(expected_platforms),
     )
-
     common_identity = all(
         (
             item.source_tree_id,
@@ -149,7 +198,6 @@ def evaluate_release(
         fail_reason="evidence-identity-mismatch",
         evidence_ids=evidence_ids,
     )
-
     baselines_complete = all(
         set(item.baselines) == set(policy.required_baselines) for item in evidence
     )
@@ -163,13 +211,11 @@ def evaluate_release(
         observed=sum(set(item.baselines) == set(policy.required_baselines) for item in evidence),
         expected=len(evidence),
     )
-
     required_suites = set(policy.required_suites)
-    suites_complete = all(_required_suites_pass(policy, item) for item in evidence)
     _append_check(
         checks,
         check_id="suite-completeness",
-        passed=suites_complete,
+        passed=all(_required_suites_pass(policy, item) for item in evidence),
         success_reason="suites-complete",
         fail_reason="mandatory-suite-failed",
         evidence_ids=evidence_ids,
@@ -179,56 +225,71 @@ def evaluate_release(
         expected=len(evidence) * len(required_suites),
     )
 
+
+def _append_reference_check(
+    evidence: Sequence[PlatformEvidence],
+    checks: list[GateCheck],
+) -> PlatformEvidence | None:
+    """Append reference-timing uniqueness and return the sole reference if present."""
     references = tuple(item for item in evidence if item.environment.reference_timing)
-    reference_complete = len(references) == 1
+    reference = references[0] if len(references) == 1 else None
     _append_check(
         checks,
         check_id="reference-timing-uniqueness",
-        passed=reference_complete,
+        passed=reference is not None,
         success_reason="reference-timing-present",
         fail_reason="reference-timing-missing",
         evidence_ids=tuple(item.evidence_id for item in references),
         observed=len(references),
         expected=1,
     )
+    return reference
 
-    if reference_complete:
-        reference = references[0]
-        raw_latency = _observation_values(
+
+def _append_timing_checks(
+    policy: ReleaseGatePolicy,
+    reference: PlatformEvidence | None,
+    checks: list[GateCheck],
+) -> None:
+    """Append sample, latency-value and warm-parser checks in fixed order."""
+    raw_latency = (
+        ()
+        if reference is None
+        else _observation_values(
             reference.observations,
             baseline=Baseline.RAW_REPARSE,
             metric=BenchmarkMetric.LATENCY,
             phase=BenchmarkPhase.RETRIEVAL,
         )
-        openardp_latency = _observation_values(
+    )
+    openardp_latency = (
+        ()
+        if reference is None
+        else _observation_values(
             reference.observations,
             baseline=Baseline.OPENARDP_RETRIEVAL,
             metric=BenchmarkMetric.LATENCY,
             phase=BenchmarkPhase.RETRIEVAL,
         )
-        samples_complete = (
-            len(raw_latency) >= policy.minimum_timing_samples
-            and len(openardp_latency) >= policy.minimum_timing_samples
-        )
-    else:
-        reference = None
-        raw_latency = ()
-        openardp_latency = ()
-        samples_complete = False
+    )
+    samples_complete = (
+        reference is not None
+        and len(raw_latency) >= policy.minimum_timing_samples
+        and len(openardp_latency) >= policy.minimum_timing_samples
+    )
+    reference_ids = () if reference is None else (reference.evidence_id,)
     _append_check(
         checks,
         check_id="timing-sample-sufficiency",
         passed=samples_complete,
         success_reason="timing-samples-sufficient",
         fail_reason="timing-samples-insufficient",
-        evidence_ids=() if reference is None else (reference.evidence_id,),
+        evidence_ids=reference_ids,
         observed=min(len(raw_latency), len(openardp_latency)),
         expected=policy.minimum_timing_samples,
     )
-
-    intervals_separate = False
-    observed_latency_upper: float | None = None
-    expected_latency_lower: float | None = None
+    observed_upper: float | None = None
+    expected_lower: float | None = None
     if samples_complete and reference is not None:
         raw_summary = summarize_samples(
             raw_latency,
@@ -246,130 +307,111 @@ def evaluate_release(
             ),
             resamples=policy.bootstrap_resamples,
         )
-        intervals_separate = openardp_summary.confidence_upper < raw_summary.confidence_lower
-        observed_latency_upper = openardp_summary.confidence_upper
-        expected_latency_lower = raw_summary.confidence_lower
+        observed_upper = openardp_summary.confidence_upper
+        expected_lower = raw_summary.confidence_lower
     _append_check(
         checks,
         check_id="raw-reparse-latency-value",
-        passed=intervals_separate,
+        passed=(
+            observed_upper is not None
+            and expected_lower is not None
+            and observed_upper < expected_lower
+        ),
         success_reason="raw-reparse-interval-exceeded",
         fail_reason="operational-value-not-demonstrated",
-        evidence_ids=() if reference is None else (reference.evidence_id,),
-        observed=observed_latency_upper,
-        expected=expected_latency_lower,
+        evidence_ids=reference_ids,
+        observed=observed_upper,
+        expected=expected_lower,
     )
-
-    parser_zero = reference is not None and _all_zero_parser_observations(reference.observations)
     _append_check(
         checks,
         check_id="warm-parser-avoidance",
-        passed=parser_zero,
+        passed=reference is not None and _all_zero_parser_observations(reference.observations),
         success_reason="warm-parser-invocations-zero",
         fail_reason="warm-parser-reuse-not-demonstrated",
-        evidence_ids=() if reference is None else (reference.evidence_id,),
+        evidence_ids=reference_ids,
         observed=(
             None if reference is None else _warm_parser_invocation_total(reference.observations)
         ),
         expected=0,
     )
 
-    correctness = (
+
+def _append_ratio_check(
+    policy: ReleaseGatePolicy,
+    reference: PlatformEvidence | None,
+    checks: list[GateCheck],
+    *,
+    metric: BenchmarkMetric,
+    baselines: tuple[Baseline, ...],
+    minimum: float,
+    check_id: str,
+    success_reason: str,
+    fail_reason: str,
+) -> None:
+    """Append one exact ratio threshold and confidence-interval check."""
+    values = (
         ()
         if reference is None
-        else _ratio_values(
-            reference.observations,
-            metric=BenchmarkMetric.CORRECTNESS,
-            baselines=(Baseline.OPENARDP_RETRIEVAL, Baseline.OPENARDP_COMPILER),
-        )
+        else _ratio_values(reference.observations, metric=metric, baselines=baselines)
     )
-    correctness_passed = bool(correctness) and min(correctness) >= policy.minimum_correctness_ratio
-    correctness_intervals = (
+    intervals = (
         {}
         if reference is None
         else summarize_case_ratios(
             reference.observations,
-            metric=BenchmarkMetric.CORRECTNESS,
-            baselines=(Baseline.OPENARDP_RETRIEVAL, Baseline.OPENARDP_COMPILER),
+            metric=metric,
+            baselines=baselines,
             resamples=policy.bootstrap_resamples,
             seed_id=reference.evidence_id,
         )
     )
-    correctness_passed = (
-        correctness_passed
-        and bool(correctness_intervals)
-        and all(
-            summary.confidence_lower >= policy.minimum_correctness_ratio
-            for summary in correctness_intervals.values()
-        )
+    passed = (
+        bool(values)
+        and min(values) >= minimum
+        and bool(intervals)
+        and all(summary.confidence_lower >= minimum for summary in intervals.values())
     )
     _append_check(
         checks,
-        check_id="correctness-threshold",
-        passed=correctness_passed,
-        success_reason="correctness-threshold-met",
-        fail_reason="correctness-threshold-not-met",
+        check_id=check_id,
+        passed=passed,
+        success_reason=success_reason,
+        fail_reason=fail_reason,
         evidence_ids=() if reference is None else (reference.evidence_id,),
-        observed=min(correctness) if correctness else None,
-        expected=policy.minimum_correctness_ratio,
+        observed=min(values) if values else None,
+        expected=minimum,
     )
 
-    coverage = (
-        ()
-        if reference is None
-        else _ratio_values(
-            reference.observations,
-            metric=BenchmarkMetric.COVERAGE,
-            baselines=(Baseline.OPENARDP_COMPILER,),
-        )
-    )
-    coverage_passed = bool(coverage) and min(coverage) >= policy.minimum_coverage_ratio
-    coverage_intervals = (
-        {}
-        if reference is None
-        else summarize_case_ratios(
-            reference.observations,
-            metric=BenchmarkMetric.COVERAGE,
-            baselines=(Baseline.OPENARDP_COMPILER,),
-            resamples=policy.bootstrap_resamples,
-            seed_id=reference.evidence_id,
-        )
-    )
-    coverage_passed = (
-        coverage_passed
-        and bool(coverage_intervals)
-        and all(
-            summary.confidence_lower >= policy.minimum_coverage_ratio
-            for summary in coverage_intervals.values()
-        )
-    )
-    _append_check(
-        checks,
-        check_id="coverage-threshold",
-        passed=coverage_passed,
-        success_reason="coverage-threshold-met",
-        fail_reason="coverage-threshold-not-met",
-        evidence_ids=() if reference is None else (reference.evidence_id,),
-        observed=min(coverage) if coverage else None,
-        expected=policy.minimum_coverage_ratio,
-    )
 
-    selected_native_ratio = _selected_to_native_ratio(reference)
-    ratio_passed = (
-        selected_native_ratio is not None
-        and selected_native_ratio <= policy.maximum_selected_native_ratio
-    )
+def _append_bounded_context_check(
+    policy: ReleaseGatePolicy,
+    reference: PlatformEvidence | None,
+    checks: list[GateCheck],
+) -> None:
+    """Append the selected-to-native context value check."""
+    ratio = _selected_to_native_ratio(reference)
     _append_check(
         checks,
         check_id="bounded-context-value",
-        passed=ratio_passed,
+        passed=ratio is not None and ratio <= policy.maximum_selected_native_ratio,
         success_reason="bounded-context-value-demonstrated",
         fail_reason="bounded-context-value-not-demonstrated",
         evidence_ids=() if reference is None else (reference.evidence_id,),
-        observed=selected_native_ratio,
+        observed=ratio,
         expected=policy.maximum_selected_native_ratio,
     )
 
+
+def _build_release_decision(
+    *,
+    policy: ReleaseGatePolicy,
+    evidence: Sequence[PlatformEvidence],
+    first: PlatformEvidence,
+    checks: Sequence[GateCheck],
+    decision_at: datetime,
+) -> ReleaseDecision:
+    """Build and self-identify the final fail-closed release decision."""
     blockers = tuple(item.reason for item in checks if not item.passed)
     status = ReleaseStatus.GO if not blockers else ReleaseStatus.NO_GO
     allowed_claims = tuple(
@@ -378,6 +420,7 @@ def evaluate_release(
     prohibited_claims = tuple(
         sorted(_ALWAYS_PROHIBITED_CLAIMS + (() if status is ReleaseStatus.GO else _GO_ONLY_CLAIMS))
     )
+    required_suites = set(policy.required_suites)
     supported_platforms = tuple(
         sorted(
             item.environment.platform_id
@@ -402,8 +445,9 @@ def evaluate_release(
         prohibited_claims=prohibited_claims,
         supported_platforms=supported_platforms,
     )
-    decision_payload = provisional.identity_projection
-    return provisional.model_copy(update={"decision_id": release_decision_id(decision_payload)})
+    return provisional.model_copy(
+        update={"decision_id": release_decision_id(provisional.identity_projection)}
+    )
 
 
 def _required_suites_pass(policy: ReleaseGatePolicy, evidence: PlatformEvidence) -> bool:

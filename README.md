@@ -46,7 +46,13 @@ verified retention and recovery in
 and the experimental BagIt exchange profile in
 [`014-export-interchange-experiment`](specs/014-export-interchange-experiment/spec.md),
 followed by the fail-closed evidence gate in
-[`015-benchmark-security-release-gate`](specs/015-benchmark-security-release-gate/spec.md):
+[`015-benchmark-security-release-gate`](specs/015-benchmark-security-release-gate/spec.md),
+the independent conformance spike in
+[`016-alternate-parser-conformance-spike`](specs/016-alternate-parser-conformance-spike/spec.md),
+the mock-only enterprise-connector design in
+[`017-microsoft-graph-design-spike`](specs/017-microsoft-graph-design-spike/spec.md),
+and the behavior-preserving maintenance pass in
+[`018-repository-hygiene`](specs/018-repository-hygiene/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -121,6 +127,13 @@ followed by the fail-closed evidence gate in
   wheel/sdist inspection;
 - a normalized CycloneDX 1.5 SBOM with all locked components, explicit per-component
   license review state, three-platform CI evidence jobs and one aggregate no-waiver gate.
+- an isolated standard-library consumer plus non-Docling TXT/CSV producer proving the
+  scoped F006 evidence-contract neutrality claim without adding a runtime adapter;
+- mock-only tenant-scoped Graph delta, permission, tombstone, retry and notification
+  contracts; production Microsoft Graph access remains explicitly unauthorized;
+- deterministic maintainability auditing with monotonic legacy-hotspot ceilings,
+  independently runnable focused tests and characterized release, CLI and watcher
+  orchestration refactors.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. F012 watching is a
@@ -135,7 +148,9 @@ built-in OCR/caption models and automatic materialization remain unsupported. F0
 does not schedule reconciliation or execute generators; callers explicitly supply two
 READY scopes and already-generated output bytes. Feature 015 does not authorize a
 release: the committed candidate decision is `NO-GO` because required evidence remains
-incomplete. Those boundaries and remaining work packages are recorded in the
+incomplete. Feature 017 likewise does not authorize a production Microsoft Graph
+connector. Feature 018 changes no product contract, dependency, persisted identity,
+workspace revision or release decision. Those boundaries and remaining work packages are recorded in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Evidence-backed claim status
@@ -168,6 +183,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
 uv run pytest
+uv run python scripts/audit_maintainability.py
 ```
 
 Create a local workspace and prepare text evidence:

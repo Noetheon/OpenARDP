@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "source_root": "src/openardp",
+  "module_line_limit": 1000,
+  "function_line_limit": 100,
+  "module_exceptions": {
+    "src/openardp/adapters/filesystem_maintenance.py": {
+      "maximum_lines": 1100,
+      "reason": "Legacy filesystem recovery adapter with bounded backup, restore and quarantine workflows."
+    },
+    "src/openardp/adapters/sqlite_catalog.py": {
+      "maximum_lines": 6958,
+      "reason": "Legacy transactional catalog facade spanning independently tested persistence capabilities."
+    },
+    "src/openardp/adapters/sqlite_migrations.py": {
+      "maximum_lines": 1432,
+      "reason": "Append-only reviewed SQL migration history through workspace revision 10."
+    },
+    "src/openardp/interfaces/cli.py": {
+      "maximum_lines": 1918,
+      "reason": "Legacy command definitions and stable human and JSON projection compatibility."
+    },
+    "src/openardp/services/context_compiler.py": {
+      "maximum_lines": 1115,
+      "reason": "Auditable deterministic context selection and receipt orchestration."
+    }
+  },
+  "function_exceptions": {
+    "src/openardp/adapters/docling_native.py:convert_docling_bytes": {
+      "maximum_lines": 184,
+      "reason": "Reviewed provider-native conversion boundary."
+    },
+    "src/openardp/adapters/docling_native.py:project_native_document": {
+      "maximum_lines": 144,
+      "reason": "Reviewed thin evidence projection boundary."
+    },
+    "src/openardp/adapters/filesystem_maintenance.py:backup_workspace": {
+      "maximum_lines": 139,
+      "reason": "Atomic backup orchestration with explicit verification stages."
+    },
+    "src/openardp/adapters/local_watch.py:LocalWatchScanner.scan": {
+      "maximum_lines": 118,
+      "reason": "Bounded cross-platform filesystem scan compatibility path."
+    },
+    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog._load_reconciliation": {
+      "maximum_lines": 143,
+      "reason": "Validated reconciliation aggregate reconstruction."
+    },
+    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.acquire_representation": {
+      "maximum_lines": 118,
+      "reason": "Fenced representation lease acquisition transaction."
+    },
+    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.commit_ready_representation": {
+      "maximum_lines": 159,
+      "reason": "Atomic ready-representation publication transaction."
+    },
+    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.commit_reconciliation": {
+      "maximum_lines": 120,
+      "reason": "Atomic reconciliation result publication transaction."
+    },
+    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.publish_derivation": {
+      "maximum_lines": 145,
+      "reason": "Atomic derivation lifecycle publication transaction."
+    },
+    "src/openardp/adapters/text_parser.py:TextParserAdapter._parse_markdown": {
+      "maximum_lines": 173,
+      "reason": "Deterministic Markdown block state machine."
+    },
+    "src/openardp/adapters/visual_pdfium.py:PdfiumVisualRenderer.render_page": {
+      "maximum_lines": 103,
+      "reason": "Bounded optional renderer conversion and validation boundary."
+    },
+    "src/openardp/domain/reconciliation.py:reconcile_blocks": {
+      "maximum_lines": 219,
+      "reason": "Deterministic multi-phase conservative matching algorithm."
+    },
+    "src/openardp/interfaces/cli.py:_parser": {
+      "maximum_lines": 292,
+      "reason": "Stable complete argparse command grammar."
+    },
+    "src/openardp/interfaces/cli.py:_success": {
+      "maximum_lines": 163,
+      "reason": "Stable command-specific human output compatibility."
+    },
+    "src/openardp/services/context_compiler.py:ContextCompilerService._compile_with_snapshot": {
+      "maximum_lines": 138,
+      "reason": "Atomic bounded compilation orchestration."
+    },
+    "src/openardp/services/ingestion.py:IngestionService._prepare_commit": {
+      "maximum_lines": 120,
+      "reason": "CAS-first immutable text commit preparation."
+    },
+    "src/openardp/services/ingestion.py:IngestionService.ingest": {
+      "maximum_lines": 112,
+      "reason": "Text ingestion cache and publication orchestration."
+    },
+    "src/openardp/services/rich_ingestion.py:RichIngestionService.ingest": {
+      "maximum_lines": 155,
+      "reason": "Rich ingestion cache and publication orchestration."
+    },
+    "src/openardp/services/rich_ingestion.py:prepare_rich_attempt": {
+      "maximum_lines": 153,
+      "reason": "Immutable rich attempt preparation and evidence verification."
+    },
+    "src/openardp/services/visual_evidence.py:VisualEvidenceService.materialize": {
+      "maximum_lines": 202,
+      "reason": "Bounded render, crop and descriptor materialization."
+    },
+    "src/openardp/services/visual_interpretation.py:VisualInterpretationService.interpret": {
+      "maximum_lines": 129,
+      "reason": "Provider-neutral optional visual derivation orchestration."
+    }
+  }
+}

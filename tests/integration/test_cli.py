@@ -6,11 +6,12 @@ import json
 import os
 import subprocess
 import sys
+from argparse import Namespace
 from pathlib import Path
 
 import pytest
 
-from openardp.interfaces.cli import main
+from openardp.interfaces.cli import _execute, main
 
 
 def _installed_openardp() -> Path:
@@ -242,6 +243,20 @@ def test_json_usage_and_not_found_failures_are_single_sanitized_envelopes(
         "message": "command usage is invalid",
     }
     assert stderr == ""
+
+
+def test_internal_dispatch_rejects_unknown_command_without_mutation(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Characterize the closed command-dispatch fallback before helper extraction."""
+    workspace = tmp_path / "store"
+    assert main(["init", "--store", str(workspace)]) == 0
+    capsys.readouterr()
+    before = tuple(workspace.rglob("*"))
+    with pytest.raises(ValueError, match="invalid command usage"):
+        _execute(Namespace(command="unknown", store=str(workspace)))
+    assert tuple(workspace.rglob("*")) == before
 
     workspace = tmp_path / "store"
     assert main(["init", "--store", str(workspace)]) == 0

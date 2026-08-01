@@ -5,7 +5,7 @@
 ```bash
 uv sync --all-extras --locked
 uv run python scripts/generate_release_corpus.py --check
-uv run pytest \
+uv run pytest --no-cov \
   tests/domain/test_release.py \
   tests/contract/test_release_schema.py \
   tests/integration/test_release_benchmarks.py \

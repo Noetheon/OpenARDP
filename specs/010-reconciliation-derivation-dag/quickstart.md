@@ -21,7 +21,7 @@ uv run python scripts/validate_repository.py
 ## Run the labelled reconciliation safety corpus
 
 ```bash
-uv run pytest tests/domain/test_reconciliation_corpus.py -q
+uv run pytest --no-cov tests/domain/test_reconciliation_corpus.py -q
 ```
 
 Expected properties:
@@ -34,7 +34,7 @@ Expected properties:
 ## Run transactional lifecycle demonstrations
 
 ```bash
-uv run pytest \
+uv run pytest --no-cov \
   tests/integration/test_f010_catalog.py \
   tests/domain/test_reconciliation.py \
   tests/domain/test_derivation_lifecycle.py -q
@@ -52,7 +52,7 @@ The tests demonstrate:
 ## Run migration and reachability evidence
 
 ```bash
-uv run pytest \
+uv run pytest --no-cov \
   tests/integration/test_f010_migration.py \
   tests/integration/test_reachability.py -q
 ```

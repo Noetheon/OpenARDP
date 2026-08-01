@@ -60,7 +60,7 @@ authority. Production deployment remains prohibited.
 - **Article X**: ADR 0016 authorizes this single mock implementation because the future Graph
   transport is the anticipated second implementation; no reusable framework is added.
 - **Articles XI-XII**: F016 is merged and green. F017 changes no public or persisted version axis.
-- **Explicit ADR boundary**: Constitution Article XIII forbids production Graph integration
+- **Explicit ADR boundary**: Constitution Article X forbids production Graph integration
   without ADR; ADR 0016 authorizes mock-only design and explicitly does not authorize production.
 
 **Gate result**: PASS for the bounded mock spike. Production implementation remains blocked.

@@ -11,7 +11,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 007 notes](specs/007-docling-native-adapter/implementation-notes.md),
 [feature 008 notes](specs/008-context-compiler-receipts/implementation-notes.md) and
 [feature 009 notes](specs/009-read-only-mcp/implementation-notes.md) and
-[feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md).
+[feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md) and
+[feature 018 notes](specs/018-repository-hygiene/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -162,7 +163,7 @@ The local locked gate passes 415 offline tests with 86.45 percent branch-aware c
 native and Windows targets, staged pre-commit hooks, the repository validator, source/wheel builds, an isolated offline
 wheel import, JSON validation, relative links, migration accounting and the Feature 005A quickstart all pass.
 
-Constitution 2.0.0 is byte-identical to its canonical source. Repository-contract tests enforce the exact 005A–017 prompt
+Constitution 2.0.0 is byte-identical to its canonical source. Repository-contract tests enforce the exact 005A–018 prompt
 sequence, ADR supersession/deferral, experimental contract maturity, claim discipline, overlay completeness and exclusion
 of the external blueprint package.
 
@@ -373,6 +374,25 @@ cached `DirEntry.stat()` identities. The scanner now uses fresh no-follow `os.st
 metadata for portable device/file identity checks, with a regression test that forbids
 the cached call. These failed runs are retained as corrective evidence and are not
 treated as publication success.
+
+## Feature 018 local hygiene evidence
+
+Feature `018-repository-hygiene` is a behavior-preserving maintenance slice. It adds no
+runtime dependency, schema, migration, identifier, provider, network default or release
+claim. The measured release, CLI and watcher orchestration spans fell by 86.9%, 92.7%
+and 88.7%, respectively, behind strengthened characterization coverage.
+
+The standard-library maintainability audit passes twice with identical output and is
+part of repository validation. It rejects new or growing structural debt and stale
+exceptions while keeping the five accepted legacy modules visible. Corrected focused
+commands use `pytest --no-cov`; this only prevents a partial suite from falsely failing
+the repository-wide threshold. The separate `uv run --locked pytest` gate continues to
+block sockets and enforce at least 85% branch coverage.
+
+The local before/after measurements, focused test results, residual debt and rollback
+boundary are recorded in [the F018 hygiene record](docs/17_CODEBASE_HYGIENE.md). Final
+full-suite, package, pre-commit and external CI evidence is recorded in the
+[F018 implementation notes](specs/018-repository-hygiene/implementation-notes.md).
 
 ## Corrective environment verification
 

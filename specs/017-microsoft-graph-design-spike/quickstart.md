@@ -3,7 +3,7 @@
 The spike is deliberately offline. It requires no tenant, credentials, Graph SDK or network.
 
 ```bash
-uv run pytest \
+uv run pytest --no-cov \
   tests/domain/test_graph.py \
   tests/contract/test_graph_ports.py \
   tests/integration/test_graph_sync.py \

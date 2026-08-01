@@ -84,6 +84,20 @@ from openardp.ports.parser import (
     UnsupportedRichMedia,
     UnsupportedTextMedia,
 )
+from openardp.ports.watcher import (
+    WatchCancellationObserved,
+    WatchCatalog,
+    WatcherError,
+    WatchIngestionRunner,
+    WatchPermanentIngestion,
+    WatchRetryableIngestion,
+    WatchRootInvalid,
+    WatchRootOverlap,
+    WatchRootUnsupported,
+    WatchRuntimeCatalog,
+    WatchScanner,
+    WatchTargetChanged,
+)
 
 __all__ = [
     "AmbiguousBlock",
@@ -162,4 +176,16 @@ __all__ = [
     "UnsupportedRichMedia",
     "UnsupportedTextMedia",
     "VersionConflict",
+    "WatchCancellationObserved",
+    "WatchCatalog",
+    "WatchIngestionRunner",
+    "WatchPermanentIngestion",
+    "WatchRetryableIngestion",
+    "WatchRootInvalid",
+    "WatchRootOverlap",
+    "WatchRootUnsupported",
+    "WatchRuntimeCatalog",
+    "WatchScanner",
+    "WatchTargetChanged",
+    "WatcherError",
 ]

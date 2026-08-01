@@ -8,6 +8,8 @@ with body-free selection receipts, plus Feature 009's dependency-free read-only 
 stdio interface and Feature 010's conservative reconciliation plus exact derivation
 DAG lifecycle, followed by Feature 011's explicit bounded PDF visual-evidence
 materialization and handle-only context integration.
+Feature 012 adds explicit bounded local polling, durable stability observations and
+cancellable foreground ingestion jobs without a daemon or MCP write surface.
 
 ## 1. Read the authoritative rules
 
@@ -66,6 +68,8 @@ openardp context "Which exact controls are documented?" \
 openardp visual-materialize <document-uuid> <projection-sha256> \
   --store .openardp --json
 openardp visual-evidence <visual-evidence-sha256> --store .openardp --json
+openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
+openardp jobs --store .openardp --limit 50 --json
 openardp mcp --store .openardp
 ```
 
@@ -89,6 +93,12 @@ materialized verified descriptor handle; it never renders implicitly. The option
 OCR/caption port has no built-in provider and all results remain untrusted F010
 derivations. DOCX/PPTX page rendering is still unavailable.
 
+Feature 012 watches only one operator-supplied canonical local directory disjoint from
+the workspace. Complete bounded rescans establish truth; metadata only controls
+stability while existing ingestion still hashes exact bytes. Deletes create watcher
+tombstones, queue pressure requests a later rescan, and job retry/cancellation remain
+durable and fenced across restart.
+
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
 identity. Context compilation applies the same rule: accelerator hits are reverified
@@ -101,7 +111,8 @@ The optional Docling extra provides bounded DOCX/PPTX parsing and PDF parsing on
 with reviewed local assets. Feature 008 provides deterministic local context
 compilation, body-free receipts and replay. Feature 009 exposes the same verified
 application services through a bounded read-only stdio MCP server. The current
-implementation does not yet provide local watching, retention/garbage collection,
+implementation does not yet provide a watcher daemon, network-share correctness,
+retention/garbage collection,
 HTTP transport, stable export or Microsoft Graph access. The
 [005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
 outcomes individually.
@@ -126,6 +137,7 @@ preserving complete provider-native output.
 - [F009 quickstart](specs/009-read-only-mcp/quickstart.md)
 - [F010 quickstart](specs/010-reconciliation-derivation-dag/quickstart.md)
 - [F011 quickstart](specs/011-visual-evidence-escalation/quickstart.md)
+- [F012 quickstart](specs/012-local-watcher-and-jobs/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

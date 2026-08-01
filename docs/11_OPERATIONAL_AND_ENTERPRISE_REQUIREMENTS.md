@@ -85,6 +85,12 @@ For enterprise mode:
   not hold a SQLite transaction while processing.
 - Expired running jobs are requeued only while attempts remain; exhausted work becomes terminal and repeated recovery is
   empty until state changes again.
+- F012 watcher jobs persist eligibility and deterministic capped retry. Queued
+  cancellation is terminal; a running request fences stale work and expired recovery
+  completes cancellation. Complete rescans and rescan markers survive process restart.
+- The delivered watcher supports foreground local polling only. Service-manager
+  packaging, shared/network filesystem correctness, retention and disaster-recovery
+  automation remain future requirements.
 - Backups, point-in-time recovery, network filesystems, disk failure and universal power-loss durability are not currently
   provided and require explicit Feature 013 plus deployment-environment validation.
 

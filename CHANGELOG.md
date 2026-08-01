@@ -7,6 +7,16 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Foreground `watch`, body-free `jobs` and fenced `job-cancel` CLI commands over one
+  explicit disjoint local root, with deterministic bounded polling and no daemon,
+  listener, cloud call or MCP mutation.
+- Checksummed SQLite revision 9 with durable watch roots, observations, exact immutable
+  job targets and redacted events; generic jobs now persist `available_at`, running
+  cancellation requests and terminal `CANCELLED` state.
+- Complete-scan stability reconciliation, one-job deterministic convergence, delayed
+  capped retry, cancellation-aware lease recovery, queue backpressure, tombstones,
+  fresh reappearance and unambiguous rename hints while preserving path identity.
+
 - Experimental `VisualEvidenceDescriptor 0.1.0`, deterministic visual/page-raster
   identities and the twelfth generated JSON Schema 2020-12 root without drift in the
   eleven prior schemas or F006/F008/F009 contracts.

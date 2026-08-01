@@ -1,11 +1,12 @@
 # Architecture
 
-**Status:** Canonical architecture. Sections distinguish delivered Features 001–010 from planned components in the
+**Status:** Canonical architecture. Sections distinguish delivered Features 001–012 from planned components in the
 [005A–017 feature map](../spec-kit/FEATURE_MAP.md). Feature 007 delivered the bounded
 Docling-native adapter; Feature 008 delivered the deterministic context compiler and
 selection receipts described below.
 Feature 010 delivers conservative F002 block lineages and the exact derivation lifecycle;
-it does not add scheduling or generator execution.
+it does not add generator execution. Feature 012 delivers local foreground polling and
+stable jobs; it does not add a daemon, cloud connector or MCP mutation.
 
 ## 1. Architectural style
 
@@ -63,7 +64,8 @@ The implemented F004/F005 coordinator snapshots an explicitly selected regular l
 immutable source version, and acquires a fenced representation claim. Parsing runs outside SQLite against CAS bytes only;
 the complete manifest, native reference, normalized block projections, head and ingestion event then become visible in
 one immediate transaction. An unchanged candidate is reused only after physical and semantic verification of every READY
-artifact. F004 does not yet provide a watcher or a general per-document scheduling lock.
+artifact. F012 composes this unchanged coordinator behind exact revalidated watcher
+targets; it does not introduce a watcher-specific parser or source identity.
 
 ### Parser adapters
 
@@ -93,6 +95,9 @@ derivation slots/nodes/dependencies/events. Canonical relation, generation-recor
 output bytes live in the content-addressed store; the catalog retains only verified
 metadata and the canonical F002 generation-record JSON required to reconstruct and
 fingerprint its internal lifecycle row.
+Revision 8 adds visual page/crop evidence. Revision 9 atomically rebuilds the released
+job tables to add eligibility and cancellation, then adds watcher roots, observations,
+exact targets and body/path-free events. The public JSON schemas remain unchanged.
 
 Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
 an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
@@ -188,7 +193,8 @@ CLI
 read-only stdio MCP
 ```
 
-Watcher and HTTP remain later bounded features. Run rich parsers in a worker process with explicit limits
+The F012 watcher is an optional foreground loop in the same process; it is not an
+installed service. HTTP remains a later bounded feature. Run rich parsers in a worker process with explicit limits
 and denied network where supported; this is defense in depth, not a universal strong sandbox.
 
 ### Team server
@@ -242,6 +248,26 @@ expired, mutating timestamps cannot move backward, retries are bounded and every
 F004 applies the same fencing posture to `(document_id, version_id, representation_id)`. One unexpired owner may parse;
 same-token retries are idempotent, stale owners cannot commit, and forced parsing of READY state succeeds only when the
 new canonical aggregate is byte-identical to the persisted evidence.
+
+F012 claims only eligible `watch_ingest` jobs for the selected root. Retry eligibility
+is a persisted UTC instant. Queued cancellation is immediately terminal; running
+cancellation increments the revision, fences stale renew/complete/fail operations and
+is acknowledged by the current owner or expired-lease recovery. Watch reconciliation
+and target creation share one SQLite transaction, while parsing remains outside it.
+
+### Delivered Feature 012 watcher
+
+`WatcherService` treats polling observations as hints. `LocalWatchScanner` admits one
+canonical absolute directory disjoint from the managed workspace, rejects links and
+recognizable UNC/device authority, stays on the root device and returns either a
+complete sorted bounded metadata set or an empty incomplete result. Complete scans
+advance a durable generation, debounce unchanged fingerprints, tombstone missing
+path-addressed locators and schedule at most the configured active capacity. Exact
+source bytes are still acquired and SHA-256 hashed by the existing ingestion service.
+
+Rename recognition is audit-only: a unique one-to-one same-root file identity emits a
+redacted hint, while the old path is tombstoned and the new path follows a fresh
+observation lifecycle. Hard-link ambiguity degrades to independent path facts.
 
 ## 6. Failure behavior
 

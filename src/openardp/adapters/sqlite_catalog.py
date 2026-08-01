@@ -12,7 +12,7 @@ from datetime import datetime
 from itertools import pairwise
 from pathlib import Path
 from typing import Any, cast
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from pydantic import SecretStr, ValidationError
 
@@ -113,6 +113,22 @@ from openardp.domain.visual import (
     VisualPageRaster,
     visual_record_fingerprint,
 )
+from openardp.domain.watcher import (
+    AdmittedWatchRoot,
+    WatchConfig,
+    WatchEvent,
+    WatchEventType,
+    WatchFileFingerprint,
+    WatchJobTarget,
+    WatchObservation,
+    WatchObservationState,
+    WatchReconciliation,
+    WatchRoot,
+    WatchScan,
+    WatchScanEntry,
+    watch_job_key,
+    watch_observation_fingerprint,
+)
 from openardp.ports.catalog import (
     CatalogError,
     CatalogIncompatible,
@@ -144,6 +160,8 @@ from openardp.ports.catalog import (
     VisualCatalogConflict,
     VisualCatalogIntegrityError,
 )
+
+_WATCH_JOB_NAMESPACE = UUID("a2b64ef3-5813-57bb-a297-903183b34d6d")
 
 _OWNER = re.compile(r"^.{1,255}$", re.DOTALL)
 _MACHINE_TOKEN = re.compile(r"^[a-z][a-z0-9_.-]{0,127}$")
@@ -335,6 +353,9 @@ _SCHEMA_TABLES = {
         }
     ),
 }
+_SCHEMA_TABLES[9] = _SCHEMA_TABLES[8] | frozenset(
+    {"watch_roots", "watch_observations", "watch_job_targets", "watch_events"}
+)
 
 
 class SQLiteCatalog:
@@ -1696,9 +1717,378 @@ class SQLiteCatalog:
             ).fetchall()
             return tuple(self._ingestion_event_from_row(row) for row in rows)
 
+    def register_watch_root(self, root: AdmittedWatchRoot, *, now: datetime) -> WatchRoot:
+        """Register or exactly reuse one admitted root authority."""
+        now_text = encode_storage_datetime(now)
+        config_json = canonical_json_bytes(root.config.model_dump(mode="json")).decode("utf-8")
+        with self._write_connection() as connection:
+            existing = connection.execute(
+                "SELECT * FROM watch_roots WHERE root_id = ?", (root.root_id,)
+            ).fetchone()
+            if existing is not None:
+                projection = self._watch_root_from_row(existing)
+                if projection.authority != root:
+                    raise JobConflict("watch root identity has conflicting immutable facts")
+                return projection
+            connection.execute(
+                "INSERT INTO watch_roots("
+                "root_id, root_path, root_path_digest, device_id, file_id, config_json, "
+                "config_hash, generation, rescan_required, created_at, updated_at"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?)",
+                (
+                    root.root_id,
+                    root.root_path,
+                    root.root_path_digest,
+                    root.device_id,
+                    root.file_id,
+                    config_json,
+                    root.config.config_hash,
+                    now_text,
+                    now_text,
+                ),
+            )
+            self._fault_point("after_watch_root")
+            self._append_watch_event(
+                connection,
+                root_id=root.root_id,
+                event_type=WatchEventType.ROOT_REGISTERED,
+                generation=0,
+                occurred_at=now_text,
+            )
+            created = self._load_watch_root(connection, root.root_id)
+            if created is None:
+                raise CatalogError("watch root did not become visible")
+            return created
+
+    def get_watch_root(self, root_id: str) -> WatchRoot | None:
+        """Return one durable current watch-root projection."""
+        with self._read_connection() as connection:
+            return self._load_watch_root(connection, root_id)
+
+    def reconcile_watch_scan(
+        self,
+        root_id: str,
+        scan: WatchScan,
+        *,
+        now: datetime,
+    ) -> WatchReconciliation:
+        """Atomically reconcile a complete scan or record only rescan state."""
+        if scan.root_id != root_id:
+            raise JobConflict("watch scan root identity does not match")
+        now_text = encode_storage_datetime(now)
+        if now < scan.completed_at:
+            raise InvalidJobTransition("reconciliation time precedes scan completion")
+        with self._write_connection() as connection:
+            root_row = self._required_watch_root_row(connection, root_id)
+            self._assert_transition_time(root_row, now_text=now_text)
+            current_generation = int(root_row["generation"])
+            if not scan.complete:
+                connection.execute(
+                    "UPDATE watch_roots SET rescan_required = 1, updated_at = ? WHERE root_id = ?",
+                    (now_text, root_id),
+                )
+                self._append_watch_event(
+                    connection,
+                    root_id=root_id,
+                    event_type=WatchEventType.RESCAN_REQUIRED,
+                    generation=current_generation,
+                    occurred_at=now_text,
+                )
+                root = self._load_watch_root(connection, root_id)
+                if root is None:
+                    raise CatalogError("watch root did not remain visible")
+                return WatchReconciliation(
+                    root=root,
+                    complete=False,
+                    entry_count=0,
+                    candidate_count=0,
+                    stable_count=0,
+                    scheduled_job_ids=(),
+                    tombstone_count=0,
+                )
+
+            generation = current_generation + 1
+            existing_rows = {
+                str(row["locator_digest"]): row
+                for row in connection.execute(
+                    "SELECT * FROM watch_observations WHERE root_id = ?",
+                    (root_id,),
+                ).fetchall()
+            }
+            scanned_digests = {entry.locator_digest for entry in scan.entries}
+            previous_by_file_identity: dict[tuple[str, str], list[WatchObservation]] = {}
+            for previous_row in existing_rows.values():
+                prior_observation = self._watch_observation_from_row(previous_row)
+                if prior_observation.fingerprint is not None:
+                    identity = (
+                        prior_observation.fingerprint.device_id,
+                        prior_observation.fingerprint.file_id,
+                    )
+                    previous_by_file_identity.setdefault(identity, []).append(prior_observation)
+            current_by_file_identity: dict[tuple[str, str], list[WatchScanEntry]] = {}
+            for entry in scan.entries:
+                identity = (entry.fingerprint.device_id, entry.fingerprint.file_id)
+                current_by_file_identity.setdefault(identity, []).append(entry)
+            rename_hints = tuple(
+                current_entries[0].locator_digest
+                for identity, current_entries in sorted(current_by_file_identity.items())
+                if len(current_entries) == 1
+                and len(previous_by_file_identity.get(identity, ())) == 1
+                and previous_by_file_identity[identity][0].locator_digest not in scanned_digests
+                and current_entries[0].locator_digest not in existing_rows
+                and previous_by_file_identity[identity][0].fingerprint
+                == current_entries[0].fingerprint
+            )
+            seen: set[str] = set()
+            candidate_count = 0
+            stable_count = 0
+            tombstone_count = 0
+            scheduled: list[UUID] = []
+            active_count = int(
+                connection.execute(
+                    "SELECT count(*) FROM watch_job_targets AS t "
+                    "JOIN jobs AS j ON j.job_id = t.job_id "
+                    "WHERE t.root_id = ? AND j.state IN ('QUEUED', 'RUNNING')",
+                    (root_id,),
+                ).fetchone()[0]
+            )
+            backpressure = False
+            config = self._watch_root_from_row(root_row).authority.config
+            observed_at = scan.completed_at
+            for entry in scan.entries:
+                seen.add(entry.locator_digest)
+                previous_row = existing_rows.get(entry.locator_digest)
+                previous = (
+                    self._watch_observation_from_row(previous_row)
+                    if previous_row is not None
+                    else None
+                )
+                event_type: WatchEventType | None = None
+                if previous is None:
+                    state = (
+                        WatchObservationState.STABLE
+                        if config.stability_ms == 0
+                        else WatchObservationState.CANDIDATE
+                    )
+                    first_observed_at = observed_at
+                    stable_since = observed_at if state is WatchObservationState.STABLE else None
+                    last_scheduled_key = None
+                    revision = 1
+                    event_type = WatchEventType.OBSERVATION_CREATED
+                elif (
+                    previous.state is WatchObservationState.TOMBSTONED
+                    or previous.fingerprint != entry.fingerprint
+                ):
+                    state = (
+                        WatchObservationState.STABLE
+                        if config.stability_ms == 0
+                        else WatchObservationState.CANDIDATE
+                    )
+                    first_observed_at = observed_at
+                    stable_since = observed_at if state is WatchObservationState.STABLE else None
+                    last_scheduled_key = None
+                    revision = previous.revision + 1
+                    event_type = (
+                        WatchEventType.REAPPEARED
+                        if previous.state is WatchObservationState.TOMBSTONED
+                        else WatchEventType.OBSERVATION_CHANGED
+                    )
+                else:
+                    elapsed_ms = int(
+                        (observed_at - previous.first_observed_at).total_seconds() * 1_000
+                    )
+                    is_stable = elapsed_ms >= config.stability_ms
+                    state = (
+                        WatchObservationState.STABLE
+                        if is_stable
+                        else WatchObservationState.CANDIDATE
+                    )
+                    first_observed_at = previous.first_observed_at
+                    stable_since = previous.stable_since or observed_at if is_stable else None
+                    last_scheduled_key = previous.last_scheduled_key
+                    revision = previous.revision + 1
+                    if is_stable and previous.state is not WatchObservationState.STABLE:
+                        event_type = WatchEventType.OBSERVATION_STABLE
+                observation = self._make_watch_observation(
+                    root_id=root_id,
+                    relative_locator=entry.relative_locator,
+                    locator_digest=entry.locator_digest,
+                    state=state,
+                    fingerprint=entry.fingerprint,
+                    first_observed_at=first_observed_at,
+                    last_observed_at=observed_at,
+                    stable_since=stable_since,
+                    last_generation=generation,
+                    last_scheduled_key=last_scheduled_key,
+                    revision=revision,
+                )
+                self._write_watch_observation(connection, observation)
+                self._fault_point("after_watch_observation")
+                if event_type is not None:
+                    self._append_watch_event(
+                        connection,
+                        root_id=root_id,
+                        event_type=event_type,
+                        locator_digest=entry.locator_digest,
+                        generation=generation,
+                        occurred_at=now_text,
+                    )
+                if state is WatchObservationState.CANDIDATE:
+                    candidate_count += 1
+                    continue
+                stable_count += 1
+                profile = (
+                    config.text_profile
+                    if entry.media_type.startswith("text/")
+                    else config.rich_profile
+                )
+                key = watch_job_key(
+                    root_id=root_id,
+                    locator_digest=entry.locator_digest,
+                    fingerprint=entry.fingerprint,
+                    parser_profile=profile,
+                )
+                if observation.last_scheduled_key == key:
+                    continue
+                if active_count >= config.max_active_jobs:
+                    backpressure = True
+                    continue
+                job_id = uuid5(_WATCH_JOB_NAMESPACE, key)
+                job = self._create_watch_job_and_target(
+                    connection,
+                    job_id=job_id,
+                    root_id=root_id,
+                    entry=entry,
+                    parser_profile=profile,
+                    deduplication_key=key,
+                    max_attempts=config.max_attempts,
+                    created_at=now,
+                )
+                observation = observation.model_copy(
+                    update={
+                        "last_scheduled_key": key,
+                        "row_fingerprint": self._observation_fingerprint_with_update(
+                            observation, last_scheduled_key=key
+                        ),
+                    }
+                )
+                self._write_watch_observation(connection, observation)
+                scheduled.append(job.job_id)
+                active_count += 1
+                self._append_watch_event(
+                    connection,
+                    root_id=root_id,
+                    event_type=WatchEventType.TARGET_SCHEDULED,
+                    locator_digest=entry.locator_digest,
+                    job_id=job.job_id,
+                    generation=generation,
+                    occurred_at=now_text,
+                    scheduled_count=1,
+                )
+
+            for locator_digest, previous_row in sorted(existing_rows.items()):
+                previous = self._watch_observation_from_row(previous_row)
+                if locator_digest in seen or previous.state is WatchObservationState.TOMBSTONED:
+                    continue
+                tombstone = self._make_watch_observation(
+                    root_id=root_id,
+                    relative_locator=previous.relative_locator,
+                    locator_digest=locator_digest,
+                    state=WatchObservationState.TOMBSTONED,
+                    fingerprint=None,
+                    first_observed_at=previous.first_observed_at,
+                    last_observed_at=observed_at,
+                    stable_since=None,
+                    last_generation=generation,
+                    last_scheduled_key=previous.last_scheduled_key,
+                    revision=previous.revision + 1,
+                )
+                self._write_watch_observation(connection, tombstone)
+                self._fault_point("after_watch_tombstone")
+                tombstone_count += 1
+                self._append_watch_event(
+                    connection,
+                    root_id=root_id,
+                    event_type=WatchEventType.TOMBSTONED,
+                    locator_digest=locator_digest,
+                    generation=generation,
+                    occurred_at=now_text,
+                    tombstone_count=1,
+                )
+
+            for locator_digest in rename_hints:
+                self._append_watch_event(
+                    connection,
+                    root_id=root_id,
+                    event_type=WatchEventType.RENAME_HINT,
+                    locator_digest=locator_digest,
+                    generation=generation,
+                    occurred_at=now_text,
+                )
+
+            connection.execute(
+                "UPDATE watch_roots SET generation = ?, rescan_required = ?, updated_at = ? "
+                "WHERE root_id = ?",
+                (generation, int(backpressure), now_text, root_id),
+            )
+            self._append_watch_event(
+                connection,
+                root_id=root_id,
+                event_type=(
+                    WatchEventType.BACKPRESSURE if backpressure else WatchEventType.SCAN_COMPLETED
+                ),
+                generation=generation,
+                occurred_at=now_text,
+                entry_count=len(scan.entries),
+                scheduled_count=len(scheduled),
+                tombstone_count=tombstone_count,
+            )
+            self._fault_point("before_watch_reconciliation_commit")
+            updated_root = self._load_watch_root(connection, root_id)
+            if updated_root is None:
+                raise CatalogError("watch root did not remain visible")
+            return WatchReconciliation(
+                root=updated_root,
+                complete=True,
+                entry_count=len(scan.entries),
+                candidate_count=candidate_count,
+                stable_count=stable_count,
+                scheduled_job_ids=tuple(sorted(scheduled, key=str)),
+                tombstone_count=tombstone_count,
+            )
+
+    def get_watch_target(self, job_id: UUID) -> WatchJobTarget | None:
+        """Return one immutable watcher target without event/log disclosure."""
+        with self._read_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM watch_job_targets WHERE job_id = ?", (str(job_id),)
+            ).fetchone()
+            return self._watch_target_from_row(row) if row is not None else None
+
+    def list_watch_events(self, root_id: str) -> tuple[WatchEvent, ...]:
+        """Return append-only body/path-free watcher events."""
+        with self._read_connection() as connection:
+            self._required_watch_root_row(connection, root_id)
+            rows = connection.execute(
+                "SELECT * FROM watch_events WHERE root_id = ? ORDER BY sequence",
+                (root_id,),
+            ).fetchall()
+            return tuple(self._watch_event_from_row(row) for row in rows)
+
+    def list_watch_observations(self, root_id: str) -> tuple[WatchObservation, ...]:
+        """Return deterministic watcher state while keeping it out of default events."""
+        with self._read_connection() as connection:
+            self._required_watch_root_row(connection, root_id)
+            rows = connection.execute(
+                "SELECT * FROM watch_observations WHERE root_id = ? ORDER BY locator_digest",
+                (root_id,),
+            ).fetchall()
+            return tuple(self._watch_observation_from_row(row) for row in rows)
+
     def create_job(self, spec: JobSpec) -> Job:
         """Create or idempotently return one immutable queued job request."""
         created_at = encode_storage_datetime(spec.created_at)
+        available_at = encode_storage_datetime(spec.available_at or spec.created_at)
         with self._write_connection() as connection:
             existing_row = connection.execute(
                 "SELECT * FROM jobs WHERE kind = ? AND deduplication_key = ?",
@@ -1715,21 +2105,42 @@ class SQLiteCatalog:
                 raise JobConflict("job identity is already registered")
             for reference in spec.references:
                 self._register_object(connection, reference, registered_at=created_at)
-            connection.execute(
-                "INSERT INTO jobs("
-                "job_id, kind, deduplication_key, state, attempt_count, max_attempts, revision, "
-                "active_owner_id, active_lease_token_hash, lease_expires_at, "
-                "last_transition_token_hash, last_failure_code, created_at, updated_at, terminal_at"
-                ") VALUES (?, ?, ?, 'QUEUED', 0, ?, 0, NULL, NULL, NULL, NULL, NULL, ?, ?, NULL)",
-                (
-                    str(spec.job_id),
-                    spec.kind,
-                    spec.deduplication_key,
-                    spec.max_attempts,
-                    created_at,
-                    created_at,
-                ),
-            )
+            if self._migrations[-1].version < 9:
+                connection.execute(
+                    "INSERT INTO jobs("
+                    "job_id, kind, deduplication_key, state, attempt_count, max_attempts, "
+                    "revision, active_owner_id, active_lease_token_hash, lease_expires_at, "
+                    "last_transition_token_hash, last_failure_code, created_at, updated_at, "
+                    "terminal_at) VALUES (?, ?, ?, 'QUEUED', 0, ?, 0, NULL, NULL, NULL, NULL, "
+                    "NULL, ?, ?, NULL)",
+                    (
+                        str(spec.job_id),
+                        spec.kind,
+                        spec.deduplication_key,
+                        spec.max_attempts,
+                        created_at,
+                        created_at,
+                    ),
+                )
+            else:
+                connection.execute(
+                    "INSERT INTO jobs("
+                    "job_id, kind, deduplication_key, state, attempt_count, max_attempts, "
+                    "revision, available_at, active_owner_id, active_lease_token_hash, "
+                    "lease_expires_at, cancellation_requested_at, last_transition_token_hash, "
+                    "last_failure_code, created_at, updated_at, terminal_at) VALUES "
+                    "(?, ?, ?, 'QUEUED', 0, ?, 0, ?, NULL, NULL, NULL, NULL, NULL, NULL, "
+                    "?, ?, NULL)",
+                    (
+                        str(spec.job_id),
+                        spec.kind,
+                        spec.deduplication_key,
+                        spec.max_attempts,
+                        available_at,
+                        created_at,
+                        created_at,
+                    ),
+                )
             for reference in spec.references:
                 connection.execute(
                     "INSERT INTO job_object_references("
@@ -1798,14 +2209,31 @@ class SQLiteCatalog:
                 )
 
             if kind is None:
+                future_state = connection.execute(
+                    "SELECT * FROM jobs WHERE state = 'QUEUED' AND updated_at > ? "
+                    "ORDER BY updated_at, job_id LIMIT 1",
+                    (now_text,),
+                ).fetchone()
+            else:
+                future_state = connection.execute(
+                    "SELECT * FROM jobs WHERE state = 'QUEUED' AND kind = ? "
+                    "AND updated_at > ? ORDER BY updated_at, job_id LIMIT 1",
+                    (kind, now_text),
+                ).fetchone()
+            if future_state is not None:
+                self._assert_transition_time(future_state, now_text=now_text)
+
+            if kind is None:
                 queued = connection.execute(
-                    "SELECT * FROM jobs WHERE state = 'QUEUED' ORDER BY created_at, job_id LIMIT 1"
+                    "SELECT * FROM jobs WHERE state = 'QUEUED' AND available_at <= ? "
+                    "ORDER BY available_at, created_at, job_id LIMIT 1",
+                    (now_text,),
                 ).fetchone()
             else:
                 queued = connection.execute(
                     "SELECT * FROM jobs WHERE state = 'QUEUED' AND kind = ? "
-                    "ORDER BY created_at, job_id LIMIT 1",
-                    (kind,),
+                    "AND available_at <= ? ORDER BY available_at, created_at, job_id LIMIT 1",
+                    (kind, now_text),
                 ).fetchone()
             if queued is None:
                 return None
@@ -1841,6 +2269,85 @@ class SQLiteCatalog:
             claimed = self._load_job(connection, job_id)
             if claimed is None:
                 raise CatalogError("claimed job did not become visible")
+            return JobLease(job=claimed, lease_token=SecretStr(lease_token))
+
+    def claim_watch_job(
+        self,
+        root_id: str,
+        *,
+        owner_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_until: datetime,
+    ) -> JobLease | None:
+        """Claim one eligible watcher job only from the explicitly admitted root."""
+        self._validate_owner(owner_id)
+        token_hash = self._lease_token_hash(lease_token)
+        now_text = encode_storage_datetime(now)
+        lease_text = encode_storage_datetime(lease_until)
+        if lease_text <= now_text:
+            raise InvalidJobTransition("lease_until must be later than now")
+        with self._write_connection() as connection:
+            self._required_watch_root_row(connection, root_id)
+            active = connection.execute(
+                "SELECT j.* FROM jobs AS j JOIN watch_job_targets AS t ON t.job_id = j.job_id "
+                "WHERE t.root_id = ? AND j.state = 'RUNNING' AND j.active_owner_id = ? "
+                "AND j.active_lease_token_hash = ? AND j.lease_expires_at > ?",
+                (root_id, owner_id, token_hash, now_text),
+            ).fetchone()
+            if active is not None:
+                return JobLease(
+                    job=self._job_from_row(connection, active),
+                    lease_token=SecretStr(lease_token),
+                )
+            future = connection.execute(
+                "SELECT j.* FROM jobs AS j JOIN watch_job_targets AS t ON t.job_id = j.job_id "
+                "WHERE t.root_id = ? AND j.state = 'QUEUED' AND j.updated_at > ? "
+                "ORDER BY j.updated_at, j.job_id LIMIT 1",
+                (root_id, now_text),
+            ).fetchone()
+            if future is not None:
+                self._assert_transition_time(future, now_text=now_text)
+            queued = connection.execute(
+                "SELECT j.* FROM jobs AS j JOIN watch_job_targets AS t ON t.job_id = j.job_id "
+                "WHERE t.root_id = ? AND j.state = 'QUEUED' AND j.available_at <= ? "
+                "ORDER BY j.available_at, j.created_at, j.job_id LIMIT 1",
+                (root_id, now_text),
+            ).fetchone()
+            if queued is None:
+                return None
+            self._assert_transition_time(queued, now_text=now_text)
+            job_id = UUID(str(queued["job_id"]))
+            attempt_count = int(queued["attempt_count"]) + 1
+            revision = int(queued["revision"]) + 1
+            connection.execute(
+                "UPDATE jobs SET state = 'RUNNING', attempt_count = ?, revision = ?, "
+                "active_owner_id = ?, active_lease_token_hash = ?, lease_expires_at = ?, "
+                "updated_at = ?, terminal_at = NULL WHERE job_id = ? AND state = 'QUEUED'",
+                (
+                    attempt_count,
+                    revision,
+                    owner_id,
+                    token_hash,
+                    lease_text,
+                    now_text,
+                    str(job_id),
+                ),
+            )
+            self._append_event(
+                connection,
+                job_id=job_id,
+                event_type=JobEventType.CLAIMED,
+                from_state=JobState.QUEUED,
+                to_state=JobState.RUNNING,
+                occurred_at=now_text,
+                attempt_count=attempt_count,
+                owner_id=owner_id,
+                failure_code=None,
+            )
+            claimed = self._load_job(connection, job_id)
+            if claimed is None:
+                raise CatalogError("claimed watch job did not become visible")
             return JobLease(job=claimed, lease_token=SecretStr(lease_token))
 
     def renew_job(
@@ -1945,6 +2452,12 @@ class SQLiteCatalog:
                 owner_id=owner_id,
                 failure_code=None,
             )
+            self._append_watch_job_outcome(
+                connection,
+                job_id=job_id,
+                state=JobState.SUCCEEDED,
+                occurred_at=now_text,
+            )
             completed = self._load_job(connection, job_id)
             if completed is None:
                 raise CatalogError("completed job did not become visible")
@@ -1960,12 +2473,18 @@ class SQLiteCatalog:
         now: datetime,
         retryable: bool,
         failure_code: str,
+        retry_at: datetime | None = None,
     ) -> Job:
         """Requeue or terminally fail a running job through fencing proof."""
         self._validate_owner(owner_id)
         self._validate_failure_code(failure_code)
         token_hash = self._lease_token_hash(lease_token)
         now_text = encode_storage_datetime(now)
+        retry_text = encode_storage_datetime(retry_at) if retry_at is not None else now_text
+        if retry_text < now_text:
+            raise InvalidJobTransition("retry_at must not precede now")
+        if not retryable and retry_at is not None:
+            raise InvalidJobTransition("terminal failure cannot specify retry_at")
         with self._write_connection() as connection:
             row = self._required_job_row(connection, job_id)
             if row["state"] in {JobState.QUEUED.value, JobState.FAILED.value}:
@@ -1982,18 +2501,22 @@ class SQLiteCatalog:
                 expected_revision=expected_revision,
                 now_text=now_text,
             )
+            if row["cancellation_requested_at"] is not None:
+                raise InvalidJobTransition("job cancellation is requested")
             self._assert_transition_time(row, now_text=now_text)
             should_retry = retryable and int(row["attempt_count"]) < int(row["max_attempts"])
             state = JobState.QUEUED if should_retry else JobState.FAILED
             terminal_at = None if should_retry else now_text
             event_type = JobEventType.RETRY_QUEUED if should_retry else JobEventType.FAILED
             connection.execute(
-                "UPDATE jobs SET state = ?, revision = revision + 1, active_owner_id = NULL, "
+                "UPDATE jobs SET state = ?, revision = revision + 1, available_at = ?, "
+                "active_owner_id = NULL, "
                 "active_lease_token_hash = NULL, lease_expires_at = NULL, "
                 "last_transition_token_hash = ?, last_failure_code = ?, updated_at = ?, "
                 "terminal_at = ? WHERE job_id = ? AND revision = ? AND state = 'RUNNING'",
                 (
                     state.value,
+                    retry_text if should_retry else str(row["available_at"]),
                     token_hash,
                     failure_code,
                     now_text,
@@ -2013,6 +2536,12 @@ class SQLiteCatalog:
                 owner_id=owner_id,
                 failure_code=failure_code,
             )
+            self._append_watch_job_outcome(
+                connection,
+                job_id=job_id,
+                state=state,
+                occurred_at=now_text,
+            )
             failed = self._load_job(connection, job_id)
             if failed is None:
                 raise CatalogError("failed job did not become visible")
@@ -2022,6 +2551,163 @@ class SQLiteCatalog:
         """Return one durable job projection or no result."""
         with self._read_connection() as connection:
             return self._load_job(connection, job_id)
+
+    def list_jobs(
+        self,
+        *,
+        state: str | None = None,
+        kind: str | None = None,
+        limit: int = 100,
+    ) -> tuple[Job, ...]:
+        """Return deterministic bounded job projections without transition tokens."""
+        if type(limit) is not int or not 1 <= limit <= 1_000:
+            raise ValueError("job list limit must be between 1 and 1000")
+        if state is not None:
+            try:
+                state_value = JobState(state).value
+            except ValueError:
+                raise ValueError("job state filter is invalid") from None
+        else:
+            state_value = None
+        clauses: list[str] = []
+        parameters: list[Any] = []
+        if state_value is not None:
+            clauses.append("state = ?")
+            parameters.append(state_value)
+        if kind is not None:
+            if _MACHINE_TOKEN.fullmatch(kind) is None:
+                raise ValueError("job kind filter is invalid")
+            clauses.append("kind = ?")
+            parameters.append(kind)
+        query = "SELECT * FROM jobs"
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        query += " ORDER BY created_at, job_id LIMIT ?"
+        parameters.append(limit)
+        with self._read_connection() as connection:
+            rows = connection.execute(query, tuple(parameters)).fetchall()
+            return tuple(self._job_from_row(connection, row) for row in rows)
+
+    def request_job_cancellation(self, job_id: UUID, *, now: datetime) -> Job:
+        """Request queued or running cancellation idempotently with revision fencing."""
+        now_text = encode_storage_datetime(now)
+        with self._write_connection() as connection:
+            row = self._required_job_row(connection, job_id)
+            self._assert_transition_time(row, now_text=now_text)
+            state = JobState(str(row["state"]))
+            if state is JobState.CANCELLED:
+                return self._job_from_row(connection, row)
+            if state in {JobState.SUCCEEDED, JobState.FAILED}:
+                raise InvalidJobTransition("terminal job cannot be cancelled")
+            if row["cancellation_requested_at"] is not None:
+                return self._job_from_row(connection, row)
+            if state is JobState.QUEUED:
+                connection.execute(
+                    "UPDATE jobs SET state = 'CANCELLED', revision = revision + 1, "
+                    "last_transition_token_hash = NULL, last_failure_code = NULL, "
+                    "updated_at = ?, terminal_at = ? WHERE job_id = ? AND state = 'QUEUED'",
+                    (now_text, now_text, str(job_id)),
+                )
+                self._append_event(
+                    connection,
+                    job_id=job_id,
+                    event_type=JobEventType.CANCELLED,
+                    from_state=JobState.QUEUED,
+                    to_state=JobState.CANCELLED,
+                    occurred_at=now_text,
+                    attempt_count=int(row["attempt_count"]),
+                    owner_id=None,
+                    failure_code=None,
+                )
+                self._append_watch_job_outcome(
+                    connection,
+                    job_id=job_id,
+                    state=JobState.CANCELLED,
+                    occurred_at=now_text,
+                )
+            else:
+                connection.execute(
+                    "UPDATE jobs SET revision = revision + 1, cancellation_requested_at = ?, "
+                    "updated_at = ? WHERE job_id = ? AND state = 'RUNNING' "
+                    "AND cancellation_requested_at IS NULL",
+                    (now_text, now_text, str(job_id)),
+                )
+                self._append_event(
+                    connection,
+                    job_id=job_id,
+                    event_type=JobEventType.CANCEL_REQUESTED,
+                    from_state=JobState.RUNNING,
+                    to_state=JobState.RUNNING,
+                    occurred_at=now_text,
+                    attempt_count=int(row["attempt_count"]),
+                    owner_id=str(row["active_owner_id"]),
+                    failure_code=None,
+                )
+            changed = self._load_job(connection, job_id)
+            if changed is None:
+                raise CatalogError("cancelled job did not become visible")
+            return changed
+
+    def acknowledge_job_cancellation(
+        self,
+        job_id: UUID,
+        *,
+        owner_id: str,
+        lease_token: str,
+        expected_revision: int,
+        now: datetime,
+    ) -> Job:
+        """Acknowledge a running cancellation through the current fenced lease."""
+        self._validate_owner(owner_id)
+        token_hash = self._lease_token_hash(lease_token)
+        now_text = encode_storage_datetime(now)
+        with self._write_connection() as connection:
+            row = self._required_job_row(connection, job_id)
+            if row["state"] == JobState.CANCELLED.value:
+                if row["last_transition_token_hash"] == token_hash:
+                    return self._job_from_row(connection, row)
+                raise LeaseConflict("cancelled job fencing token does not match")
+            self._assert_active_lease(
+                row,
+                owner_id=owner_id,
+                token_hash=token_hash,
+                expected_revision=expected_revision,
+                now_text=now_text,
+                allow_cancellation_requested=True,
+            )
+            if row["cancellation_requested_at"] is None:
+                raise InvalidJobTransition("job cancellation is not requested")
+            self._assert_transition_time(row, now_text=now_text)
+            connection.execute(
+                "UPDATE jobs SET state = 'CANCELLED', revision = revision + 1, "
+                "active_owner_id = NULL, active_lease_token_hash = NULL, "
+                "lease_expires_at = NULL, cancellation_requested_at = NULL, "
+                "last_transition_token_hash = ?, last_failure_code = NULL, "
+                "updated_at = ?, terminal_at = ? WHERE job_id = ? AND revision = ? "
+                "AND state = 'RUNNING'",
+                (token_hash, now_text, now_text, str(job_id), expected_revision),
+            )
+            self._append_event(
+                connection,
+                job_id=job_id,
+                event_type=JobEventType.CANCELLED,
+                from_state=JobState.RUNNING,
+                to_state=JobState.CANCELLED,
+                occurred_at=now_text,
+                attempt_count=int(row["attempt_count"]),
+                owner_id=owner_id,
+                failure_code=None,
+            )
+            self._append_watch_job_outcome(
+                connection,
+                job_id=job_id,
+                state=JobState.CANCELLED,
+                occurred_at=now_text,
+            )
+            cancelled = self._load_job(connection, job_id)
+            if cancelled is None:
+                raise CatalogError("cancelled job did not become visible")
+            return cancelled
 
     def list_job_events(self, job_id: UUID) -> tuple[JobEvent, ...]:
         """Return append-only transition evidence in sequence order."""
@@ -2039,6 +2725,7 @@ class SQLiteCatalog:
         now_text = encode_storage_datetime(now)
         requeued: list[UUID] = []
         failed: list[UUID] = []
+        cancelled: list[UUID] = []
         with self._write_connection() as connection:
             rows = connection.execute(
                 "SELECT * FROM jobs WHERE state = 'RUNNING' AND lease_expires_at <= ? "
@@ -2047,21 +2734,37 @@ class SQLiteCatalog:
             ).fetchall()
             for row in rows:
                 job_id = UUID(str(row["job_id"]))
-                should_retry = int(row["attempt_count"]) < int(row["max_attempts"])
-                state = JobState.QUEUED if should_retry else JobState.FAILED
+                cancellation_requested = row["cancellation_requested_at"] is not None
+                should_retry = not cancellation_requested and int(row["attempt_count"]) < int(
+                    row["max_attempts"]
+                )
+                state = (
+                    JobState.CANCELLED
+                    if cancellation_requested
+                    else (JobState.QUEUED if should_retry else JobState.FAILED)
+                )
                 event_type = (
-                    JobEventType.LEASE_RECOVERED if should_retry else JobEventType.LEASE_EXHAUSTED
+                    JobEventType.CANCELLED
+                    if cancellation_requested
+                    else (
+                        JobEventType.LEASE_RECOVERED
+                        if should_retry
+                        else JobEventType.LEASE_EXHAUSTED
+                    )
                 )
                 terminal_at = None if should_retry else now_text
+                failure_code = None if cancellation_requested else "lease_expired"
                 connection.execute(
                     "UPDATE jobs SET state = ?, revision = revision + 1, "
                     "active_owner_id = NULL, active_lease_token_hash = NULL, "
-                    "lease_expires_at = NULL, last_transition_token_hash = ?, "
-                    "last_failure_code = 'lease_expired', updated_at = ?, terminal_at = ? "
+                    "lease_expires_at = NULL, cancellation_requested_at = NULL, "
+                    "last_transition_token_hash = ?, last_failure_code = ?, "
+                    "updated_at = ?, terminal_at = ? "
                     "WHERE job_id = ? AND state = 'RUNNING' AND lease_expires_at <= ?",
                     (
                         state.value,
                         row["active_lease_token_hash"],
+                        failure_code,
                         now_text,
                         terminal_at,
                         str(job_id),
@@ -2077,12 +2780,22 @@ class SQLiteCatalog:
                     occurred_at=now_text,
                     attempt_count=int(row["attempt_count"]),
                     owner_id=str(row["active_owner_id"]),
-                    failure_code="lease_expired",
+                    failure_code=failure_code,
                 )
-                (requeued if should_retry else failed).append(job_id)
+                self._append_watch_job_outcome(
+                    connection,
+                    job_id=job_id,
+                    state=state,
+                    occurred_at=now_text,
+                )
+                if cancellation_requested:
+                    cancelled.append(job_id)
+                else:
+                    (requeued if should_retry else failed).append(job_id)
         return RecoveryResult(
             requeued_job_ids=tuple(sorted(requeued, key=str)),
             failed_job_ids=tuple(sorted(failed, key=str)),
+            cancelled_job_ids=tuple(sorted(cancelled, key=str)),
             recovered_at=now,
         )
 
@@ -4442,11 +5155,370 @@ class SQLiteCatalog:
             raise RepresentationIncomplete("representation commit event is missing")
         return self._ingestion_event_from_row(row)
 
+    def _load_watch_root(
+        self,
+        connection: sqlite3.Connection,
+        root_id: str,
+    ) -> WatchRoot | None:
+        row = connection.execute(
+            "SELECT * FROM watch_roots WHERE root_id = ?", (root_id,)
+        ).fetchone()
+        return self._watch_root_from_row(row) if row is not None else None
+
+    @staticmethod
+    def _watch_root_from_row(row: sqlite3.Row) -> WatchRoot:
+        config = WatchConfig.model_validate_json(str(row["config_json"]))
+        authority = AdmittedWatchRoot(
+            root_id=str(row["root_id"]),
+            root_path=str(row["root_path"]),
+            root_path_digest=str(row["root_path_digest"]),
+            device_id=str(row["device_id"]),
+            file_id=str(row["file_id"]),
+            config=config,
+        )
+        if str(row["config_hash"]) != config.config_hash:
+            raise CatalogIncompatible("watch root config identity is inconsistent")
+        return WatchRoot(
+            authority=authority,
+            generation=int(row["generation"]),
+            rescan_required=bool(row["rescan_required"]),
+            created_at=decode_storage_datetime(str(row["created_at"])),
+            updated_at=decode_storage_datetime(str(row["updated_at"])),
+        )
+
+    @staticmethod
+    def _required_watch_root_row(
+        connection: sqlite3.Connection,
+        root_id: str,
+    ) -> sqlite3.Row:
+        row = connection.execute(
+            "SELECT * FROM watch_roots WHERE root_id = ?", (root_id,)
+        ).fetchone()
+        if row is None:
+            raise JobNotFound("watch root does not exist")
+        return cast(sqlite3.Row, row)
+
+    @staticmethod
+    def _make_watch_observation(
+        *,
+        root_id: str,
+        relative_locator: str,
+        locator_digest: str,
+        state: WatchObservationState,
+        fingerprint: WatchFileFingerprint | None,
+        first_observed_at: datetime,
+        last_observed_at: datetime,
+        stable_since: datetime | None,
+        last_generation: int,
+        last_scheduled_key: str | None,
+        revision: int,
+    ) -> WatchObservation:
+        values: dict[str, Any] = {
+            "root_id": root_id,
+            "relative_locator": relative_locator,
+            "locator_digest": locator_digest,
+            "state": state,
+            "fingerprint": fingerprint,
+            "first_observed_at": first_observed_at,
+            "last_observed_at": last_observed_at,
+            "stable_since": stable_since,
+            "last_generation": last_generation,
+            "last_scheduled_key": last_scheduled_key,
+            "revision": revision,
+        }
+        provisional = WatchObservation.model_construct(
+            **values,
+            row_fingerprint="sha256:" + "0" * 64,
+        )
+        values["row_fingerprint"] = watch_observation_fingerprint(provisional)
+        return WatchObservation.model_validate(values)
+
+    @staticmethod
+    def _observation_fingerprint_with_update(
+        observation: WatchObservation,
+        *,
+        last_scheduled_key: str,
+    ) -> str:
+        updated = observation.model_copy(update={"last_scheduled_key": last_scheduled_key})
+        return watch_observation_fingerprint(updated)
+
+    @staticmethod
+    def _write_watch_observation(
+        connection: sqlite3.Connection,
+        observation: WatchObservation,
+    ) -> None:
+        fingerprint_json = (
+            canonical_json_bytes(observation.fingerprint.model_dump(mode="json")).decode("utf-8")
+            if observation.fingerprint is not None
+            else None
+        )
+        connection.execute(
+            "INSERT INTO watch_observations("
+            "root_id, locator_digest, relative_locator, state, fingerprint_json, "
+            "first_observed_at, last_observed_at, stable_since, last_generation, "
+            "last_scheduled_key, revision, row_fingerprint"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(root_id, locator_digest) DO UPDATE SET "
+            "relative_locator = excluded.relative_locator, state = excluded.state, "
+            "fingerprint_json = excluded.fingerprint_json, "
+            "first_observed_at = excluded.first_observed_at, "
+            "last_observed_at = excluded.last_observed_at, "
+            "stable_since = excluded.stable_since, last_generation = excluded.last_generation, "
+            "last_scheduled_key = excluded.last_scheduled_key, revision = excluded.revision, "
+            "row_fingerprint = excluded.row_fingerprint",
+            (
+                observation.root_id,
+                observation.locator_digest,
+                observation.relative_locator,
+                observation.state.value,
+                fingerprint_json,
+                encode_storage_datetime(observation.first_observed_at),
+                encode_storage_datetime(observation.last_observed_at),
+                (
+                    encode_storage_datetime(observation.stable_since)
+                    if observation.stable_since is not None
+                    else None
+                ),
+                observation.last_generation,
+                observation.last_scheduled_key,
+                observation.revision,
+                observation.row_fingerprint,
+            ),
+        )
+
+    @staticmethod
+    def _watch_observation_from_row(row: sqlite3.Row) -> WatchObservation:
+        fingerprint = (
+            WatchFileFingerprint.model_validate_json(str(row["fingerprint_json"]))
+            if row["fingerprint_json"] is not None
+            else None
+        )
+        return WatchObservation(
+            root_id=str(row["root_id"]),
+            relative_locator=str(row["relative_locator"]),
+            locator_digest=str(row["locator_digest"]),
+            state=WatchObservationState(str(row["state"])),
+            fingerprint=fingerprint,
+            first_observed_at=decode_storage_datetime(str(row["first_observed_at"])),
+            last_observed_at=decode_storage_datetime(str(row["last_observed_at"])),
+            stable_since=(
+                decode_storage_datetime(str(row["stable_since"]))
+                if row["stable_since"] is not None
+                else None
+            ),
+            last_generation=int(row["last_generation"]),
+            last_scheduled_key=(
+                str(row["last_scheduled_key"]) if row["last_scheduled_key"] is not None else None
+            ),
+            revision=int(row["revision"]),
+            row_fingerprint=str(row["row_fingerprint"]),
+        )
+
+    def _create_watch_job_and_target(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        job_id: UUID,
+        root_id: str,
+        entry: WatchScanEntry,
+        parser_profile: str,
+        deduplication_key: str,
+        max_attempts: int,
+        created_at: datetime,
+    ) -> Job:
+        created_text = encode_storage_datetime(created_at)
+        row = connection.execute(
+            "SELECT * FROM jobs WHERE kind = 'watch_ingest' AND deduplication_key = ?",
+            (deduplication_key,),
+        ).fetchone()
+        if row is None:
+            connection.execute(
+                "INSERT INTO jobs("
+                "job_id, kind, deduplication_key, state, attempt_count, max_attempts, revision, "
+                "available_at, active_owner_id, active_lease_token_hash, lease_expires_at, "
+                "cancellation_requested_at, last_transition_token_hash, last_failure_code, "
+                "created_at, updated_at, terminal_at) VALUES "
+                "(?, 'watch_ingest', ?, 'QUEUED', 0, ?, 0, ?, NULL, NULL, NULL, NULL, NULL, "
+                "NULL, ?, ?, NULL)",
+                (
+                    str(job_id),
+                    deduplication_key,
+                    max_attempts,
+                    created_text,
+                    created_text,
+                    created_text,
+                ),
+            )
+            self._append_event(
+                connection,
+                job_id=job_id,
+                event_type=JobEventType.ENQUEUED,
+                from_state=None,
+                to_state=JobState.QUEUED,
+                occurred_at=created_text,
+                attempt_count=0,
+                owner_id=None,
+                failure_code=None,
+            )
+            self._fault_point("after_watch_job")
+            row = self._required_job_row(connection, job_id)
+        job = self._job_from_row(connection, row)
+        if (
+            job.job_id != job_id
+            or job.kind != "watch_ingest"
+            or job.deduplication_key != deduplication_key
+            or job.max_attempts != max_attempts
+        ):
+            raise JobConflict("watch job identity has conflicting immutable facts")
+        target = WatchJobTarget(
+            job_id=job_id,
+            root_id=root_id,
+            relative_locator=str(entry.relative_locator),
+            locator_digest=str(entry.locator_digest),
+            fingerprint=entry.fingerprint,
+            parser_profile=parser_profile,
+            deduplication_key=deduplication_key,
+            created_at=created_at,
+        )
+        fingerprint_json = canonical_json_bytes(target.fingerprint.model_dump(mode="json")).decode(
+            "utf-8"
+        )
+        existing_target = connection.execute(
+            "SELECT * FROM watch_job_targets WHERE job_id = ?", (str(job_id),)
+        ).fetchone()
+        if existing_target is None:
+            connection.execute(
+                "INSERT INTO watch_job_targets("
+                "job_id, root_id, locator_digest, relative_locator, fingerprint_json, "
+                "parser_profile, deduplication_key, created_at"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    str(job_id),
+                    root_id,
+                    target.locator_digest,
+                    target.relative_locator,
+                    fingerprint_json,
+                    parser_profile,
+                    deduplication_key,
+                    created_text,
+                ),
+            )
+            self._fault_point("after_watch_target")
+        elif self._watch_target_from_row(existing_target) != target:
+            raise JobConflict("watch target identity has conflicting immutable facts")
+        return job
+
+    @staticmethod
+    def _watch_target_from_row(row: sqlite3.Row) -> WatchJobTarget:
+        return WatchJobTarget(
+            job_id=UUID(str(row["job_id"])),
+            root_id=str(row["root_id"]),
+            relative_locator=str(row["relative_locator"]),
+            locator_digest=str(row["locator_digest"]),
+            fingerprint=WatchFileFingerprint.model_validate_json(str(row["fingerprint_json"])),
+            parser_profile=str(row["parser_profile"]),
+            deduplication_key=str(row["deduplication_key"]),
+            created_at=decode_storage_datetime(str(row["created_at"])),
+        )
+
+    def _append_watch_event(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        root_id: str,
+        event_type: WatchEventType,
+        generation: int,
+        occurred_at: str,
+        locator_digest: str | None = None,
+        job_id: UUID | None = None,
+        entry_count: int = 0,
+        scheduled_count: int = 0,
+        tombstone_count: int = 0,
+    ) -> None:
+        sequence = int(
+            connection.execute(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM watch_events WHERE root_id = ?",
+                (root_id,),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            "INSERT INTO watch_events("
+            "root_id, sequence, event_type, locator_digest, job_id, generation, occurred_at, "
+            "entry_count, scheduled_count, tombstone_count"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                root_id,
+                sequence,
+                event_type.value,
+                locator_digest,
+                str(job_id) if job_id is not None else None,
+                generation,
+                occurred_at,
+                entry_count,
+                scheduled_count,
+                tombstone_count,
+            ),
+        )
+        self._fault_point("after_watch_event")
+
+    def _append_watch_job_outcome(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        job_id: UUID,
+        state: JobState,
+        occurred_at: str,
+    ) -> None:
+        if self._migrations[-1].version < 9:
+            return
+        target = connection.execute(
+            "SELECT root_id, locator_digest FROM watch_job_targets WHERE job_id = ?",
+            (str(job_id),),
+        ).fetchone()
+        if target is None:
+            return
+        event_type = {
+            JobState.QUEUED: WatchEventType.JOB_RETRY,
+            JobState.SUCCEEDED: WatchEventType.JOB_SUCCEEDED,
+            JobState.FAILED: WatchEventType.JOB_FAILED,
+            JobState.CANCELLED: WatchEventType.JOB_CANCELLED,
+        }.get(state)
+        if event_type is None:
+            return
+        root = self._required_watch_root_row(connection, str(target["root_id"]))
+        self._append_watch_event(
+            connection,
+            root_id=str(target["root_id"]),
+            event_type=event_type,
+            locator_digest=str(target["locator_digest"]),
+            job_id=job_id,
+            generation=int(root["generation"]),
+            occurred_at=occurred_at,
+        )
+
+    @staticmethod
+    def _watch_event_from_row(row: sqlite3.Row) -> WatchEvent:
+        return WatchEvent(
+            root_id=str(row["root_id"]),
+            sequence=int(row["sequence"]),
+            event_type=WatchEventType(str(row["event_type"])),
+            locator_digest=(
+                str(row["locator_digest"]) if row["locator_digest"] is not None else None
+            ),
+            job_id=UUID(str(row["job_id"])) if row["job_id"] is not None else None,
+            generation=int(row["generation"]),
+            occurred_at=decode_storage_datetime(str(row["occurred_at"])),
+            entry_count=int(row["entry_count"]),
+            scheduled_count=int(row["scheduled_count"]),
+            tombstone_count=int(row["tombstone_count"]),
+        )
+
     def _load_job(self, connection: sqlite3.Connection, job_id: UUID) -> Job | None:
         row = connection.execute("SELECT * FROM jobs WHERE job_id = ?", (str(job_id),)).fetchone()
         return self._job_from_row(connection, row) if row is not None else None
 
     def _job_from_row(self, connection: sqlite3.Connection, row: sqlite3.Row) -> Job:
+        columns = frozenset(row.keys())
         references = tuple(
             self._reference_from_row(item)
             for item in connection.execute(
@@ -4466,10 +5538,19 @@ class SQLiteCatalog:
             attempt_count=int(row["attempt_count"]),
             max_attempts=int(row["max_attempts"]),
             revision=int(row["revision"]),
+            available_at=decode_storage_datetime(
+                str(row["available_at"] if "available_at" in columns else row["created_at"])
+            ),
             active_owner_id=(
                 str(row["active_owner_id"]) if row["active_owner_id"] is not None else None
             ),
             lease_expires_at=decode_storage_datetime(str(lease)) if lease is not None else None,
+            cancellation_requested_at=(
+                decode_storage_datetime(str(row["cancellation_requested_at"]))
+                if "cancellation_requested_at" in columns
+                and row["cancellation_requested_at"] is not None
+                else None
+            ),
             last_failure_code=(
                 str(row["last_failure_code"]) if row["last_failure_code"] is not None else None
             ),
@@ -4486,6 +5567,7 @@ class SQLiteCatalog:
             and job.kind == spec.kind
             and job.deduplication_key == spec.deduplication_key
             and job.max_attempts == spec.max_attempts
+            and job.available_at == (spec.available_at or spec.created_at)
             and job.created_at == spec.created_at
             and job.references == SQLiteCatalog._canonical_references(spec.references)
         )
@@ -4506,6 +5588,7 @@ class SQLiteCatalog:
         now_text: str,
         allow_idempotent_revision: bool = False,
         requested_lease_until: str | None = None,
+        allow_cancellation_requested: bool = False,
     ) -> None:
         if row["state"] != JobState.RUNNING.value:
             raise InvalidJobTransition("job is not running")
@@ -4513,6 +5596,8 @@ class SQLiteCatalog:
             raise LeaseConflict("job lease owner or fencing token does not match")
         if str(row["lease_expires_at"]) <= now_text:
             raise LeaseConflict("job lease has expired")
+        if row["cancellation_requested_at"] is not None and not allow_cancellation_requested:
+            raise InvalidJobTransition("job cancellation is requested")
         if int(row["revision"]) != expected_revision:
             if (
                 allow_idempotent_revision

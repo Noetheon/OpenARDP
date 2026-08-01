@@ -185,6 +185,7 @@ def test_job_state_invariants_require_exact_lease_and_terminal_fields() -> None:
             attempt_count=1,
             max_attempts=3,
             revision=1,
+            available_at=NOW,
             active_owner_id=None,
             lease_expires_at=None,
             created_at=NOW,
@@ -199,6 +200,7 @@ def test_job_state_invariants_require_exact_lease_and_terminal_fields() -> None:
             attempt_count=1,
             max_attempts=3,
             revision=2,
+            available_at=NOW,
             created_at=NOW,
             updated_at=NOW,
         )
@@ -214,6 +216,7 @@ def test_job_lease_masks_raw_token_representation() -> None:
         attempt_count=1,
         max_attempts=3,
         revision=1,
+        available_at=NOW,
         active_owner_id="worker-1",
         lease_expires_at=NOW + timedelta(minutes=1),
         created_at=NOW,

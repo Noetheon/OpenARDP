@@ -364,6 +364,18 @@ class Catalog(Protocol):
         """Claim one deterministic queued job with a caller fencing token."""
         ...
 
+    def claim_watch_job(
+        self,
+        root_id: str,
+        *,
+        owner_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_until: datetime,
+    ) -> JobLease | None:
+        """Claim one eligible watch-ingest job scoped to explicit root authority."""
+        ...
+
     def renew_job(
         self,
         job_id: UUID,
@@ -399,12 +411,39 @@ class Catalog(Protocol):
         now: datetime,
         retryable: bool,
         failure_code: str,
+        retry_at: datetime | None = None,
     ) -> Job:
         """Requeue or terminally fail a running job with sanitized evidence."""
         ...
 
+    def request_job_cancellation(self, job_id: UUID, *, now: datetime) -> Job:
+        """Request queued or running cancellation idempotently."""
+        ...
+
+    def acknowledge_job_cancellation(
+        self,
+        job_id: UUID,
+        *,
+        owner_id: str,
+        lease_token: str,
+        expected_revision: int,
+        now: datetime,
+    ) -> Job:
+        """Finalize a requested running cancellation through fencing proof."""
+        ...
+
     def get_job(self, job_id: UUID) -> Job | None:
         """Return one durable job projection or no result."""
+        ...
+
+    def list_jobs(
+        self,
+        *,
+        state: str | None = None,
+        kind: str | None = None,
+        limit: int = 100,
+    ) -> tuple[Job, ...]:
+        """Return deterministic bounded durable job projections."""
         ...
 
     def list_job_events(self, job_id: UUID) -> tuple[JobEvent, ...]:

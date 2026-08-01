@@ -1,0 +1,8 @@
+{
+  "config_hash": "sha256:f260b0456839e613db5ced7d8dfa713834f99769b0c3bc26aad61f1db1725a08",
+  "job_key": "sha256:6fe4a4490f5829755f560d85312bf32adbaf1df1d480ba21df0a4c5aa72708d8",
+  "locator_digest": "sha256:b111ba17bc2c445cbd04fc53cb48792295473ffea6acb3dd91fe249c865231fb",
+  "observation_fingerprint": "sha256:3558560ad3de785b0406bd5ac162dd991426cfd420ccaf0b529c92f00015fa6b",
+  "root_id": "sha256:5b012225d22c1e497d0c3dcd6d9fd5f14e6af24fa495692de0ab51d85dd47825",
+  "root_path_digest": "sha256:36e6e1f2b0046d6f2dc9b10d231aeb9e6ab026cda34d2b4b1f53ea76d283f843"
+}

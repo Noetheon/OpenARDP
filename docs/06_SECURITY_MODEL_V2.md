@@ -29,6 +29,7 @@ Ingestion adapters may only emit the first two. Promotion to trusted policy or e
 - cross-document data exfiltration;
 - malicious Docling/native payloads;
 - deceptive visual evidence.
+- recursive path/link/device authority expansion and watcher event leakage.
 
 ## Required controls
 
@@ -142,3 +143,26 @@ which workspace path is configured out of band.
 
 The worker is defense in depth, not a universal sandbox. Native decoder defects and
 viewer-fidelity differences remain residual risks.
+
+## Delivered Feature 012 controls
+
+- Watching requires one explicit canonical absolute directory disjoint from the
+  workspace. Parent discovery is absent; linked/junction components and entries,
+  recognizable UNC/device authority, escapes and cross-device traversal are rejected.
+- Polling is never authoritative by itself. Only a complete bounded sorted rescan may
+  add, stabilize or tombstone observations; overflow, disappearance, permission failure
+  or root replacement yields an empty incomplete result and a rescan marker.
+- File metadata is a stability hint only. Before work, the service reconstructs the
+  relative target beneath the admitted root and rechecks root identity, every component,
+  filesystem device and the complete scheduled fingerprint. Existing ingestion then
+  hashes exact bytes and retains its own source-race checks.
+- Jobs use persisted eligibility, bounded attempts, hashed lease tokens, revision
+  compare-and-set fencing and durable cooperative cancellation. Stale owners cannot
+  renew, complete or fail after a cancellation request.
+- Watch events and CLI job summaries use a closed allowlist of classifications,
+  digests, UUIDs, counts, revisions and UTC times; paths, filenames, bodies, parser
+  output, exception strings, owners and lease tokens are excluded.
+- The watcher invokes no shell/tool instruction from document names or contents,
+  opens no listener and performs no default network or model call. Network/shared POSIX
+  mounts that cannot be identified portably remain explicitly unsupported rather than
+  receiving a correctness claim.

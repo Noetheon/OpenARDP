@@ -204,12 +204,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f016_governance_and_prior_contracts_are_present_and_frozen(
+def test_f017_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active conformance governance, accepted ADRs and frozen prior contracts."""
+    """Require active mock governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/016-alternate-parser-conformance-spike"
+    assert active["feature_directory"] == "specs/017-microsoft-graph-design-spike"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -247,6 +247,11 @@ def test_f016_governance_and_prior_contracts_are_present_and_frozen(
     )
     assert "Status: Accepted for Feature 014" in f014_adr
     assert "Date: 2026-08-01" in f014_adr
+    f017_adr = (repository_root / "docs/adr/0016-microsoft-graph-mock-design.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Status: Accepted for Feature 017" in f017_adr
+    assert "does not authorize production Graph access" in f017_adr
     assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
     for name, expected in F014_ADDITIVE_SCHEMA_HASHES.items():
         actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()

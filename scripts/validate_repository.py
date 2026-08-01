@@ -125,6 +125,30 @@ _F016_REQUIRED_FILES = (
     "scripts/alternate_evidence_process.py",
     "scripts/validate_alternate_conformance.py",
 )
+_F017_REQUIRED_FILES = (
+    "docs/16_MICROSOFT_GRAPH_DESIGN_SPIKE.md",
+    "docs/adr/0016-microsoft-graph-mock-design.md",
+    "specs/017-microsoft-graph-design-spike/analysis.md",
+    "specs/017-microsoft-graph-design-spike/contracts/connector-contract.md",
+    "specs/017-microsoft-graph-design-spike/contracts/data-protection-assessment.md",
+    "specs/017-microsoft-graph-design-spike/contracts/permission-matrix.md",
+    "specs/017-microsoft-graph-design-spike/contracts/threat-model.md",
+    "specs/017-microsoft-graph-design-spike/data-model.md",
+    "specs/017-microsoft-graph-design-spike/implementation-notes.md",
+    "specs/017-microsoft-graph-design-spike/plan.md",
+    "specs/017-microsoft-graph-design-spike/quickstart.md",
+    "specs/017-microsoft-graph-design-spike/research.md",
+    "specs/017-microsoft-graph-design-spike/spec.md",
+    "specs/017-microsoft-graph-design-spike/tasks.md",
+    "src/openardp/adapters/mock_graph.py",
+    "src/openardp/domain/graph.py",
+    "src/openardp/ports/graph.py",
+    "src/openardp/services/graph_sync.py",
+    "tests/contract/test_graph_ports.py",
+    "tests/domain/test_graph.py",
+    "tests/integration/test_graph_sync.py",
+    "tests/security/test_graph_boundaries.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -633,6 +657,39 @@ def _validate_f016_conformance(root: Path) -> list[Diagnostic]:
     return diagnostics
 
 
+def _validate_f017_design(root: Path) -> list[Diagnostic]:
+    """Require the complete bounded F017 mock design and decision evidence."""
+    diagnostics: list[Diagnostic] = []
+    for relative in _F017_REQUIRED_FILES:
+        if not (root / relative).is_file():
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV016",
+                    relative,
+                    "required F017 mock design artifact is missing",
+                )
+            )
+    decision_path = root / "docs/16_MICROSOFT_GRAPH_DESIGN_SPIKE.md"
+    if decision_path.is_file():
+        decision = decision_path.read_text(encoding="utf-8")
+        required = (
+            "Mock contract architecture: GO",
+            "Production Microsoft Graph connector: NO-GO",
+            "no credential, SDK, network path or production configuration",
+        )
+        if any(statement not in decision for statement in required):
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV017",
+                    "docs/16_MICROSOFT_GRAPH_DESIGN_SPIKE.md",
+                    "F017 mock and production decisions are incomplete",
+                )
+            )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -717,6 +774,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_mcp_fixtures(root))
     diagnostics.extend(_validate_f015_release_inputs(root))
     diagnostics.extend(_validate_f016_conformance(root))
+    diagnostics.extend(_validate_f017_design(root))
     return _sort_diagnostics(root, diagnostics)
 
 

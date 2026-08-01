@@ -23,6 +23,10 @@ openardp = "openardp.interfaces.cli:main"
 docling = [
     "docling==2.114.0",
 ]
+visual = [
+    "Pillow==12.3.0",
+    "pypdfium2==5.12.1",
+]
 
 [dependency-groups]
 dev = [

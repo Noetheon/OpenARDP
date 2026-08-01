@@ -109,3 +109,27 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - Reachability retains relation objects and record/output objects for current, stale,
   failed and superseded history. Missing/corrupt objects are reported; F010 never
   deletes, quarantines or repairs them.
+
+## Feature 011 operating profile
+
+- Core remains free of image/PDF dependencies. Install the exact `visual` extra only
+  for explicit PDF materialization; its reviewed lock adds `pypdfium2==5.12.1` and
+  `Pillow==12.3.0`. Neither package authorizes network or model download.
+- PDF page rasterization is the only concrete renderer. DOCX/PPTX page rendering and
+  built-in OCR/caption providers are unsupported rather than emulated or downloaded.
+- Workspace migration 8 is additive and checksummed. Back up revision 7 before first
+  opening with F011; older software rejects revision 8 and rollback requires restoring
+  that backup, never editing migration rows or CAS content.
+- `visual-materialize DOCUMENT_ID PROJECTION_ID --store PATH` and
+  `visual-evidence VISUAL_ID --store PATH` are identifier-scoped local operations.
+  Outputs/errors contain identifiers, dimensions and stable codes, never image bytes,
+  OCR bodies, source paths or native metadata.
+- Rights default to local-only/export-denied with `license_unverified`. Document or
+  EXIF claims cannot expand them, and any future F014 export must enforce the stored
+  effective policy.
+- A worker/CAS/catalog failure may leave complete unreachable immutable objects but no
+  partial catalog-visible record. Reachability reports missing/corrupt visual roots;
+  cleanup, quarantine and recovery remain F013 responsibilities.
+- Resource isolation is bounded defense in depth. Native decoder risk, platform
+  resource-limit variance and imperfect proprietary-viewer parity are explicit
+  residual risks, not sandbox or fidelity guarantees.

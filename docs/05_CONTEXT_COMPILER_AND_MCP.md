@@ -3,7 +3,8 @@
 **Status:** Feature 008 delivered the deterministic context compiler, the public
 `ContextBundle 0.2.0`, the experimental `SelectionReceipt 0.1.0` and the `context` /
 `context-receipt` CLI verbs documented below. Feature 009 delivers the bounded
-read-only stdio MCP interface documented here; HTTP and visual extraction remain later.
+read-only stdio MCP interface documented here. Feature 011 adds explicit visual
+materialization and verified handle-only context candidates; HTTP remains later.
 
 ## 1. Context compiler objective
 
@@ -13,8 +14,9 @@ top-k vector search.
 ## 2. Delivered selection stages (F008)
 
 1. Resolve each requested document to one exact READY snapshot scope.
-2. Discover lexical candidates from the verified FTS accelerator and the bounded
-   rich-projection scan; every hit is reverified against content-addressed bodies.
+2. Discover lexical candidates from the verified FTS accelerator, the bounded
+   rich-projection scan and already materialized canonical visual descriptors; every
+   candidate is reverified against catalog and content-addressed facts.
 3. Classify freshness, trust zone, sensitivity and duplicates under the declared
    policy into selected-eligible, rejected and stale partitions.
 4. Order candidates by the documented total order (high value, coverage, occurrences,
@@ -31,8 +33,9 @@ byte/character/conservative-token identities.
 ## 3. Evidence rules
 
 - Numeric questions include exact table cells or source text, not only summaries.
-- Visual/layout questions include the relevant image/page crop. Until visual
-  extraction exists, VISUAL mode escalates `visual_evidence_required` honestly.
+- Visual/layout questions select an already materialized descriptor as a
+  `visual_handle`. If none exists for the exact current scope, VISUAL mode preserves
+  `visual_evidence_required`; compilation never invokes a renderer or interpreter.
 - Source-verification questions include source locator and integrity state.
 - Generated summaries are labelled and never presented as quoted source text.
 - Low-confidence OCR includes the original crop.
@@ -77,7 +80,8 @@ are authoritative. Default output is body-free handles plus accounting; only
 `--include-bundle` returns the digest-checked untrusted-data payload. Ordinary commands
 support `--json`; `mcp` reserves stdout for newline-delimited JSON-RPC and accepts no
 CLI JSON envelope switch. Watch, export, import, verification, garbage collection,
-doctor, HTTP and visual tools remain separate work packages.
+doctor and HTTP remain separate work packages. F011 visual CLI operations are explicit
+mutations outside MCP and accept only registered identifiers.
 
 ## 7. Delivered MCP tools — read-only stdio
 
@@ -117,5 +121,7 @@ Descriptors, parameter schemas, bounds and error fixtures live under
 
 Configure a local client to execute `openardp mcp --store /absolute/workspace` over
 stdio. Prefer `get_document_outline` or handle-first `compile_context` before exact
-body tools. Visual evidence is not a delivered F009 tool; callers must preserve the
-compiler's `visual_evidence_required` escalation until Feature 011 exists.
+body tools. Visual evidence is not an MCP tool. F011 lets the unchanged
+`compile_context` tool select a pre-materialized exact descriptor-object handle through
+the existing bundle shape; it still reports `visual_evidence_required` when no current
+record exists and never grants MCP rendering authority.

@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from openardp.adapters.context_candidates import (
     RichLexicalCandidateSource,
     TextLexicalCandidateSource,
+    VisualContextCandidateSource,
 )
 from openardp.adapters.context_estimators import (
     ConservativeTokenEstimator,
@@ -27,6 +28,7 @@ from openardp.adapters.context_estimators import (
 )
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
+from openardp.adapters.isolated_visual import IsolatedVisualRenderer
 from openardp.adapters.local_source import (
     InvalidSourcePath,
     LocalSource,
@@ -38,6 +40,7 @@ from openardp.adapters.local_workspace import (
     WorkspaceError,
     WorkspaceIncompatible,
 )
+from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
 from openardp.domain.common import SCHEMA_VERSION, Sensitivity
 from openardp.domain.context import ContextMode
 from openardp.domain.context_compilation import (
@@ -76,12 +79,21 @@ from openardp.ports.context import (
 )
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, UnsupportedTextMedia
+from openardp.ports.visual import (
+    UnsupportedVisualMedia,
+    VisualConflict,
+    VisualDependencyUnavailable,
+    VisualIntegrityError,
+    VisualResourceLimitExceeded,
+    VisualTargetUnavailable,
+)
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
 from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
+from openardp.services.visual_evidence import VisualEvidenceService
 
 _COMMANDS = {
     "init",
@@ -96,6 +108,8 @@ _COMMANDS = {
     "get-evidence",
     "context",
     "context-receipt",
+    "visual-materialize",
+    "visual-evidence",
     "mcp",
 }
 
@@ -203,6 +217,22 @@ def _parser() -> _ArgumentParser:
     context_receipt.add_argument("receipt_id")
     _common_options(context_receipt)
 
+    visual_materialize = subparsers.add_parser(
+        "visual-materialize",
+        help="materialize one accepted evidence projection as exact visual evidence",
+    )
+    visual_materialize.add_argument("document_id")
+    visual_materialize.add_argument("projection_id")
+    visual_materialize.add_argument("--version")
+    _common_options(visual_materialize)
+
+    visual_evidence = subparsers.add_parser(
+        "visual-evidence",
+        help="inspect one exact verified visual evidence descriptor",
+    )
+    visual_evidence.add_argument("visual_evidence_id")
+    _common_options(visual_evidence)
+
     mcp = subparsers.add_parser(
         "mcp",
         help="serve the bounded read-only MCP interface over stdio",
@@ -306,7 +336,18 @@ def _context_compiler(
                 workspace.catalog,
                 representation_verifier=rich_ingestion.verify_ready_representation,
             ),
+            VisualContextCandidateSource(workspace.object_store, workspace.catalog),
         ),
+    )
+
+
+def _visual_service(workspace: LocalWorkspace) -> VisualEvidenceService:
+    """Compose explicit isolated rendering without granting context compiler authority."""
+    return VisualEvidenceService(
+        workspace.object_store,
+        workspace.catalog,
+        IsolatedVisualRenderer(),
+        LocalOnlyVisualPolicy(),
     )
 
 
@@ -567,6 +608,21 @@ def _execute(arguments: argparse.Namespace) -> object:
         return _context_compile(workspace, arguments)
     if command == "context-receipt":
         return _context_receipt(workspace, arguments)
+    if command == "visual-materialize":
+        document_id = _parse_uuid(str(arguments.document_id))
+        aggregate = workspace.catalog.resolve_ready_representation(
+            document_id,
+            version_id=(str(arguments.version) if arguments.version is not None else None),
+        )
+        if aggregate is None:
+            raise RepresentationNotFound("ready representation does not exist")
+        return _visual_service(workspace).materialize(
+            aggregate.representation.scope,
+            str(arguments.projection_id),
+            created_at=_utc_now(),
+        )
+    if command == "visual-evidence":
+        return _visual_service(workspace).inspect(str(arguments.visual_evidence_id))
     raise _UsageError("invalid command usage")
 
 
@@ -726,6 +782,16 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
             f"rejected={len(converted['rejected'])} stale={len(converted['stale'])} "
             f"truncated={str(converted['truncated']).lower()}"
         )
+    elif command in {"visual-materialize", "visual-evidence"}:
+        assert isinstance(converted, dict)
+        crop = converted["crop_object"]
+        assert isinstance(crop, dict)
+        policy = converted["usage_policy"]
+        assert isinstance(policy, dict)
+        print(f"visual={converted['visual_evidence_id']}")
+        print(f"projection={converted['evidence_projection_id']}")
+        print(f"crop={crop['object_id']} ({crop['byte_length']} bytes)")
+        print(f"usage={policy['scope']} export={str(policy['export_allowed']).lower()}")
     else:
         print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
 
@@ -741,6 +807,8 @@ def _classification(error: Exception) -> tuple[int, str, str]:
         return 2, "invalid_usage", "command usage is invalid"
     if isinstance(error, ContextNotFound):
         return 3, "not_found", "requested evidence was not found"
+    if isinstance(error, VisualTargetUnavailable):
+        return 3, "not_found", "requested visual evidence was not found"
     if isinstance(error, ContextLimitExceeded):
         return 4, "rejected_input", "input was rejected"
     if isinstance(error, (ContextConfigurationMismatch, ContextCompilationCancelled)):
@@ -760,6 +828,9 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             UnsupportedTextMedia,
             ParserError,
             SearchQueryRejected,
+            UnsupportedVisualMedia,
+            VisualDependencyUnavailable,
+            VisualResourceLimitExceeded,
             ValueError,
         ),
     ):
@@ -771,6 +842,7 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             RepresentationConflict,
             RepresentationLeaseConflict,
             AmbiguousBlock,
+            VisualConflict,
         ),
     ):
         return 5, "conflict", "operation conflicts with current state"
@@ -786,6 +858,7 @@ def _classification(error: Exception) -> tuple[int, str, str]:
             SearchIndexDrifted,
             ObjectStoreError,
             CatalogError,
+            VisualIntegrityError,
         ),
     ):
         return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"

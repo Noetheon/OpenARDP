@@ -910,6 +910,97 @@ MIGRATION_7 = Migration(
     ),
 )
 
+MIGRATION_8 = Migration(
+    version=8,
+    name="visual-evidence",
+    statements=(
+        """
+        CREATE TABLE visual_page_rasters (
+            raster_id TEXT PRIMARY KEY CHECK (
+                length(raster_id) = 71 AND substr(raster_id, 1, 7) = 'sha256:'
+                AND substr(raster_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL,
+            representation_id TEXT NOT NULL,
+            page_number INTEGER NOT NULL CHECK (page_number BETWEEN 1 AND 10000),
+            recipe_config_hash TEXT NOT NULL CHECK (
+                length(recipe_config_hash) = 71
+                AND substr(recipe_config_hash, 1, 7) = 'sha256:'
+                AND substr(recipe_config_hash, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            raster_record_object_id TEXT NOT NULL,
+            raster_object_id TEXT NOT NULL,
+            raster_json TEXT NOT NULL CHECK (length(raster_json) BETWEEN 2 AND 1048576),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            UNIQUE (document_id, version_id, representation_id, page_number, recipe_config_hash),
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES rich_accepted_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT,
+            FOREIGN KEY (raster_record_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (raster_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        CREATE TABLE visual_evidence (
+            visual_evidence_id TEXT PRIMARY KEY CHECK (
+                length(visual_evidence_id) = 71
+                AND substr(visual_evidence_id, 1, 7) = 'sha256:'
+                AND substr(visual_evidence_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL,
+            representation_id TEXT NOT NULL,
+            evidence_projection_id TEXT NOT NULL,
+            raster_id TEXT NOT NULL,
+            descriptor_object_id TEXT NOT NULL,
+            crop_object_id TEXT NOT NULL,
+            page_number INTEGER NOT NULL CHECK (page_number BETWEEN 1 AND 10000),
+            granularity TEXT NOT NULL CHECK (
+                granularity IN ('page_exact', 'region_exact', 'cell_exact', 'table_fallback')
+            ),
+            canonical_context_profile INTEGER NOT NULL CHECK (
+                canonical_context_profile IN (0, 1)
+            ),
+            descriptor_json TEXT NOT NULL CHECK (
+                length(descriptor_json) BETWEEN 2 AND 1048576
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            row_fingerprint TEXT NOT NULL CHECK (
+                length(row_fingerprint) = 71
+                AND substr(row_fingerprint, 1, 7) = 'sha256:'
+                AND substr(row_fingerprint, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            UNIQUE (evidence_projection_id, raster_id),
+            FOREIGN KEY (raster_id)
+                REFERENCES visual_page_rasters(raster_id) ON DELETE RESTRICT,
+            FOREIGN KEY (descriptor_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (crop_object_id)
+                REFERENCES objects(object_id) ON DELETE RESTRICT,
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES rich_accepted_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        "CREATE INDEX visual_page_rasters_scope_idx ON visual_page_rasters("
+        "document_id, version_id, representation_id, page_number)",
+        "CREATE INDEX visual_page_rasters_record_object_idx "
+        "ON visual_page_rasters(raster_record_object_id)",
+        "CREATE INDEX visual_page_rasters_raster_object_idx "
+        "ON visual_page_rasters(raster_object_id)",
+        "CREATE INDEX visual_evidence_scope_idx ON visual_evidence("
+        "document_id, version_id, representation_id, evidence_projection_id)",
+        "CREATE INDEX visual_evidence_descriptor_object_idx "
+        "ON visual_evidence(descriptor_object_id)",
+        "CREATE INDEX visual_evidence_crop_object_idx ON visual_evidence(crop_object_id)",
+    ),
+)
+
 MIGRATIONS = (
     MIGRATION_1,
     MIGRATION_2,
@@ -918,6 +1009,7 @@ MIGRATIONS = (
     MIGRATION_5,
     MIGRATION_6,
     MIGRATION_7,
+    MIGRATION_8,
 )
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
@@ -931,5 +1023,6 @@ __all__ = [
     "MIGRATION_5",
     "MIGRATION_6",
     "MIGRATION_7",
+    "MIGRATION_8",
     "Migration",
 ]

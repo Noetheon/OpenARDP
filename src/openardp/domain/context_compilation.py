@@ -331,15 +331,18 @@ ContextEvidenceProvenance = Annotated[
 
 
 class ContextCandidate(DomainModel):
-    """One verified body-bearing candidate before deterministic selection."""
+    """One verified body or handle candidate before deterministic selection."""
 
     evidence_id: EvidenceId
     scope: VersionScope
     provenance: ContextEvidenceProvenance
     representation: EvidenceRepresentation
     source_order: int = Field(strict=True, ge=0, le=MAX_SAFE_INTEGER)
-    body_object: StoredObject
-    body_media_type: MediaType
+    body_object: StoredObject | None = None
+    body_media_type: MediaType | None = None
+    artifact_handle: Annotated[str, StringConstraints(strict=True, min_length=1)] | None = None
+    artifact_id: Sha256Id | None = None
+    cost_object: StoredObject | None = None
     trust: DataTrustClassification
     freshness: CandidateFreshness
     term_coverage: int = Field(strict=True, ge=0, le=MAX_SAFE_INTEGER)
@@ -363,6 +366,25 @@ class ContextCandidate(DomainModel):
         )
         if self.evidence_id != expected:
             raise ValueError("candidate evidence_id does not match provenance")
+        body_shape = self.body_object is not None and self.body_media_type is not None
+        handle_shape = (
+            self.artifact_handle is not None
+            and self.artifact_id is not None
+            and self.cost_object is not None
+        )
+        if body_shape == handle_shape:
+            raise ValueError("candidate requires exactly one complete body or handle payload")
+        if (self.body_object is None) != (self.body_media_type is None):
+            raise ValueError("candidate body object and media type must appear together")
+        if handle_shape:
+            if self.representation is not EvidenceRepresentation.VISUAL_HANDLE:
+                raise ValueError("handle candidate requires visual_handle representation")
+            if self.artifact_handle != self.artifact_id:
+                raise ValueError("visual handle must identify the exact descriptor object")
+            if self.cost_object is None or self.cost_object.object_id != self.artifact_id:
+                raise ValueError("visual candidate cost object must be the descriptor object")
+        elif self.representation is EvidenceRepresentation.VISUAL_HANDLE:
+            raise ValueError("visual_handle representation requires a handle payload")
         return self
 
 

@@ -50,6 +50,18 @@ experimental `MCP interface 0.1.0` is an application contract documented under t
 feature and pinned by canonical protocol fixtures. All eleven generated schema files
 and all three identity-vector files therefore remain byte-identical to Feature 008.
 
+### Feature 011 visual root
+
+| Record | Python model | Schema | Golden fixture | Version field |
+|---|---|---|---|---|
+| Visual Evidence Descriptor | `VisualEvidenceDescriptor` | `visual-evidence-descriptor.schema.json` | `tests/fixtures/visual/contract/valid-descriptor.json` | `contract_version` |
+
+F011 adds this single experimental `0.1.0` root without changing the eleven prior
+schemas. It composes accepted F006 anchors, exact source/native/projection identities,
+a deterministic page-raster recipe, integer crop transform, untrusted-data
+classification and a trusted local/export usage policy. Raster records and catalog
+rows remain internal runtime contracts.
+
 ## Compatibility policy
 
 - Readers accept exactly the explicitly installed schema release `0.1.0`; they do not guess compatibility from a shared minor number.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -12,12 +12,14 @@ import pytest
 from openardp.adapters.context_candidates import (
     RichLexicalCandidateSource,
     TextLexicalCandidateSource,
+    VisualContextCandidateSource,
     lexical_query_items,
 )
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
 from openardp.adapters.local_source import LocalSource
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
 from openardp.adapters.text_parser import TextParserAdapter
+from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
 from openardp.domain.common import (
     ContentRole,
     DataTrustClassification,
@@ -44,11 +46,16 @@ from openardp.services.context_compiler import (
     required_representations,
 )
 from openardp.services.ingestion import IngestionService
+from openardp.services.visual_evidence import VisualEvidenceService
 from tests.integration.test_rich_ingestion import (
     _Clock,
     _Parser,
     _service,
     _TamperingStore,
+)
+from tests.integration.visual_service_support import (
+    CountingVisualRenderer,
+    prepared_visual_service,
 )
 
 NOW = datetime(2026, 7, 26, 12, 0, tzinfo=UTC)
@@ -78,6 +85,49 @@ def _text_services(tmp_path: Path) -> tuple[IngestionService, FilesystemObjectSt
 def _write(path: Path, text: str) -> Path:
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def test_visual_candidate_source_is_exact_stable_bounded_and_cancellable(
+    tmp_path: Path,
+) -> None:
+    """Discover only verified stable handle candidates under exact snapshot and caps."""
+    catalog, store, rich = prepared_visual_service(tmp_path / "visual")
+    visual = VisualEvidenceService(
+        store,
+        catalog,
+        CountingVisualRenderer(),
+        LocalOnlyVisualPolicy(),
+    )
+    for projection in rich.bundle.projections:
+        visual.materialize(
+            rich.bundle.scope,
+            projection.evidence_projection_id,
+            created_at=NOW + timedelta(seconds=2),
+        )
+    snapshot = CorpusSnapshot(
+        scopes=(
+            VersionScope(
+                document_id=rich.bundle.scope.document_id,
+                version_id=rich.bundle.scope.version_id,
+                representation_id=rich.bundle.scope.representation_id,
+            ),
+        ),
+        created_at=NOW,
+    )
+    source = VisualContextCandidateSource(store, catalog)
+    candidates = source.discover("ignored", snapshot, LIMITS, _never_cancel)
+    assert {item.source_order for item in candidates} == {0, 1}
+    assert source.discover("ignored", snapshot, LIMITS, _never_cancel) == candidates
+    assert all(item.body_object is None for item in candidates)
+    with pytest.raises(ContextCompilationCancelled):
+        source.discover("ignored", snapshot, LIMITS, lambda: True)
+    with pytest.raises(ContextLimitExceeded, match="max_discovered"):
+        source.discover(
+            "ignored",
+            snapshot,
+            ContextCompileLimits(max_discovered=1, max_candidates=1),
+            _never_cancel,
+        )
 
 
 def _snapshot_for(catalog: SQLiteCatalog, document_id: UUID) -> CorpusSnapshot:

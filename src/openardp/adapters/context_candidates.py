@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from typing import cast
 from uuid import UUID
 
 from pydantic import JsonValue, ValidationError
@@ -36,11 +37,13 @@ from openardp.domain.search import (
     indexed_text_hash,
 )
 from openardp.domain.storage import StoredObject
+from openardp.domain.visual import VisualEvidenceDescriptor, VisualPageRaster
 from openardp.ports.catalog import (
     Catalog,
     RichCatalog,
     SearchIndexDrifted,
     SearchIndexIncomplete,
+    VisualCatalog,
 )
 from openardp.ports.context import (
     CancellationCheck,
@@ -333,6 +336,128 @@ class RichLexicalCandidateSource:
         )
 
 
+class VisualContextCandidateSource:
+    """Verified bounded discovery of pre-materialized canonical visual handles."""
+
+    def __init__(
+        self,
+        object_store: ObjectStore,
+        catalog: RichCatalog | VisualCatalog,
+    ) -> None:
+        """Bind visual catalog and CAS verification without renderer authority."""
+        self._object_store = object_store
+        self._rich_catalog = cast("RichCatalog", catalog)
+        self._visual_catalog = cast("VisualCatalog", catalog)
+
+    def discover(
+        self,
+        task: str,
+        snapshot: CorpusSnapshot,
+        limits: ContextCompileLimits,
+        cancel: CancellationCheck,
+    ) -> tuple[ContextCandidate, ...]:
+        """Return handle-only candidates pinned to the exact supplied snapshot."""
+        del task
+        if cancel():
+            raise ContextCompilationCancelled("cancelled_before_visual_discovery")
+        candidates: list[ContextCandidate] = []
+        for scope in snapshot.scopes:
+            rich = self._rich_catalog.load_rich_representation(_representation_scope(scope))
+            if rich is None:
+                continue
+            projection_by_id = {
+                projection.evidence_projection_id: projection
+                for projection in rich.bundle.projections
+            }
+            for record in self._visual_catalog.list_visual_evidence(_representation_scope(scope)):
+                if cancel():
+                    raise ContextCompilationCancelled("cancelled_during_visual_verification")
+                if len(candidates) >= limits.max_discovered:
+                    raise ContextLimitExceeded("max_discovered_exceeded")
+                if not record.canonical_context_profile:
+                    continue
+                commit = self._visual_catalog.load_visual_evidence(record.visual_evidence_id)
+                if commit is None:
+                    raise ContextIntegrityFailure("visual_record_missing")
+                descriptor = self._verified_descriptor(commit.descriptor_object)
+                raster = self._verified_raster(commit.raster_record_object)
+                if descriptor != commit.descriptor or raster != commit.page_raster:
+                    raise ContextIntegrityFailure("visual_record_object_mismatch")
+                self._verify_binary(commit.page_raster.raster_object)
+                self._verify_binary(commit.crop_object)
+                projection = projection_by_id.get(descriptor.evidence_projection_id)
+                if (
+                    projection is None
+                    or projection.reference.evidence_reference_id
+                    != descriptor.evidence_reference_id
+                    or projection.reference.anchor != descriptor.target_anchor
+                    or projection.trust != descriptor.trust
+                ):
+                    raise ContextIntegrityFailure("visual_parent_projection_mismatch")
+                provenance = ContextProjectionProvenance(
+                    record_type="evidence_projection",
+                    document_id=scope.document_id,
+                    version_id=scope.version_id,
+                    representation_id=scope.representation_id,
+                    source_version_id=projection.source_version_id,
+                    native_representation_id=projection.native_representation_id,
+                    evidence_reference_id=projection.reference.evidence_reference_id,
+                    evidence_projection_id=projection.evidence_projection_id,
+                )
+                trust = DataTrustClassification(
+                    zone=projection.trust.effective_zone,
+                    role=ContentRole.DATA,
+                    instruction_execution_allowed=False,
+                    integrity=projection.trust.integrity,
+                    sensitivity=projection.trust.sensitivity,
+                )
+                candidates.append(
+                    ContextCandidate(
+                        evidence_id=projection.evidence_projection_id,
+                        scope=scope,
+                        provenance=provenance,
+                        representation=EvidenceRepresentation.VISUAL_HANDLE,
+                        source_order=projection.ordinal,
+                        artifact_handle=record.descriptor_object.object_id,
+                        artifact_id=record.descriptor_object.object_id,
+                        cost_object=record.descriptor_object,
+                        trust=trust,
+                        freshness=CandidateFreshness.CURRENT,
+                        term_coverage=0,
+                        occurrences=0,
+                        reason_code="visual_evidence_materialized",
+                        high_value=False,
+                    )
+                )
+        return tuple(candidates)
+
+    def _verified_descriptor(self, stored: StoredObject) -> VisualEvidenceDescriptor:
+        payload = _read_verified(self._object_store, stored)
+        try:
+            descriptor = validate_json(VisualEvidenceDescriptor, payload)
+        except (ValidationError, ValueError) as error:
+            raise ContextIntegrityFailure("visual_descriptor_invalid") from error
+        if canonical_json_bytes(descriptor.model_dump(mode="json")) != payload:
+            raise ContextIntegrityFailure("visual_descriptor_noncanonical")
+        return descriptor
+
+    def _verified_raster(self, stored: StoredObject) -> VisualPageRaster:
+        payload = _read_verified(self._object_store, stored)
+        try:
+            raster = validate_json(VisualPageRaster, payload)
+        except (ValidationError, ValueError) as error:
+            raise ContextIntegrityFailure("visual_raster_record_invalid") from error
+        if canonical_json_bytes(raster.model_dump(mode="json")) != payload:
+            raise ContextIntegrityFailure("visual_raster_record_noncanonical")
+        return raster
+
+    def _verify_binary(self, stored: StoredObject) -> None:
+        try:
+            self._object_store.verify(stored.object_id, expected_length=stored.byte_length)
+        except ObjectStoreError as error:
+            raise ContextIntegrityFailure("visual_binary_invalid") from error
+
+
 def _snapshot_document_ids(snapshot: CorpusSnapshot) -> tuple[UUID, ...]:
     """Return sorted unique document identifiers of one exact snapshot."""
     return tuple(sorted({scope.document_id for scope in snapshot.scopes}, key=str))
@@ -351,6 +476,7 @@ __all__ = [
     "TEXT_MATCH_REASON",
     "RichLexicalCandidateSource",
     "TextLexicalCandidateSource",
+    "VisualContextCandidateSource",
     "lexical_match_expression",
     "lexical_query_items",
     "lexical_score",

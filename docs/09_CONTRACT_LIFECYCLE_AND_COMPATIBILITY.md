@@ -19,6 +19,13 @@ Readers must reject unsupported major versions and preserve unknown extension da
 
 Every catalog migration is transactional, checksummed, restart-safe and backed by upgrade/downgrade or backup/restore evidence. Opening a newer unsupported workspace must fail without mutation. Rebuildable indexes are migrated separately from authoritative facts.
 
+As of F011 these axes are deliberately independent: application `0.0.1`, workspace
+revision 8, `VisualEvidenceDescriptor 0.1.0`, unchanged F006/F008/F009 contracts and no
+export-format version. Exact renderer dependency/profile versions are identity inputs,
+not application or workspace versions. A breaking visual identity or schema change
+requires a new contract version, fixtures, migration/reset guidance, changelog and ADR;
+it must not be emitted under `0.1.0`.
+
 ## Stabilization gate
 
 No public contract becomes stable through internal declaration or elapsed time. Stabilization requires external-use

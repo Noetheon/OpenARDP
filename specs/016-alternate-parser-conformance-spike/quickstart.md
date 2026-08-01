@@ -12,7 +12,7 @@ From the repository root:
 
 ```bash
 uv run --locked python scripts/validate_alternate_conformance.py --check
-uv run --locked pytest \
+uv run --locked pytest --no-cov \
   tests/contract/test_alternate_conformance.py \
   tests/security/test_alternate_conformance_boundaries.py
 ```

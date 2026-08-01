@@ -34,11 +34,13 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 15 | `015-benchmark-security-release-gate` | Fair baselines, security evidence and a v0.1 go/no-go decision. |
 | 16 | `016-alternate-parser-conformance-spike` | A second minimal parser or consumer proves or falsifies provider-neutral contracts. |
 | 17 | `017-microsoft-graph-design-spike` | Mock-only least-privilege enterprise connector design. |
+| 18 | `018-repository-hygiene` | Measured post-roadmap refactoring, truthful validation and maintainability non-regression. |
 
 ## Dependency rule
 
 A feature begins only after its predecessor converges and merges. Feature 006 defines the minimum contracts required by
-Feature 007. Later features may add fields only through documented contract evolution and migration rules.
+Feature 007. Later features may add fields only through documented contract evolution and migration rules. Feature 018
+is a behavior-preserving maintenance slice after the reviewed product roadmap; it does not authorize a new capability.
 
 ## Scope rule
 

@@ -69,6 +69,7 @@ F005A_FEATURE_SEQUENCE = (
     "015-benchmark-security-release-gate",
     "016-alternate-parser-conformance-spike",
     "017-microsoft-graph-design-spike",
+    "018-repository-hygiene",
 )
 HISTORICAL_FEATURE_PROMPTS = (
     "001-repository-baseline.md",
@@ -204,12 +205,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f017_governance_and_prior_contracts_are_present_and_frozen(
+def test_f018_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active mock governance, accepted ADRs and frozen prior contracts."""
+    """Require active hygiene governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/017-microsoft-graph-design-spike"
+    assert active["feature_directory"] == "specs/018-repository-hygiene"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -252,6 +253,9 @@ def test_f017_governance_and_prior_contracts_are_present_and_frozen(
     )
     assert "Status: Accepted for Feature 017" in f017_adr
     assert "does not authorize production Graph access" in f017_adr
+    assert (repository_root / "spec-kit/feature-prompts/018-repository-hygiene.md").is_file()
+    assert (repository_root / "quality/maintainability-policy.json").is_file()
+    assert (repository_root / "scripts/audit_maintainability.py").is_file()
     assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
     for name, expected in F014_ADDITIVE_SCHEMA_HASHES.items():
         actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
@@ -277,6 +281,49 @@ def test_f017_governance_and_prior_contracts_are_present_and_frozen(
     for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected
+
+
+def test_focused_quickstarts_separate_partial_tests_from_full_coverage(
+    repository_root: Path,
+) -> None:
+    """Keep feature-focused commands runnable without weakening the full coverage gate."""
+    quickstarts = (
+        "010-reconciliation-derivation-dag",
+        "014-export-interchange-experiment",
+        "015-benchmark-security-release-gate",
+        "016-alternate-parser-conformance-spike",
+        "017-microsoft-graph-design-spike",
+        "018-repository-hygiene",
+    )
+    for feature in quickstarts:
+        text = (repository_root / "specs" / feature / "quickstart.md").read_text(encoding="utf-8")
+        assert "pytest --no-cov" in text
+
+
+def test_generated_local_state_is_not_tracked(repository_root: Path) -> None:
+    """Keep caches, environments, coverage and build output outside repository history."""
+    git_executable = shutil.which("git")
+    assert git_executable is not None
+    completed = subprocess.run(  # noqa: S603 -- fixed git command in repository checkout
+        [git_executable, "ls-files"],
+        cwd=repository_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    forbidden_parts = {
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".venv",
+        "dist",
+        "build",
+        "htmlcov",
+    }
+    tracked = tuple(line for line in completed.stdout.splitlines() if line)
+    assert not any(forbidden_parts.intersection(Path(path).parts) for path in tracked)
+    assert not any(path.endswith((".pyc", ".coverage", "coverage.xml")) for path in tracked)
 
 
 def test_required_repository_files_exist(repository_root: Path) -> None:

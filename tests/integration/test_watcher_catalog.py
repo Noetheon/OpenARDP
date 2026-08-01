@@ -87,6 +87,24 @@ def test_candidate_becomes_one_stable_exact_job_at_boundary(tmp_path: Path) -> N
     assert catalog.get_job(job_id).state is JobState.QUEUED  # type: ignore[union-attr]
 
 
+def test_complete_reconciliation_event_order_is_stable(tmp_path: Path) -> None:
+    """Freeze event sequencing across watcher reconciliation helper extraction."""
+    _workspace, root, scanner, catalog, root_id = _setup(
+        tmp_path,
+        config=WatchConfig(stability_ms=0),
+    )
+    (root / "ordered.txt").write_text("ordered", encoding="utf-8")
+    result = _scan(scanner, catalog, root_id, NOW)
+    assert result.entry_count == result.stable_count == 1
+    assert result.candidate_count == result.tombstone_count == 0
+    assert tuple(event.event_type for event in catalog.list_watch_events(root_id)) == (
+        WatchEventType.ROOT_REGISTERED,
+        WatchEventType.OBSERVATION_CREATED,
+        WatchEventType.TARGET_SCHEDULED,
+        WatchEventType.SCAN_COMPLETED,
+    )
+
+
 def test_root_registration_is_idempotent_and_rejects_identity_conflict(tmp_path: Path) -> None:
     """Reuse exact authority and fail closed if the same root id carries different facts."""
     _workspace, _root, _scanner, catalog, root_id = _setup(

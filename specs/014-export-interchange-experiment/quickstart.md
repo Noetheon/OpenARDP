@@ -4,7 +4,7 @@
 
 ```bash
 uv sync --frozen
-uv run pytest \
+uv run pytest --no-cov \
   tests/domain/test_interchange.py \
   tests/contract/test_interchange_port.py \
   tests/integration/test_bagit_interchange.py \

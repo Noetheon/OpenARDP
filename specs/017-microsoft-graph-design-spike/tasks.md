@@ -86,3 +86,7 @@ production adapter or live call is permitted at any phase.
 ## Format validation
 
 All 40 tasks use required checkboxes, sequential IDs, optional `[P]`, user-story labels and paths.
+
+## Phase 7: Convergence
+
+- [x] T041 Correct the documented focused verification command so it passes independently while preserving the separate full-suite coverage gate per SC-009 (partial)

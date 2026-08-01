@@ -15,6 +15,11 @@ acknowledged reclamation, paired recovery, explicit migration and atomic index r
 Feature 014 adds an experimental RFC 8493 BagIt profile for deterministic permitted
 export, offline hostile-package verification and fresh read-only snapshot import. It is
 not a universal format, workspace restore path or authenticity/license guarantee.
+Feature 015 adds the fail-closed release-evidence gate but retains the candidate `NO-GO`.
+Feature 016 proves only bounded evidence-contract neutrality, and Feature 017 remains a
+mock-only Microsoft Graph design with production access at `NO-GO`. Feature 018 is a
+behavior-preserving hygiene pass with a deterministic maintainability guard; it adds no
+runtime capability or release authorization.
 
 ## 1. Read the authoritative rules
 
@@ -43,6 +48,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
 uv run pytest
+uv run python scripts/audit_maintainability.py
 uv run pre-commit run --all-files
 uv run python scripts/validate_repository.py
 uv build
@@ -144,7 +150,7 @@ implementation does not provide a watcher daemon, network-share correctness, sch
 or automatic garbage collection,
 HTTP transport, stable/universal export or Microsoft Graph access. The experimental
 F014 BagIt profile is intentionally versioned and narrower than general BagIt. The
-[005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
+[005A–018 sequence](spec-kit/FEATURE_MAP.md) owns these
 outcomes individually.
 
 Public contracts remain experimental interoperability candidates. Feature 006 publishes
@@ -170,6 +176,11 @@ preserving complete provider-native output.
 - [F012 quickstart](specs/012-local-watcher-and-jobs/quickstart.md)
 - [F013 quickstart](specs/013-retention-recovery-migrations/quickstart.md)
 - [F014 quickstart](specs/014-export-interchange-experiment/quickstart.md)
+- [F015 quickstart](specs/015-benchmark-security-release-gate/quickstart.md)
+- [F016 quickstart](specs/016-alternate-parser-conformance-spike/quickstart.md)
+- [F017 quickstart](specs/017-microsoft-graph-design-spike/quickstart.md)
+- [F018 quickstart](specs/018-repository-hygiene/quickstart.md)
+- [F018 hygiene record](docs/17_CODEBASE_HYGIENE.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

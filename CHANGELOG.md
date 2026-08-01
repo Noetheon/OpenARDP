@@ -5,6 +5,20 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 018 — repository hygiene and maintainability
+
+- Decomposed the release-gate evaluator, CLI command dispatcher and watcher reconciliation
+  transaction behind characterization tests while preserving public results, failure ordering
+  and transactional behavior.
+- Added a deterministic standard-library AST audit with strict policy parsing, explicit
+  monotonic ceilings for reviewed legacy hotspots and repository-validation integration.
+- Corrected focused quickstarts to opt out of the full-suite coverage threshold explicitly,
+  retained the authoritative offline 85 percent branch gate and synchronized current project
+  status without changing dependencies, schemas, migrations, identities or release decisions.
+- Recorded measured improvements and remaining structural debt in
+  [`docs/17_CODEBASE_HYGIENE.md`](docs/17_CODEBASE_HYGIENE.md); this maintenance feature makes
+  no claim that the whole codebase is complexity-free or release-ready.
+
 ### Feature 017 — Microsoft Graph design spike
 
 - Added experimental tenant/site/drive-scoped Graph synchronization contracts with stable

@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+if __package__:
+    from scripts.audit_maintainability import PolicyError, audit_repository, load_policy
+else:
+    from audit_maintainability import PolicyError, audit_repository, load_policy
+
 _EXCLUDED_DIRECTORIES = {
     ".git",
     ".mypy_cache",
@@ -781,7 +786,40 @@ def validate_governance(root: Path) -> list[Diagnostic]:
 def validate_repository(root: Path) -> list[Diagnostic]:
     """Return all offline Markdown and governance findings for a repository."""
     root = Path(os.path.abspath(root))
-    return _sort_diagnostics(root, [*validate_markdown(root), *validate_governance(root)])
+    return _sort_diagnostics(
+        root,
+        [*validate_markdown(root), *validate_governance(root), *_validate_maintainability(root)],
+    )
+
+
+def _validate_maintainability(root: Path) -> list[Diagnostic]:
+    """Project deterministic structural findings into repository diagnostics."""
+    policy_path = root / "quality/maintainability-policy.json"
+    try:
+        findings = audit_repository(root, load_policy(policy_path))
+    except PolicyError as error:
+        return [
+            Diagnostic(
+                path=policy_path,
+                line=1,
+                code="HYG001",
+                target="maintainability-policy",
+                message=str(error),
+            )
+        ]
+    return [
+        Diagnostic(
+            path=root / finding.key.partition(":")[0],
+            line=1,
+            code="HYG002",
+            target=finding.code,
+            message=(
+                f"maintainability limit violated: actual={finding.actual!r}, "
+                f"allowed={finding.allowed!r}"
+            ),
+        )
+        for finding in findings
+    ]
 
 
 def main(argv: Sequence[str] | None = None) -> int:

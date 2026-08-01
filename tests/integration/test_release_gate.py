@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
 from openardp.domain.release import (
     Baseline,
     BenchmarkMetric,
@@ -11,6 +13,7 @@ from openardp.domain.release import (
     BenchmarkPhase,
     EnvironmentProfile,
     EvidenceCheck,
+    EvidenceMalformed,
     EvidenceStatus,
     EvidenceSuite,
     MetricUnit,
@@ -259,6 +262,30 @@ def test_complete_evidence_produces_go_and_consistent_projections() -> None:
     assert report.endswith(b"\n")
     assert not report.endswith(b"\n\n")
     assert "v0.1-release-ready" in build_claim_map(decision)["allowed"]
+    assert tuple(check.check_id for check in decision.checks) == (
+        "platform-completeness",
+        "evidence-identity-agreement",
+        "baseline-completeness",
+        "suite-completeness",
+        "reference-timing-uniqueness",
+        "timing-sample-sufficiency",
+        "raw-reparse-latency-value",
+        "warm-parser-avoidance",
+        "correctness-threshold",
+        "coverage-threshold",
+        "bounded-context-value",
+    )
+
+
+def test_duplicate_platform_evidence_fails_before_gate_checks() -> None:
+    """Keep evidence validation precedence ahead of release policy evaluation."""
+    repeated = _evidence("macos-arm64", reference=True)
+    with pytest.raises(EvidenceMalformed, match="identifiers must be unique"):
+        evaluate_release(
+            policy=_policy(),
+            evidence=(repeated, repeated),
+            decision_at=datetime(2026, 8, 1, tzinfo=UTC),
+        )
 
 
 def test_missing_platform_and_baseline_produce_no_go() -> None:

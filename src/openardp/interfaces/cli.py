@@ -1260,8 +1260,31 @@ def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
     }
 
 
+_UNHANDLED = object()
+
+
 def _execute(arguments: argparse.Namespace) -> object:
+    """Dispatch one parsed command through its bounded command family."""
     command = str(arguments.command)
+    result = _execute_standalone(arguments, command)
+    if result is not _UNHANDLED:
+        return result
+    workspace = LocalWorkspace.open(Path(arguments.store))
+    for handler in (
+        _execute_watch_jobs,
+        _execute_maintenance,
+        _execute_ingestion,
+        _execute_query,
+        _execute_evidence,
+    ):
+        result = handler(workspace, arguments, command)
+        if result is not _UNHANDLED:
+            return result
+    raise _UsageError("invalid command usage")
+
+
+def _execute_standalone(arguments: argparse.Namespace, command: str) -> object:
+    """Execute commands that do not open an existing workspace."""
     if command == "release-evidence":
         return _release_evidence(arguments)
     if command == "release-gate":
@@ -1294,25 +1317,31 @@ def _execute(arguments: argparse.Namespace) -> object:
             Path(arguments.destination),
             now=_utc_now(),
         )
-    store = Path(arguments.store)
     if command == "init":
-        workspace = LocalWorkspace.initialize(store, now=_utc_now())
+        workspace = LocalWorkspace.initialize(Path(arguments.store), now=_utc_now())
         return {
             "catalog_schema_version": workspace.catalog.schema_version(),
             "root": str(workspace.root),
         }
     if command == "workspace-migrate":
-        migrated = LocalWorkspace.migrate(
-            store,
+        workspace = LocalWorkspace.migrate(
+            Path(arguments.store),
             Path(arguments.backup_destination),
             now=_utc_now(),
         )
         return {
-            "catalog_schema_version": migrated.catalog.schema_version(),
-            "root": str(migrated.root),
+            "catalog_schema_version": workspace.catalog.schema_version(),
+            "root": str(workspace.root),
         }
+    return _UNHANDLED
 
-    workspace = LocalWorkspace.open(store)
+
+def _execute_watch_jobs(
+    workspace: LocalWorkspace,
+    arguments: argparse.Namespace,
+    command: str,
+) -> object:
+    """Execute foreground watch and durable job commands."""
     if command == "workspace-backup":
         return workspace.backup(Path(arguments.destination), now=_utc_now())
     if command == "watch":
@@ -1338,6 +1367,15 @@ def _execute(arguments: argparse.Namespace) -> object:
             now=_utc_now(),
         )
         return _job_summary(job)
+    return _UNHANDLED
+
+
+def _execute_maintenance(
+    workspace: LocalWorkspace,
+    arguments: argparse.Namespace,
+    command: str,
+) -> object:
+    """Execute storage maintenance and index-rebuild commands."""
     if command == "storage-inventory":
         return _maintenance_service(workspace).inventory(
             policy=_retention_policy(arguments),
@@ -1413,39 +1451,56 @@ def _execute(arguments: argparse.Namespace) -> object:
             ),
             now=_utc_now(),
         )
-    if command == "ingest":
-        source = Path(arguments.path)
-        media_type = LocalSource(source).media_type
-        if isinstance(media_type, RichMediaType):
-            rich_ingestion, _evidence = _rich_services(
-                workspace,
-                model_root=(
-                    Path(arguments.docling_model_root)
-                    if arguments.docling_model_root is not None
-                    else None
-                ),
-                model_manifest_path=(
-                    Path(arguments.docling_model_manifest)
-                    if arguments.docling_model_manifest is not None
-                    else None
-                ),
-            )
-            return rich_ingestion.ingest(
-                source,
-                profile=(
-                    str(arguments.profile)
-                    if arguments.profile is not None
-                    else rich_ingestion.recipe.parser.profile
-                ),
-                force=bool(arguments.force),
-            )
-        ingestion, _query, _search = _services(workspace)
-        return ingestion.ingest(
+    return _UNHANDLED
+
+
+def _execute_ingestion(
+    workspace: LocalWorkspace,
+    arguments: argparse.Namespace,
+    command: str,
+) -> object:
+    """Execute text or rich ingestion while preserving profile selection."""
+    if command != "ingest":
+        return _UNHANDLED
+    source = Path(arguments.path)
+    media_type = LocalSource(source).media_type
+    if isinstance(media_type, RichMediaType):
+        rich_ingestion, _evidence = _rich_services(
+            workspace,
+            model_root=(
+                Path(arguments.docling_model_root)
+                if arguments.docling_model_root is not None
+                else None
+            ),
+            model_manifest_path=(
+                Path(arguments.docling_model_manifest)
+                if arguments.docling_model_manifest is not None
+                else None
+            ),
+        )
+        return rich_ingestion.ingest(
             source,
-            profile=str(arguments.profile) if arguments.profile is not None else "default",
+            profile=(
+                str(arguments.profile)
+                if arguments.profile is not None
+                else rich_ingestion.recipe.parser.profile
+            ),
             force=bool(arguments.force),
         )
+    ingestion, _query, _search = _services(workspace)
+    return ingestion.ingest(
+        source,
+        profile=str(arguments.profile) if arguments.profile is not None else "default",
+        force=bool(arguments.force),
+    )
 
+
+def _execute_query(
+    workspace: LocalWorkspace,
+    arguments: argparse.Namespace,
+    command: str,
+) -> object:
+    """Execute document navigation and lexical search commands."""
     _ingestion, query, search = _services(workspace)
     if command == "list":
         return query.list_documents()
@@ -1474,6 +1529,15 @@ def _execute(arguments: argparse.Namespace) -> object:
         return search.reindex(
             document=str(arguments.document) if arguments.document is not None else None,
         )
+    return _UNHANDLED
+
+
+def _execute_evidence(
+    workspace: LocalWorkspace,
+    arguments: argparse.Namespace,
+    command: str,
+) -> object:
+    """Execute rich, context and visual evidence commands."""
     if command == "evidence":
         _rich_ingestion, evidence = _rich_services(workspace)
         return evidence.list(
@@ -1507,7 +1571,7 @@ def _execute(arguments: argparse.Namespace) -> object:
         )
     if command == "visual-evidence":
         return _visual_service(workspace).inspect(str(arguments.visual_evidence_id))
-    raise _UsageError("invalid command usage")
+    return _UNHANDLED
 
 
 def _parse_uuid(value: str) -> UUID:

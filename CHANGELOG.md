@@ -5,6 +5,19 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 017 — Microsoft Graph design spike
+
+- Added experimental tenant/site/drive-scoped Graph synchronization contracts with stable
+  item-ID digests, remote revision hints, complete permission-snapshot references and explicit
+  tombstones while excluding raw provider IDs, paths, names, cursors and secrets.
+- Added deterministic zero-network delta/state mocks and bounded whole-cycle orchestration for
+  pagination, last-occurrence-wins reduction, 410 reset, throttling and atomic final-cursor/state
+  publication, plus constant-time wakeup-only notification validation.
+- Added an official-source research record, permission matrix, threat model, data-protection
+  assessment and ADR. The mock architecture is `GO`; a production Microsoft Graph connector
+  remains `NO-GO` pending tenant isolation, live least-privilege evidence and operational,
+  privacy, release and security controls.
+
 ### Feature 016 — alternate parser conformance spike
 
 - Added a bounded standard-library evidence consumer that runs under Python isolated/no-site

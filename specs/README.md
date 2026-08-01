@@ -41,7 +41,8 @@ refine those decisions but may not silently contradict them.
 | `013-retention-recovery-migrations` | Verified backups, revision-9 migration, retention, quarantine, restore and explicit reclamation | Converged, merged and remotely verified |
 | `014-export-interchange-experiment` | Deterministic bounded BagIt exchange profile, hostile verification and fresh read-only import | Converged, merged and remotely verified |
 | `015-benchmark-security-release-gate` | Frozen benchmarks, security/supply-chain/reproduction evidence and fail-closed v0.1 gate | Converged, merged and remotely verified; candidate remains `NO-GO` |
-| `016-alternate-parser-conformance-spike` | Isolated independent evidence consumer, non-Docling TXT/CSV producer and bounded neutrality decision | Implemented; scoped claim supported, contract remains experimental |
+| `016-alternate-parser-conformance-spike` | Isolated independent evidence consumer, non-Docling TXT/CSV producer and bounded neutrality decision | Converged, merged and remotely verified; scoped claim supported, contract remains experimental |
+| `017-microsoft-graph-design-spike` | Mock-only tenant-scoped delta, permission, tombstone, retry and notification architecture | Implemented; mock architecture `GO`, production connector `NO-GO` |
 
 ## Release evidence registry
 

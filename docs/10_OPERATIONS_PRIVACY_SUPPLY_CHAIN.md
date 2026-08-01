@@ -1,7 +1,7 @@
 # Operations, privacy and supply-chain baseline
 
-**Status:** Active policy and future acceptance requirements. Feature 013 delivers the
-local retention/recovery controls described below; Feature 015 owns release evidence.
+**Status:** Active policy and future acceptance requirements. Features 013 and 014
+deliver local recovery and bounded interchange controls; Feature 015 owns release evidence.
 
 ## v0.1 deployment boundary
 
@@ -125,8 +125,8 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
   Outputs/errors contain identifiers, dimensions and stable codes, never image bytes,
   OCR bodies, source paths or native metadata.
 - Rights default to local-only/export-denied with `license_unverified`. Document or
-  EXIF claims cannot expand them, and any future F014 export must enforce the stored
-  effective policy.
+  EXIF claims cannot expand them, and F014 export requires an independent affirmative
+  redistribution assertion for every included source/provider-native asset.
 - A worker/CAS/catalog failure may leave complete unreachable immutable objects but no
   partial catalog-visible record. Reachability reports missing/corrupt visual roots;
   cleanup, quarantine and recovery remain F013 responsibilities.
@@ -163,3 +163,18 @@ is irreversible logical removal and requires the named batch plus
 it. Run `workspace-backup` before risky work and periodically drill a
 `workspace-restore` to a fresh disjoint path. Diagnostics and audit output contain only
 opaque identifiers, closed states, counts, bytes and UTC times.
+
+# Feature 014 interchange operations
+
+`package-export`, `package-verify` and `package-import` are explicit local operator
+actions and never run from MCP, watching, startup, document content or retention.
+Export request files may contain local source paths, but those paths exist only at the
+trusted composition root and never enter package metadata/results. Every included asset
+requires affirmative redistribution assertion; unknown permission stays referenced or
+omitted.
+
+Verification is offline and bounded. `fetch.txt`, remote contexts, plugins, providers,
+compression, encryption and nested archives are unsupported. Import targets an absent
+disjoint local directory and publishes a read-only snapshot only after full preflight,
+copy and rehash. This is inspection/interchange, not workspace restore or authenticity/
+license verification.

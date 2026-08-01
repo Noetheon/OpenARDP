@@ -1,8 +1,9 @@
 # OpenARDP interchange schemas
 
-This directory contains two independently governed JSON Schema Draft 2020-12
-families. The original F002 roots remain schema release `0.1.0`; F006 adds experimental
-evidence contract `0.1.0`. The Pydantic models under `src/openardp/domain/` are the
+This directory contains independently governed JSON Schema Draft 2020-12 families.
+The original F002 roots remain schema release `0.1.0`; F006 adds experimental evidence
+contract `0.1.0`; F014 adds an independent experimental package record/profile `0.1.0`.
+The Pydantic models under `src/openardp/domain/` are the
 executable authoring source; committed schemas are the provider-neutral interchange
 source that other implementations can consume without importing Python.
 
@@ -62,6 +63,18 @@ a deterministic page-raster recipe, integer crop transform, untrusted-data
 classification and a trusted local/export usage policy. Raster records and catalog
 rows remain internal runtime contracts.
 
+### Feature 014 interchange root
+
+| Record | Python model | Schema | Golden fixture | Version field |
+|---|---|---|---|---|
+| Interchange Package | `InterchangePackage` | `openardp-interchange-package.schema.json` | `conformance/interchange/v0.1.0/valid/minimal.zip` (`openardp-package.json`) | `schema_version` |
+
+F014 adds this closed canonical root under independent export profile `0.1.0` without
+changing any prior schema bytes or workspace revision 10. It carries sorted portable
+records/assets/relationships, explicit asset dispositions, data-only trust and declared
+JSON extension handling. Cross-record endpoint/cycle, recomputed package identity and
+BagIt inventory agreement remain executable validator invariants.
+
 ## Compatibility policy
 
 - Readers accept exactly the explicitly installed schema release `0.1.0`; they do not guess compatibility from a shared minor number.
@@ -89,6 +102,7 @@ JSON Schema deliberately expresses only portable structural constraints. Cross-f
 | Every evidence scope is pinned in the same context bundle | Record model |
 | Parent block exists in the same representation | Aggregate/service in a later feature |
 | Required relation graph properties hold across records | Aggregate/service in F010 |
+| Package identity, relationship endpoints/cycles and BagIt inventory agree | F014 record/validator |
 
 F006 additionally enforces declared native/reference/projection identities, fixed-point
 page and table geometry, bounded opaque pointers, projection/reference scope, trust

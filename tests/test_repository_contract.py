@@ -130,6 +130,11 @@ F009_FROZEN_DESCRIPTOR_HASHES = {
         "7ebcfc4e348f8c3d6f247491673a3724d383ceec12a859d05e87e0df2f57a76d"
     ),
 }
+F014_ADDITIVE_SCHEMA_HASHES = {
+    "openardp-interchange-package.schema.json": (
+        "541f8a708886006bc7c8984b51fdd9b0356dcb59582fa0e2cf1600d44b7a073b"
+    ),
+}
 
 
 def _project_configuration(repository_root: Path) -> dict[str, Any]:
@@ -189,12 +194,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f013_governance_and_prior_contracts_are_present_and_frozen(
+def test_f014_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active maintenance governance, accepted ADRs and frozen contracts."""
+    """Require active interchange governance, accepted ADRs and frozen contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/013-retention-recovery-migrations"
+    assert active["feature_directory"] == "specs/014-export-interchange-experiment"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -227,8 +232,16 @@ def test_f013_governance_and_prior_contracts_are_present_and_frozen(
     )
     assert "Status: Accepted for Feature 013" in f013_adr
     assert "Date: 2026-08-01" in f013_adr
+    f014_adr = (repository_root / "docs/adr/0015-bagit-interchange-profile.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Status: Accepted for Feature 014" in f014_adr
+    assert "Date: 2026-08-01" in f014_adr
     assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
-    assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 12
+    for name, expected in F014_ADDITIVE_SCHEMA_HASHES.items():
+        actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
+        assert actual == expected
+    assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 13
     migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
         encoding="utf-8"
     )

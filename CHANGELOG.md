@@ -5,6 +5,18 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 014 — export and interchange experiment
+
+- Selected RFC 8493 BagIt 1.0 plus an experimental OpenARDP profile `0.1.0` after an
+  evidence matrix covering RO-Crate 1.2, OCFL 1.1, BagIt and a custom archive; no
+  `.ardp` suffix or universal-format claim was introduced.
+- Added deterministic stored-ZIP export, complete offline hostile-package verification,
+  fresh read-only snapshot import, explicit permitted-asset dispositions and body-free
+  `package-export`, `package-verify` and `package-import` CLI operations.
+- Added a strict public interchange JSON Schema plus three valid and thirty-eight invalid
+  deterministic cross-platform vectors covering versions, paths, ZIP metadata,
+  resources, extensions, relationships, trust and integrity.
+
 ### Feature 013 — retention, recovery and migrations
 
 - Added SQLite revision 10 maintenance intent, complete retention roots, operator holds,

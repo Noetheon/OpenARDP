@@ -26,6 +26,19 @@ Demonstrate that persistent context, invalidation, token-bounded packages, prove
 - C2PA concepts for separating integrity, authenticity, trust and truth;
 - MCP as an access protocol, not storage format.
 
+## F014 packaging review (2026-08-01)
+
+- BagIt RFC 8493 / 1.0: selected for directory and exhaustive payload-fixity semantics.
+- BagIt Profiles 1.4.0: selected for declaring the narrow OpenARDP profile.
+- RO-Crate 1.2: retained as a future additive semantic mapping; not selected as the
+  exhaustive fixity layer.
+- OCFL 1.1: rejected for a finite snapshot because its durable repository/version
+  layout exceeds the exchange need.
+- Minimal custom archive: rejected because BagIt plus a profile tag closes the gap.
+
+The accepted evidence, deviations and revisit conditions are in
+[`adr/0015-bagit-interchange-profile.md`](adr/0015-bagit-interchange-profile.md).
+
 ## Claims discipline
 
 Allowed:

@@ -1,0 +1,192 @@
+{
+  "invalid": [
+    {
+      "error": "policy_rejected",
+      "path": "invalid/absolute.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_archive_bytes": 1048576
+      },
+      "path": "invalid/archive-limit.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/case-collision.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/comment.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/compressed.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/control-path.zip"
+    },
+    {
+      "error": "integrity_invalid",
+      "path": "invalid/corrupt-payload.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/credential-license.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/descriptor-flag.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/device-mode.zip"
+    },
+    {
+      "error": "malformed_package",
+      "path": "invalid/duplicate.zip"
+    },
+    {
+      "error": "malformed_package",
+      "path": "invalid/duplicate-object-id.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/encrypted-flag.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_entry_count": 6
+      },
+      "path": "invalid/entry-count-limit.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_entry_bytes": 1024
+      },
+      "path": "invalid/entry-limit.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_expanded_bytes": 1048576
+      },
+      "path": "invalid/expanded-limit.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/extension-rejected.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/link-mode.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/local-reference.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_metadata_bytes": 65536
+      },
+      "path": "invalid/metadata-limit.zip"
+    },
+    {
+      "error": "malformed_package",
+      "path": "invalid/missing-tag.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/nested-archive.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/non-nfc-path.zip"
+    },
+    {
+      "error": "malformed_package",
+      "path": "invalid/not-zip.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_path_bytes": 64
+      },
+      "path": "invalid/path-byte-limit.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_path_depth": 4
+      },
+      "path": "invalid/path-depth-limit.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/redistribution-not-asserted.zip"
+    },
+    {
+      "error": "resource_exhausted",
+      "limits": {
+        "max_relationships": 1
+      },
+      "path": "invalid/relationship-limit.zip"
+    },
+    {
+      "error": "relationship_invalid",
+      "path": "invalid/relationship-cycle.zip"
+    },
+    {
+      "error": "relationship_invalid",
+      "path": "invalid/relationship-missing.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/reserved-path.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/traversal.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/trust-elevation.zip"
+    },
+    {
+      "error": "policy_rejected",
+      "path": "invalid/undeclared-entry.zip"
+    },
+    {
+      "error": "malformed_package",
+      "path": "invalid/unknown-field.zip"
+    },
+    {
+      "error": "unsupported_version",
+      "path": "invalid/unsupported-record-version.zip"
+    },
+    {
+      "error": "unsupported_version",
+      "path": "invalid/unsupported-schema-version.zip"
+    },
+    {
+      "error": "unsupported_version",
+      "path": "invalid/unsupported-version.zip"
+    }
+  ],
+  "profile_version": "0.1.0",
+  "valid": [
+    {
+      "path": "valid/minimal.zip"
+    },
+    {
+      "path": "valid/preserved-extension.zip"
+    },
+    {
+      "path": "valid/referenced-only.zip"
+    }
+  ]
+}

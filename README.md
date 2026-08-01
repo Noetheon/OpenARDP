@@ -42,7 +42,9 @@ plus explicit visual escalation in
 foreground local watcher in
 [`012-local-watcher-and-jobs`](specs/012-local-watcher-and-jobs/spec.md), followed by
 verified retention and recovery in
-[`013-retention-recovery-migrations`](specs/013-retention-recovery-migrations/spec.md):
+[`013-retention-recovery-migrations`](specs/013-retention-recovery-migrations/spec.md),
+and the experimental BagIt exchange profile in
+[`014-export-interchange-experiment`](specs/014-export-interchange-experiment/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -105,6 +107,10 @@ verified retention and recovery in
   revision-10 migration with a recorded pre-upgrade manifest;
 - body-free storage diagnostics, exact reserve admission and an all-or-prior global
   lexical-index rebuild derived from verified READY evidence.
+- experimental BagIt profile `0.1.0` with deterministic stored-ZIP export, hostile
+  package verification, fresh read-only snapshot import and no custom `.ardp` suffix;
+- a strict public interchange schema and offline deterministic valid/invalid vector
+  corpus covering integrity, paths, resource bounds, compatibility and trust.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. F012 watching is a
@@ -112,8 +118,9 @@ foreground polling process over one explicitly supplied local root; it is not a 
 does not guarantee remote/network filesystems and adds no MCP mutation. F013 never
 deletes automatically: irreversible removal requires a named expired quarantine batch
 and a separate acknowledgement. There is no cloud connector, scheduled garbage
-collection, HTTP transport or stable custom export
-format yet. PDF is the only concrete F011 visual renderer; DOCX/PPTX page rendering,
+collection, HTTP transport or stable/universal custom export format. F014 is an
+explicitly experimental BagIt profile and does not merge into a live workspace. PDF is
+the only concrete F011 visual renderer; DOCX/PPTX page rendering,
 built-in OCR/caption models and automatic materialization remain unsupported. F010 also
 does not schedule reconciliation or execute generators; callers explicitly supply two
 READY scopes and already-generated output bytes. Those remain separate work packages in the
@@ -162,6 +169,11 @@ openardp storage-diagnostics --store .openardp --json
 openardp workspace-backup --store .openardp --destination ../openardp-backup
 openardp index-rebuild --store .openardp --json
 openardp mcp --store .openardp
+openardp package-export --request ./synthetic-export-request.json \
+  --destination ./synthetic-package.zip --json
+openardp package-verify --package ./synthetic-package.zip --json
+openardp package-import --package ./synthetic-package.zip \
+  --destination ./synthetic-imported-snapshot --json
 ```
 
 PDF additionally requires `--docling-model-root` and
@@ -176,9 +188,11 @@ bodies, always inside delimited untrusted-data envelopes. Search returns bounded
 verified snippets. Receipts, default `context` output, logs and error envelopes never
 contain the task string, evidence bodies or source paths. Replay reuses the recorded
 exact snapshot and fails with a stable mismatch error instead of recompiling silently.
-Every command except `init` requires an explicitly initialized
-compatible workspace; commands do not search parent directories or create state
-implicitly.
+Every workspace command except `init` requires an explicitly initialized compatible
+workspace; package commands are intentionally workspace-independent and use only their
+explicit local request/package/destination. Commands do not search parent directories
+or create workspace state implicitly. Package request source paths never enter package
+metadata/results, and included bytes require affirmative redistribution assertions.
 
 ## Validation and build
 

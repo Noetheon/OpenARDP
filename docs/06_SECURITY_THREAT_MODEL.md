@@ -133,3 +133,21 @@ all external providers disabled unless policy-approved.
 No prompt-injection filter can guarantee that a general-purpose model will never be influenced by untrusted natural
 language. The architecture reduces authority and separates data from instructions; it does not claim perfect prevention.
 Likewise, a portable worker process is not a universal strong sandbox.
+
+## Feature 014 hostile interchange packages
+
+An F014 archive, every metadata field, license assertion, reference, source byte and
+derived record is attacker-controlled data. Verification never calls `extract`, fetches
+BagIt `fetch.txt`, resolves JSON-LD contexts, executes content or loads a plugin/provider.
+The strict reader rejects non-canonical ZIP metadata, compression, encryption, data
+descriptors, links/devices, nested archives, duplicate/undeclared members, traversal,
+absolute/reserved/ambiguous normalized paths, unsupported versions and relationship or
+digest conflicts. Count, archive/expanded/per-entry/metadata byte and path/relationship
+limits are checked before publication.
+
+Successful SHA-256 verification proves equality with the package inventory only. It is
+not authenticity, truth, ownership, permission, license, safety or trust evidence.
+Import publishes only a fresh disjoint read-only snapshot after complete staging
+reverification; it does not mutate an existing workspace. Local privileged-user races,
+remote/shared filesystem semantics and absence of signatures remain explicit residual
+risks.

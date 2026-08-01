@@ -30,3 +30,24 @@ The validator confines manifest paths to the fixture tree and imports only stric
 contracts. It does not import adapters, dereference provider pointers, read source
 documents, contact a network service, or claim that a second provider has implemented
 the contract. Feature 016 still owns that falsification test.
+
+## Experimental interchange profile 0.1.0
+
+[`interchange/v0.1.0/`](interchange/v0.1.0/) contains three valid deterministic BagIt
+profile packages and thirty-eight invalid packages covering malformed ZIPs, compression,
+comments, traversal/absolute/reserved/non-normalized/colliding paths,
+duplicate/missing/undeclared members, link/device/encryption/descriptor metadata,
+payload digests, profile and record versions, local-reference and permission/license/trust rules,
+extensions, relationships, nested archives and resource bounds.
+
+Run the drift check and the workspace-independent validator offline:
+
+```bash
+uv run python scripts/generate_interchange_vectors.py --check
+uv run python scripts/validate_interchange_package.py \
+  conformance/interchange/v0.1.0/valid/minimal.zip
+```
+
+This is OpenARDP experimental-profile evidence, not a claim that arbitrary BagIt or
+RO-Crate packages conform. Feature 016 still owns an independent alternate producer or
+consumer.

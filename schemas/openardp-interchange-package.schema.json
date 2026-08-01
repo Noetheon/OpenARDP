@@ -1,0 +1,380 @@
+{
+  "$defs": {
+    "AssetDisposition": {
+      "description": "Closed byte-distribution decision.",
+      "enum": [
+        "included",
+        "referenced",
+        "omitted"
+      ],
+      "title": "AssetDisposition",
+      "type": "string"
+    },
+    "AssetRole": {
+      "description": "Independent original/provider-native asset roles.",
+      "enum": [
+        "source",
+        "provider_native"
+      ],
+      "title": "AssetRole",
+      "type": "string"
+    },
+    "DataTrustClassification": {
+      "additionalProperties": false,
+      "description": "Trust metadata for content that must remain non-authoritative data.",
+      "properties": {
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "zone": {
+          "$ref": "#/$defs/TrustZone"
+        }
+      },
+      "required": [
+        "zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "DataTrustClassification",
+      "type": "object"
+    },
+    "ExtensionPolicy": {
+      "description": "Closed handling of explicitly namespaced JSON extensions.",
+      "enum": [
+        "reject",
+        "preserve"
+      ],
+      "title": "ExtensionPolicy",
+      "type": "string"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "OmissionReason": {
+      "description": "Body-free reason for absent portable bytes.",
+      "enum": [
+        "permission_unknown",
+        "redistribution_prohibited",
+        "operator_excluded",
+        "not_available"
+      ],
+      "title": "OmissionReason",
+      "type": "string"
+    },
+    "PortableAsset": {
+      "additionalProperties": false,
+      "description": "Exact asset identity plus explicit distribution policy.",
+      "properties": {
+        "byte_length": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "disposition": {
+          "$ref": "#/$defs/AssetDisposition"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "license_assertion": {
+          "anyOf": [
+            {
+              "maxLength": 1024,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "License Assertion"
+        },
+        "media_type": {
+          "maxLength": 255,
+          "minLength": 3,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "object_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "omission_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OmissionReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload_path": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payload Path"
+        },
+        "redistribution_asserted": {
+          "default": false,
+          "title": "Redistribution Asserted",
+          "type": "boolean"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "role": {
+          "$ref": "#/$defs/AssetRole"
+        }
+      },
+      "required": [
+        "object_id",
+        "byte_length",
+        "media_type",
+        "role",
+        "disposition"
+      ],
+      "title": "PortableAsset",
+      "type": "object"
+    },
+    "PortableRecord": {
+      "additionalProperties": false,
+      "description": "Thin provider-neutral record carried by one package.",
+      "properties": {
+        "contract_version": {
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Facts",
+          "type": "object"
+        },
+        "record_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Record Id",
+          "type": "string"
+        },
+        "record_type": {
+          "$ref": "#/$defs/PortableRecordType"
+        },
+        "trust": {
+          "$ref": "#/$defs/DataTrustClassification"
+        }
+      },
+      "required": [
+        "record_type",
+        "contract_version",
+        "record_id",
+        "trust"
+      ],
+      "title": "PortableRecord",
+      "type": "object"
+    },
+    "PortableRecordType": {
+      "description": "Portable thin-record families admitted by profile 0.1.0.",
+      "enum": [
+        "source",
+        "native_projection",
+        "evidence_projection",
+        "derivation"
+      ],
+      "title": "PortableRecordType",
+      "type": "string"
+    },
+    "PortableRelationship": {
+      "additionalProperties": false,
+      "description": "One closed portable relationship between record/asset identities.",
+      "properties": {
+        "object_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "predicate": {
+          "$ref": "#/$defs/RelationshipPredicate"
+        },
+        "subject_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Subject Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "predicate",
+        "object_id"
+      ],
+      "title": "PortableRelationship",
+      "type": "object"
+    },
+    "RelationshipPredicate": {
+      "description": "Portable relationship vocabulary.",
+      "enum": [
+        "describes",
+        "projects",
+        "derived_from",
+        "uses_asset",
+        "has_native_asset"
+      ],
+      "title": "RelationshipPredicate",
+      "type": "string"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/interchange-package-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Identity-bearing canonical OpenARDP tag record.",
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/PortableAsset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "extension_policy": {
+      "$ref": "#/$defs/ExtensionPolicy"
+    },
+    "extensions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "identity_algorithm": {
+      "const": "sha256-rfc8785-v1",
+      "title": "Identity Algorithm",
+      "type": "string"
+    },
+    "package_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Package Id",
+      "type": "string"
+    },
+    "profile_version": {
+      "const": "0.1.0",
+      "title": "Profile Version",
+      "type": "string"
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/PortableRecord"
+      },
+      "title": "Records",
+      "type": "array"
+    },
+    "relationships": {
+      "items": {
+        "$ref": "#/$defs/PortableRelationship"
+      },
+      "title": "Relationships",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Scope Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "profile_version",
+    "schema_version",
+    "package_id",
+    "identity_algorithm",
+    "scope_id",
+    "extension_policy",
+    "records",
+    "assets",
+    "relationships"
+  ],
+  "title": "Experimental OpenARDP Interchange Package",
+  "type": "object",
+  "x-openardp-export-profile-version": "0.1.0"
+}

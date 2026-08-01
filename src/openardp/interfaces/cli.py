@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import BinaryIO, NoReturn, cast
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
+from openardp.adapters.bagit_interchange import LocalAssetSource
 from openardp.adapters.context_candidates import (
     RichLexicalCandidateSource,
     TextLexicalCandidateSource,
@@ -51,6 +52,7 @@ from openardp.domain.context_compilation import (
     ContextSelectionPolicy,
 )
 from openardp.domain.ingestion import RichMediaType
+from openardp.domain.interchange import AssetDisposition, InterchangeLimits, InterchangePackage
 from openardp.domain.maintenance import InventoryLimits, ReclamationPlan, RetentionPolicy
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
@@ -86,6 +88,18 @@ from openardp.ports.context import (
     ContextLimitExceeded,
     ContextNotFound,
 )
+from openardp.ports.interchange import (
+    InterchangeDestinationConflict,
+    InterchangeError,
+    InterchangeIntegrityInvalid,
+    InterchangePolicyRejected,
+    InterchangePublicationFailed,
+    InterchangeRelationshipInvalid,
+    InterchangeResourceExceeded,
+    InterchangeSourceChanged,
+    MalformedPackage,
+    UnsupportedInterchangeVersion,
+)
 from openardp.ports.maintenance import InsufficientSpace, MaintenanceError
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
@@ -108,6 +122,7 @@ from openardp.ports.watcher import (
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
+from openardp.services.interchange import InterchangeService
 from openardp.services.maintenance import (
     IRREVERSIBLE_ACKNOWLEDGEMENT,
     MaintenanceService,
@@ -150,6 +165,9 @@ _COMMANDS = {
     "workspace-backup",
     "workspace-migrate",
     "workspace-restore",
+    "package-export",
+    "package-verify",
+    "package-import",
 }
 
 _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
@@ -165,6 +183,15 @@ class _ArgumentParser(argparse.ArgumentParser):
         """Raise a body-free usage classification instead of exiting."""
         del message
         raise _UsageError("invalid command usage")
+
+
+class _PackageExportRequest(BaseModel):
+    """Trusted local request envelope whose paths never enter package metadata."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, hide_input_in_errors=True)
+
+    package: InterchangePackage
+    asset_sources: dict[str, str]
 
 
 def _parser() -> _ArgumentParser:
@@ -304,6 +331,31 @@ def _parser() -> _ArgumentParser:
     workspace_migrate.add_argument("--backup-destination", type=Path, required=True)
     _common_options(workspace_migrate)
 
+    package_export = subparsers.add_parser(
+        "package-export",
+        help="create one experimental deterministic BagIt package",
+    )
+    package_export.add_argument("--request", type=Path, required=True)
+    package_export.add_argument("--destination", type=Path, required=True)
+    package_export.add_argument("--json", action="store_true", dest="json_output")
+
+    package_verify = subparsers.add_parser(
+        "package-verify",
+        help="verify one experimental BagIt package without extraction",
+    )
+    package_verify.add_argument("--package", type=Path, required=True)
+    _interchange_limit_options(package_verify)
+    package_verify.add_argument("--json", action="store_true", dest="json_output")
+
+    package_import = subparsers.add_parser(
+        "package-import",
+        help="publish one verified package as a fresh immutable snapshot",
+    )
+    package_import.add_argument("--package", type=Path, required=True)
+    package_import.add_argument("--destination", type=Path, required=True)
+    _interchange_limit_options(package_import)
+    package_import.add_argument("--json", action="store_true", dest="json_output")
+
     list_parser = subparsers.add_parser("list", help="list body-free document summaries")
     _common_options(list_parser)
 
@@ -409,6 +461,18 @@ def _parser() -> _ArgumentParser:
 def _common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--store", type=Path, default=Path.cwd() / ".openardp")
     parser.add_argument("--json", action="store_true", dest="json_output")
+
+
+def _interchange_limit_options(parser: argparse.ArgumentParser) -> None:
+    defaults = InterchangeLimits()
+    parser.add_argument("--max-archive-bytes", type=int, default=defaults.max_archive_bytes)
+    parser.add_argument("--max-expanded-bytes", type=int, default=defaults.max_expanded_bytes)
+    parser.add_argument("--max-entry-count", type=int, default=defaults.max_entry_count)
+    parser.add_argument("--max-entry-bytes", type=int, default=defaults.max_entry_bytes)
+    parser.add_argument("--max-metadata-bytes", type=int, default=defaults.max_metadata_bytes)
+    parser.add_argument("--max-path-bytes", type=int, default=defaults.max_path_bytes)
+    parser.add_argument("--max-path-depth", type=int, default=defaults.max_path_depth)
+    parser.add_argument("--max-relationships", type=int, default=defaults.max_relationships)
 
 
 def _utc_now() -> datetime:
@@ -718,6 +782,83 @@ def _load_reclamation_plan(path: Path) -> ReclamationPlan:
             os.close(descriptor)
 
 
+def _load_package_export_request(path: Path) -> _PackageExportRequest:
+    """Load one bounded safe local export request without echoing its paths."""
+    payload = _read_bounded_regular(path, max_bytes=16_777_216)
+    try:
+        request = _PackageExportRequest.model_validate_json(payload)
+    except ValueError:
+        raise ValueError("package export request is invalid") from None
+    included = {
+        asset.object_id
+        for asset in request.package.assets
+        if asset.disposition is AssetDisposition.INCLUDED
+    }
+    if set(request.asset_sources) != included:
+        raise ValueError("package export request asset selection is incomplete")
+    return request
+
+
+def _read_bounded_regular(path: Path, *, max_bytes: int) -> bytes:
+    """Read one stable regular file through a no-follow descriptor under a hard cap."""
+    selected = path.expanduser().absolute()
+    descriptor: int | None = None
+    try:
+        metadata = selected.lstat()
+        if selected.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError
+        if metadata.st_size > max_bytes:
+            raise ValueError
+        flags = os.O_RDONLY
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_BINARY"):
+            flags |= os.O_BINARY
+        descriptor = os.open(selected, flags)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or (metadata.st_dev, metadata.st_ino) != (
+            opened.st_dev,
+            opened.st_ino,
+        ):
+            raise ValueError
+        chunks: list[bytes] = []
+        observed = 0
+        while chunk := os.read(descriptor, 1_048_576):
+            observed += len(chunk)
+            if observed > max_bytes:
+                raise ValueError
+            chunks.append(chunk)
+        after = os.fstat(descriptor)
+        if (
+            observed != metadata.st_size
+            or opened.st_size != after.st_size
+            or (opened.st_dev, opened.st_ino) != (after.st_dev, after.st_ino)
+        ):
+            raise ValueError
+        return b"".join(chunks)
+    except (OSError, ValueError):
+        raise ValueError("bounded local input is invalid") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _interchange_limits(arguments: argparse.Namespace) -> InterchangeLimits:
+    """Construct one closed hostile-package limit policy from CLI integers."""
+    return InterchangeLimits(
+        max_archive_bytes=int(arguments.max_archive_bytes),
+        max_expanded_bytes=int(arguments.max_expanded_bytes),
+        max_entry_count=int(arguments.max_entry_count),
+        max_entry_bytes=int(arguments.max_entry_bytes),
+        max_metadata_bytes=int(arguments.max_metadata_bytes),
+        max_path_bytes=int(arguments.max_path_bytes),
+        max_path_depth=int(arguments.max_path_depth),
+        max_relationships=int(arguments.max_relationships),
+    )
+
+
 class _CliWatchRunner:
     """Reuse configured ingestion services behind the watcher runner contract."""
 
@@ -873,6 +1014,26 @@ def _watch_cycle_summary(result: WatchCycleResult) -> dict[str, object]:
 
 def _execute(arguments: argparse.Namespace) -> object:
     command = str(arguments.command)
+    if command == "package-export":
+        request = _load_package_export_request(Path(arguments.request))
+        return InterchangeService().export(
+            request.package,
+            LocalAssetSource(
+                {object_id: Path(path) for object_id, path in request.asset_sources.items()}
+            ),
+            Path(arguments.destination),
+        )
+    if command == "package-verify":
+        return InterchangeService().verify(
+            Path(arguments.package),
+            limits=_interchange_limits(arguments),
+        )
+    if command == "package-import":
+        return InterchangeService().import_snapshot(
+            Path(arguments.package),
+            Path(arguments.destination),
+            limits=_interchange_limits(arguments),
+        )
     if command == "workspace-restore":
         return LocalWorkspace.restore(
             Path(arguments.backup),
@@ -1300,6 +1461,20 @@ def _safe_text(value: str) -> str:
 def _classification(error: Exception) -> tuple[int, str, str]:
     if isinstance(error, _UsageError):
         return 2, "invalid_usage", "command usage is invalid"
+    interchange_codes: tuple[tuple[type[InterchangeError], str], ...] = (
+        (UnsupportedInterchangeVersion, "unsupported_version"),
+        (InterchangeResourceExceeded, "resource_exhausted"),
+        (InterchangeIntegrityInvalid, "integrity_invalid"),
+        (InterchangeRelationshipInvalid, "relationship_invalid"),
+        (InterchangeSourceChanged, "source_changed"),
+        (InterchangeDestinationConflict, "destination_conflict"),
+        (InterchangePublicationFailed, "publication_failed"),
+        (InterchangePolicyRejected, "policy_rejected"),
+        (MalformedPackage, "malformed_package"),
+    )
+    for error_type, code in interchange_codes:
+        if isinstance(error, error_type):
+            return 2, code, "interchange operation was rejected"
     if isinstance(error, MaintenanceError):
         return 5, "maintenance_rejected", "maintenance operation was rejected"
     if isinstance(error, ContextNotFound):

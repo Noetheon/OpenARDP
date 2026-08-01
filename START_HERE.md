@@ -12,6 +12,9 @@ Feature 012 adds explicit bounded local polling, durable stability observations 
 cancellable foreground ingestion jobs without a daemon or MCP write surface.
 Feature 013 adds conservative retention explanation, reversible quarantine, separately
 acknowledged reclamation, paired recovery, explicit migration and atomic index rebuild.
+Feature 014 adds an experimental RFC 8493 BagIt profile for deterministic permitted
+export, offline hostile-package verification and fresh read-only snapshot import. It is
+not a universal format, workspace restore path or authenticity/license guarantee.
 
 ## 1. Read the authoritative rules
 
@@ -75,6 +78,11 @@ openardp jobs --store .openardp --limit 50 --json
 openardp storage-inventory --store .openardp --json
 openardp storage-diagnostics --store .openardp --json
 openardp workspace-backup --store .openardp --destination ../openardp-backup --json
+openardp package-export --request ./synthetic-export-request.json \
+  --destination ./evidence-package.zip --json
+openardp package-verify --package ./evidence-package.zip --json
+openardp package-import --package ./evidence-package.zip \
+  --destination ./verified-snapshot --json
 openardp mcp --store .openardp
 ```
 
@@ -111,6 +119,15 @@ commit is the only irreversible command and requires an expired named batch plus
 target only fresh disjoint paths, and older supported workspaces migrate only through
 `workspace-migrate` after a paired pre-upgrade backup.
 
+Feature 014 package operations are explicit trusted-operator commands and do not require
+or modify a workspace. An export request declares the exact portable scope plus local
+source paths for only those assets whose redistribution is affirmatively asserted. Paths
+are consumed locally and never serialized. Verification and import remain offline;
+successful SHA-256 verification establishes byte integrity, not authenticity, truth,
+ownership, licensing or execution authority. See the
+[F014 quickstart](specs/014-export-interchange-experiment/quickstart.md) for the closed
+request shape and resource-limit options.
+
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
 identity. Context compilation applies the same rule: accelerator hits are reverified
@@ -125,7 +142,8 @@ compilation, body-free receipts and replay. Feature 009 exposes the same verifie
 application services through a bounded read-only stdio MCP server. The current
 implementation does not provide a watcher daemon, network-share correctness, scheduled
 or automatic garbage collection,
-HTTP transport, stable export or Microsoft Graph access. The
+HTTP transport, stable/universal export or Microsoft Graph access. The experimental
+F014 BagIt profile is intentionally versioned and narrower than general BagIt. The
 [005A–017 sequence](spec-kit/FEATURE_MAP.md) owns these
 outcomes individually.
 
@@ -151,6 +169,7 @@ preserving complete provider-native output.
 - [F011 quickstart](specs/011-visual-evidence-escalation/quickstart.md)
 - [F012 quickstart](specs/012-local-watcher-and-jobs/quickstart.md)
 - [F013 quickstart](specs/013-retention-recovery-migrations/quickstart.md)
+- [F014 quickstart](specs/014-export-interchange-experiment/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

@@ -19,10 +19,11 @@ Readers must reject unsupported major versions and preserve unknown extension da
 
 Every catalog migration is transactional, checksummed, restart-safe and backed by upgrade/downgrade or backup/restore evidence. Opening a newer unsupported workspace must fail without mutation. Rebuildable indexes are migrated separately from authoritative facts.
 
-As of F013 these axes are deliberately independent: application `0.0.1`, workspace
-revision 10, `VisualEvidenceDescriptor 0.1.0`, unchanged F006/F008/F009 contracts and no
-export-format version. F012 watcher/job and F013 maintenance records are internal and
-add no public schema.
+As of F014 these axes are deliberately independent: application `0.0.1`, workspace
+revision 10, `VisualEvidenceDescriptor 0.1.0`, unchanged F006/F008/F009 contracts and
+experimental export profile/public interchange record `0.1.0`. F012 watcher/job and
+F013 maintenance records remain internal. F014 adds no workspace migration and never
+infers its reader version from application, workspace, provider or MCP versions.
 Exact renderer, parser and watcher profile versions are identity inputs,
 not application or workspace versions. A breaking visual identity or schema change
 requires a new contract version, fixtures, migration/reset guidance, changelog and ADR;
@@ -34,6 +35,16 @@ fact, sets old jobs' `available_at` to their creation time and installs watcher 
 in the same checksummed transaction. Older software rejects revision 9. Feature 013
 provides the first explicit paired backup/migration path for the revision-9 to
 revision-10 transition; older historical transitions remain forward-only.
+
+## Experimental interchange profile 0.1.0
+
+The installed F014 reader accepts exactly profile/schema `0.1.0`; an unsupported
+version is distinct from malformed structure. Core fields are closed. JSON-only
+extensions are accepted only under the declared `preserve` policy and participate in
+semantic package identity; `reject` requires empty extension containers. A breaking
+change needs a new profile/schema version, ADR, changelog, golden vectors and explicit
+snapshot reset/migration guidance. General BagIt conformance and live-workspace import
+compatibility are not claimed.
 
 ## Stabilization gate
 

@@ -15,6 +15,8 @@ from openardp.domain.common import ensure_json_value
 CANONICALIZATION_ALGORITHM = "RFC8785"
 IDENTITY_VERSION = 1
 SELECTION_RECEIPT_DOMAIN = "openardp:selection-receipt"
+VISUAL_EVIDENCE_DOMAIN = "openardp:visual-evidence"
+VISUAL_RASTER_DOMAIN = "openardp:visual-page-raster"
 CONTEXT_BUNDLE_UUID_NAMESPACE = UUID("26e5d61b-8bf1-5c67-943d-540decd608e4")
 
 _SHA256_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -133,6 +135,102 @@ def derivation_slot_id(*, namespace: str, subject_digest: str, purpose: str) -> 
         "purpose": purpose,
     }
     return _identity_sha256("openardp:derivation-slot", payload)
+
+
+def visual_raster_id(
+    *,
+    source_version_id: str,
+    representation_id: str,
+    native_representation_id: str,
+    page_number: int,
+    recipe: dict[str, JsonValue],
+) -> str:
+    """Hash one exact page plus the complete deterministic render recipe."""
+    if type(page_number) is not int or page_number < 1:
+        raise ValueError("page_number must be a positive integer")
+    ensure_json_value(recipe, path="$.recipe")
+    return _identity_sha256(
+        VISUAL_RASTER_DOMAIN,
+        {
+            "source_version_id": _require_sha256_id(
+                source_version_id,
+                field="source_version_id",
+            ),
+            "representation_id": _require_sha256_id(
+                representation_id,
+                field="representation_id",
+            ),
+            "native_representation_id": _require_sha256_id(
+                native_representation_id,
+                field="native_representation_id",
+            ),
+            "page_number": page_number,
+            "recipe": recipe,
+        },
+    )
+
+
+def visual_evidence_id(
+    *,
+    source_version_id: str,
+    representation_id: str,
+    native_representation_id: str,
+    evidence_reference_id: str,
+    evidence_projection_id: str,
+    target_anchor: dict[str, JsonValue],
+    resolved_region: dict[str, JsonValue],
+    raster_id: str,
+    transform: dict[str, JsonValue],
+    crop_object_id: str,
+    crop_media_type: str,
+    recipe: dict[str, JsonValue],
+    usage_policy: dict[str, JsonValue],
+) -> str:
+    """Hash every semantic source, target, geometry, object, recipe and policy fact."""
+    for field, value in (
+        ("target_anchor", target_anchor),
+        ("resolved_region", resolved_region),
+        ("transform", transform),
+        ("recipe", recipe),
+        ("usage_policy", usage_policy),
+    ):
+        ensure_json_value(value, path=f"$.{field}")
+    return _identity_sha256(
+        VISUAL_EVIDENCE_DOMAIN,
+        {
+            "source_version_id": _require_sha256_id(
+                source_version_id,
+                field="source_version_id",
+            ),
+            "representation_id": _require_sha256_id(
+                representation_id,
+                field="representation_id",
+            ),
+            "native_representation_id": _require_sha256_id(
+                native_representation_id,
+                field="native_representation_id",
+            ),
+            "evidence_reference_id": _require_sha256_id(
+                evidence_reference_id,
+                field="evidence_reference_id",
+            ),
+            "evidence_projection_id": _require_sha256_id(
+                evidence_projection_id,
+                field="evidence_projection_id",
+            ),
+            "target_anchor": target_anchor,
+            "resolved_region": resolved_region,
+            "raster_id": _require_sha256_id(raster_id, field="raster_id"),
+            "transform": transform,
+            "crop_object_id": _require_sha256_id(
+                crop_object_id,
+                field="crop_object_id",
+            ),
+            "crop_media_type": crop_media_type,
+            "recipe": recipe,
+            "usage_policy": usage_policy,
+        },
+    )
 
 
 def _require_sha256_id(value: str, *, field: str) -> str:

@@ -312,6 +312,32 @@ complete locked gate on Ubuntu, macOS and Windows. The latter succeeded on its u
 merge commit after an initial pre-checkout GitHub billing rejection was cleared. This
 closes F010's cross-platform publication and final Spec Kit convergence boundary.
 
+## Feature 011 local evidence
+
+Feature `011-visual-evidence-escalation` adds experimental
+`VisualEvidenceDescriptor 0.1.0`, one twelfth generated schema, checksummed SQLite
+migration 8 and the exact optional `visual` dependency group. It leaves all eleven
+prior schemas, F006 conformance/vector evidence, F007 provider/export profiles, F008
+bundle/receipt identities and F009 MCP descriptors unchanged.
+
+The locally observed network-blocked suite passed all 1,027 tests with 86.37 percent
+branch-aware coverage against the 85 percent gate. Evidence includes a 100-case exact
+integer geometry corpus, 20-process identity determinism, intrinsic PDF rotations
+0/90/180/270, a real spawned PDF render/crop/service/CLI flow, metadata/frame/dimension/
+pixel/output caps, timeout/crash/cancellation/egress behavior, all seven visual catalog
+fault boundaries, 20 independent-client convergence, revision-7→8 failure/concurrency/
+too-new behavior, visual reachability, descriptor tamper rejection, before/after visual
+context and byte-identical replay, and optional interpretation trust/supersession/
+no-provider/egress cases. Exact wheel RECORD fingerprints keep platform-native renderer
+and encoder outputs in distinct deterministic recipe identities.
+
+Ruff, formatting, strict mypy over 56 source files, build, all twelve generated schemas,
+F006 conformance validation, repository validation and pre-commit passed before
+publication. Pull request [#16](https://github.com/Noetheon/OpenARDP/pull/16) run
+[30677502891](https://github.com/Noetheon/OpenARDP/actions/runs/30677502891) then passed
+the complete locked gate on macOS, Ubuntu and Windows. The evidence-only amendment is
+subject to the same matrix, and F012 remains blocked until post-merge `main` CI passes.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

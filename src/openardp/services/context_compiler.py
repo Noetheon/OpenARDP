@@ -793,7 +793,18 @@ class ContextCompilerService:
         return CorpusSnapshot(scopes=tuple(scopes), created_at=max(observed))
 
     def _build_item(self, candidate: ContextCandidate) -> ContextEvidenceItem:
-        """Build one delimited untrusted-data item from a reverified body."""
+        """Build one verified handle or delimited untrusted-data item."""
+        if candidate.representation is EvidenceRepresentation.VISUAL_HANDLE:
+            if candidate.artifact_handle is None or candidate.artifact_id is None:
+                raise ContextIntegrityFailure("selected_visual_handle_invalid")
+            return ContextEvidenceItem(
+                provenance=candidate.provenance,
+                representation=candidate.representation,
+                artifact_handle=candidate.artifact_handle,
+                artifact_id=candidate.artifact_id,
+                reason=candidate.reason_code,
+                trust=candidate.trust,
+            )
         if isinstance(candidate.provenance, ContextBlockProvenance):
             content = self._block_content(candidate)
         else:
@@ -808,6 +819,8 @@ class ContextCompilerService:
 
     def _block_content(self, candidate: ContextCandidate) -> UntrustedContentEnvelope:
         """Reverify one F002 block object and enclose its exact content as data."""
+        if candidate.body_object is None:
+            raise ContextIntegrityFailure("selected_block_body_missing")
         payload = _read_verified(self._object_store, candidate.body_object)
         try:
             block = validate_json(ContentBlock, payload)
@@ -836,6 +849,8 @@ class ContextCompilerService:
         provenance = candidate.provenance
         if not isinstance(provenance, ContextProjectionProvenance):
             raise ContextIntegrityFailure("selected_projection_mismatch")
+        if candidate.body_object is None or candidate.body_media_type is None:
+            raise ContextIntegrityFailure("selected_projection_body_missing")
         payload = _read_verified(self._object_store, candidate.body_object)
         try:
             body = payload.decode("utf-8")
@@ -1002,6 +1017,14 @@ def _item_evidence_id(item: ContextEvidenceItem) -> str:
     return provenance.evidence_projection_id
 
 
+def _candidate_object_cost(candidate: ContextCandidate) -> int:
+    """Return the verified body or descriptor object length used for receipt costing."""
+    value = candidate.body_object or candidate.cost_object
+    if value is None:
+        raise ContextIntegrityFailure("candidate_cost_object_missing")
+    return value.byte_length
+
+
 def _decision(
     candidate: ContextCandidate,
     outcome: SelectionOutcome,
@@ -1021,7 +1044,7 @@ def _decision(
         term_coverage=candidate.term_coverage,
         occurrences=candidate.occurrences,
         source_order=candidate.source_order,
-        estimated_cost=(cost if cost is not None else candidate.body_object.byte_length),
+        estimated_cost=(cost if cost is not None else _candidate_object_cost(candidate)),
         final_order=final_order,
     )
 

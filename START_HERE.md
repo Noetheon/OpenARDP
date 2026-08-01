@@ -6,7 +6,8 @@ strategic/governance boundary, Feature 006 experimental evidence contracts, Feat
 007's bounded Docling-native adapter and Feature 008's deterministic context compiler
 with body-free selection receipts, plus Feature 009's dependency-free read-only MCP
 stdio interface and Feature 010's conservative reconciliation plus exact derivation
-DAG lifecycle.
+DAG lifecycle, followed by Feature 011's explicit bounded PDF visual-evidence
+materialization and handle-only context integration.
 
 ## 1. Read the authoritative rules
 
@@ -62,6 +63,9 @@ openardp context "Which exact controls are documented?" \
 openardp context-receipt <receipt-sha256> --store .openardp --json
 openardp context "Which exact controls are documented?" \
   --replay <receipt-sha256> --store .openardp --json
+openardp visual-materialize <document-uuid> <projection-sha256> \
+  --store .openardp --json
+openardp visual-evidence <visual-evidence-sha256> --store .openardp --json
 openardp mcp --store .openardp
 ```
 
@@ -78,6 +82,12 @@ Feature 010 reconciles two explicitly selected READY F002 representations, persi
 logical continuity separately from exact reuse eligibility, and transactionally
 invalidates or reactivates only the exact derivation dependency closure. It adds no
 CLI/MCP mutation, watcher, provider or model execution.
+
+Feature 011 explicitly materializes one accepted PDF projection into a reusable page
+raster, exact crop and thin descriptor. VISUAL compilation selects only an already
+materialized verified descriptor handle; it never renders implicitly. The optional
+OCR/caption port has no built-in provider and all results remain untrusted F010
+derivations. DOCX/PPTX page rendering is still unavailable.
 
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
@@ -115,6 +125,7 @@ preserving complete provider-native output.
 - [F008 quickstart](specs/008-context-compiler-receipts/quickstart.md)
 - [F009 quickstart](specs/009-read-only-mcp/quickstart.md)
 - [F010 quickstart](specs/010-reconciliation-derivation-dag/quickstart.md)
+- [F011 quickstart](specs/011-visual-evidence-escalation/quickstart.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

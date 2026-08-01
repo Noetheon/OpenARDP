@@ -118,3 +118,27 @@ These controls bound the delivered local single-user interface. They do not prov
 multi-tenant authorization or make an untrusted MCP client safe to grant local process
 execution; the operator remains responsible for which client may launch the server and
 which workspace path is configured out of band.
+
+## Delivered Feature 011 controls
+
+- Visual operations accept registered document/projection identifiers only; arbitrary
+  paths, URLs, source bytes and native pointers are not public inputs.
+- The optional exact PDFium/Pillow capability runs in a spawned, killable process.
+  Source/raster input is transferred in bounded chunks, socket creation and proxy
+  variables are denied before provider use, portable CPU/address-space/file-descriptor
+  limits apply, and the parent enforces wall/output bounds and reap cleanup.
+- Independent source, page-count, dimension, page/crop-pixel, decoded-byte, output,
+  metadata, frame and elapsed-time caps fail closed. PNG output is single-frame RGB and
+  strips metadata; intrinsic PDF rotation is recorded rather than inferred from EXIF.
+- Provider-native geometry is accepted only from the exact retained profile/version;
+  aspect mismatch above 1,000 PPM, ambiguity and absent cell geometry fail or carry an
+  explicit table-level fallback.
+- Raster/crop/descriptor objects are digest-verified before one revision-8 transaction.
+  Cancellation or failure before commit exposes no partial visual row; complete
+  unreachable CAS residue remains an F013 recovery candidate.
+- Rights come only from a trusted policy port and default to local-only, export denied,
+  `license_unverified`. No OCR/caption provider is registered by default; explicit
+  results remain model-derived data with instruction execution disabled.
+
+The worker is defense in depth, not a universal sandbox. Native decoder defects and
+viewer-fidelity differences remain residual risks.

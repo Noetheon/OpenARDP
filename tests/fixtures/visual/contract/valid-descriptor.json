@@ -1,0 +1,209 @@
+{
+  "contract_version": "0.1.0",
+  "stability": "experimental",
+  "identity_version": 1,
+  "extensions": {},
+  "visual_evidence_id": "sha256:8c365be9916c17afd180750cd24a4bf35ae447a6df8be025527b60dcb3dea0c8",
+  "document_id": "018f74a2-7b20-7cc2-9c4a-24e0f5b11831",
+  "source_version_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "representation_id": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "native_representation_id": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "evidence_reference_id": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+  "evidence_projection_id": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+  "target_anchor": {
+    "anchor_type": "page_region",
+    "coordinate_system": "normalized_ppm_top_left",
+    "page_number": 1,
+    "x": 100000,
+    "y": 200000,
+    "width": 300000,
+    "height": 400000
+  },
+  "resolved_region": {
+    "page_region": {
+      "anchor_type": "page_region",
+      "coordinate_system": "normalized_ppm_top_left",
+      "page_number": 1,
+      "x": 100000,
+      "y": 200000,
+      "width": 300000,
+      "height": 400000
+    },
+    "granularity": "region_exact",
+    "table_cell": null,
+    "provider_pointer": null,
+    "cell_geometry_explicit": false,
+    "warning_codes": []
+  },
+  "page_raster": {
+    "raster_id": "sha256:92a59e249046bd688a008c3d681f1fc055ffd6ea6541449b0bf412d19e4a7c42",
+    "scope": {
+      "document_id": "018f74a2-7b20-7cc2-9c4a-24e0f5b11831",
+      "version_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "representation_id": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "source_object": {
+      "object_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "byte_length": 1024
+    },
+    "native_representation_id": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "page_number": 1,
+    "source_width": 1000,
+    "source_height": 1000,
+    "source_rotation": 0,
+    "applied_rotation": 0,
+    "pixel_width": 2000,
+    "pixel_height": 2000,
+    "media_type": "image/png",
+    "color_mode": "RGB",
+    "raster_object": {
+      "object_id": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "byte_length": 5000
+    },
+    "recipe": {
+      "renderer": {
+        "extensions": {},
+        "name": "pypdfium2",
+        "version": "5.12.1",
+        "profile": "pdf"
+      },
+      "encoder": {
+        "extensions": {},
+        "name": "Pillow",
+        "version": "12.3.0",
+        "profile": "png-rgb"
+      },
+      "scale_numerator": 2,
+      "scale_denominator": 1,
+      "color_mode": "RGB",
+      "background_rgb": [
+        255,
+        255,
+        255
+      ],
+      "draw_annotations": false,
+      "draw_forms": false,
+      "metadata_policy": "strip",
+      "max_page_aspect_error_ppm": 1000,
+      "limits": {
+        "max_encoded_bytes": 104857600,
+        "max_pages": 2000,
+        "max_page_dimension": 20000,
+        "max_page_pixels": 100000000,
+        "max_crop_dimension": 10000,
+        "max_crop_pixels": 25000000,
+        "max_decoded_bytes": 300000000,
+        "max_output_bytes": 104857600,
+        "max_metadata_bytes": 65536,
+        "max_frames": 1,
+        "timeout_seconds": 120.0,
+        "max_address_space_bytes": 4294967296,
+        "max_open_files": 64
+      },
+      "config_hash": "sha256:94f5f87fdbe3504e5d978fc0c527025a0fed10b547e92e150617941fc5954ad5"
+    },
+    "created_at": "2026-08-01T09:00:00Z"
+  },
+  "transform": {
+    "normalized_region": {
+      "anchor_type": "page_region",
+      "coordinate_system": "normalized_ppm_top_left",
+      "page_number": 1,
+      "x": 100000,
+      "y": 200000,
+      "width": 300000,
+      "height": 400000
+    },
+    "source_width": 1000,
+    "source_height": 1000,
+    "source_rotation": 0,
+    "applied_rotation": 0,
+    "scale_numerator": 2,
+    "scale_denominator": 1,
+    "raster_width": 2000,
+    "raster_height": 2000,
+    "left": 200,
+    "top": 400,
+    "right": 800,
+    "bottom": 1200,
+    "aspect_error_ppm": 0,
+    "max_aspect_error_ppm": 1000
+  },
+  "crop_object": {
+    "object_id": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "byte_length": 1000
+  },
+  "crop_media_type": "image/png",
+  "crop_width": 600,
+  "crop_height": 800,
+  "color_mode": "RGB",
+  "recipe": {
+    "renderer": {
+      "extensions": {},
+      "name": "pypdfium2",
+      "version": "5.12.1",
+      "profile": "pdf"
+    },
+    "encoder": {
+      "extensions": {},
+      "name": "Pillow",
+      "version": "12.3.0",
+      "profile": "png-rgb"
+    },
+    "scale_numerator": 2,
+    "scale_denominator": 1,
+    "color_mode": "RGB",
+    "background_rgb": [
+      255,
+      255,
+      255
+    ],
+    "draw_annotations": false,
+    "draw_forms": false,
+    "metadata_policy": "strip",
+    "max_page_aspect_error_ppm": 1000,
+    "limits": {
+      "max_encoded_bytes": 104857600,
+      "max_pages": 2000,
+      "max_page_dimension": 20000,
+      "max_page_pixels": 100000000,
+      "max_crop_dimension": 10000,
+      "max_crop_pixels": 25000000,
+      "max_decoded_bytes": 300000000,
+      "max_output_bytes": 104857600,
+      "max_metadata_bytes": 65536,
+      "max_frames": 1,
+      "timeout_seconds": 120.0,
+      "max_address_space_bytes": 4294967296,
+      "max_open_files": 64
+    },
+    "config_hash": "sha256:94f5f87fdbe3504e5d978fc0c527025a0fed10b547e92e150617941fc5954ad5"
+  },
+  "trust": {
+    "contract_version": "0.1.0",
+    "stability": "experimental",
+    "extensions": {},
+    "origin_zone": "external_untrusted",
+    "effective_zone": "external_untrusted",
+    "role": "data",
+    "instruction_execution_allowed": false,
+    "integrity": "verified_sha256",
+    "sensitivity": "unknown"
+  },
+  "usage_policy": {
+    "scope": "local_only",
+    "export_allowed": false,
+    "license_id": null,
+    "restriction_codes": [
+      "license_unverified"
+    ],
+    "policy_provider": {
+      "extensions": {},
+      "name": "openardp-local-policy",
+      "version": "1.0.0",
+      "profile": "closed-default"
+    },
+    "policy_config_hash": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "created_at": "2026-08-01T09:00:00Z"
+}

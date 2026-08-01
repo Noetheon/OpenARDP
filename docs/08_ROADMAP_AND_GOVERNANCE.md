@@ -8,8 +8,9 @@
 OpenARDP develops useful, measurable open-source software before considering a separate neutral specification. Public
 contracts are experimental interoperability candidates, not an announced industry standard.
 
-The current runtime is complete through Feature 005, and Feature 005A establishes the strategy/contract boundary.
-Features 006–017 then proceed strictly in dependency order:
+The runtime has converged remotely through Feature 010; Feature 011 visual evidence is
+implemented and locally verified pending its publication gate. Features 012–017 then
+proceed strictly in dependency order:
 
 1. evidence contracts before the rich-parser adapter;
 2. Docling-native preservation plus thin evidence projection;

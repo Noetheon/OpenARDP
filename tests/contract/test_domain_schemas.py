@@ -147,7 +147,7 @@ def test_schema_check_mode_does_not_write_files() -> None:
         text=True,
     )
     after = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in schema_paths}
-    assert completed.stdout == "all 11 schemas are current\n"
+    assert completed.stdout == "all 12 schemas are current\n"
     assert after == before
 
 

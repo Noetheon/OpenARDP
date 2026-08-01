@@ -360,6 +360,43 @@ def _candidate(
     )
 
 
+def test_context_candidate_requires_exactly_one_complete_body_or_visual_handle() -> None:
+    """Keep internal content candidates mutually exclusive from handle-only visuals."""
+    projection = _projection_provenance()
+    descriptor = StoredObject(object_id="sha256:" + "9" * 64, byte_length=512)
+    visual = ContextCandidate(
+        evidence_id=projection.evidence_projection_id,
+        scope=SCOPE,
+        provenance=projection,
+        representation=EvidenceRepresentation.VISUAL_HANDLE,
+        source_order=0,
+        artifact_handle=descriptor.object_id,
+        artifact_id=descriptor.object_id,
+        cost_object=descriptor,
+        trust=_trust(),
+        freshness=CandidateFreshness.CURRENT,
+        term_coverage=0,
+        occurrences=0,
+        reason_code="visual_evidence_materialized",
+        high_value=False,
+    )
+    assert visual.body_object is None
+    with pytest.raises(ValidationError, match="exactly one"):
+        ContextCandidate.model_validate(
+            {
+                **visual.model_dump(mode="json"),
+                "body_object": descriptor.model_dump(mode="json"),
+                "body_media_type": "image/png",
+            },
+            strict=False,
+        )
+    with pytest.raises(ValidationError, match="visual_handle"):
+        ContextCandidate.model_validate(
+            {**_candidate().model_dump(mode="json"), "representation": "visual_handle"},
+            strict=False,
+        )
+
+
 def _bundle_payload() -> dict[str, object]:
     provenance = _block_provenance()
     item = ContextEvidenceItem(

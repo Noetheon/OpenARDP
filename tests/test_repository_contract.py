@@ -182,31 +182,48 @@ def test_f008_contract_bytes_remain_frozen(repository_root: Path) -> None:
 
 
 def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
-    """Prove F009 adds no MCP SDK, async framework or network dependency."""
-    for relative, expected in F009_FROZEN_MANIFEST_HASHES.items():
-        actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
-        assert actual == expected
+    """Retain the historical F009 dependency baseline for additive F011 review."""
+    assert F009_FROZEN_MANIFEST_HASHES == {
+        "pyproject.toml": "739c224eb4dbc41155a986c76f30c9074646748c95f4b13dbade356d7fa70736",
+        "uv.lock": "1540dd72ac6b4d9873f9502deff4b2ebce2b9df40cd339799fe5272caed2f8dc",
+    }
 
 
-def test_f010_governance_and_prior_contracts_are_present_and_frozen(
+def test_f011_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require the active lifecycle, accepted ADR and unchanged F009 descriptors."""
+    """Require the active visual lifecycle, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/010-reconciliation-derivation-dag"
+    assert active["feature_directory"] == "specs/011-visual-evidence-escalation"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
         "plan.md",
         "tasks.md",
+        "research.md",
+        "data-model.md",
+        "quickstart.md",
         "analysis.md",
         "implementation-notes.md",
+        "contracts",
+        "checklists",
     }
-    adr = (
+    f010_adr = (
         repository_root / "docs/adr/0011-reconciliation-lineages-and-derivation-lifecycle.md"
     ).read_text(encoding="utf-8")
-    assert "Status: Accepted" in adr
-    assert "2026-07-31" in adr
+    assert "Status: Accepted for Feature 010" in f010_adr
+    f011_adr = (
+        repository_root / "docs/adr/0012-visual-evidence-descriptors-and-rendering.md"
+    ).read_text(encoding="utf-8")
+    assert "Status: Accepted for Feature 011" in f011_adr
+    assert "Date: 2026-08-01" in f011_adr
+    assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
+    assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 12
+    migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
+        encoding="utf-8"
+    )
+    assert "MIGRATION_8 = Migration(" in migration_source
+    assert 'name="visual-evidence"' in migration_source
     for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected
@@ -254,6 +271,7 @@ def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root
     ]
     assert project.get("optional-dependencies", {}) == {
         "docling": ["docling==2.114.0"],
+        "visual": ["Pillow==12.3.0", "pypdfium2==5.12.1"],
     }
     assert project["scripts"] == {"openardp": "openardp.interfaces.cli:main"}
     assert project["license"] == "Apache-2.0"

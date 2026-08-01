@@ -1,7 +1,8 @@
 # Data model and package specification
 
-**Status:** Canonical data-model guidance. Existing public schemas remain the Feature 002 contracts. Export packaging is
-an experiment owned by Feature 014, not a current stable format.
+**Status:** Canonical data-model guidance. Feature 011 adds one experimental visual
+descriptor alongside the earlier public roots. Export packaging is an experiment owned
+by Feature 014, not a current stable format.
 
 ## 1. Design goals
 
@@ -74,6 +75,14 @@ derivation is reusable only when this exact binding remains active.
 For derivations, a version-1 recipe identity over ordered direct inputs, generator name/version/profile, optional model,
 configuration hash and optional prompt hash. It is not proof of output bytes: `output_hash` separately records produced
 content integrity.
+
+### `raster_id` and `visual_evidence_id`
+
+F011 uses separate versioned RFC 8785/SHA-256 domains. `raster_id` binds the exact
+source/representation/native page and complete render recipe. `visual_evidence_id`
+additionally binds the accepted F006 reference/projection/anchor, resolved geometry,
+raster, exact crop object, pixel transform and trusted usage policy. Creation time and
+extension data are excluded; page and crop bytes keep their direct CAS SHA-256 identities.
 
 ### Canonicalization and identity governance
 
@@ -157,6 +166,23 @@ it does not alter the five F002 roots.
 
 These are internal revision-7 contracts, not a twelfth public schema. Lifecycle state
 changes never rewrite the canonical record or output objects.
+
+### Feature 011 visual evidence
+
+- `VisualPageRaster` records one reusable page RGB PNG, raw source dimensions,
+  intrinsic/applied rotation, output dimensions and complete renderer/limit recipe.
+- `ResolvedVisualRegion` preserves the accepted page rectangle and labels page,
+  region, cell-exact or containing-table fallback granularity.
+- `VisualPixelTransform` records integer PPM-to-pixel floor/ceiling bounds and the
+  rotation-aware aspect error, which may not exceed 1,000 PPM.
+- `VisualEvidenceDescriptor 0.1.0` composes exact F006/F007 identities, raster, crop,
+  transform, trust and usage policy without duplicating a page/layout IR.
+- `VisualEvidenceRecord` is the body-free revision-8 catalog projection. Raster, crop
+  and both canonical record objects become live roots in one transaction.
+
+The descriptor is the twelfth public schema. Existing eleven schemas and all earlier
+identity projections remain byte-compatible. OCR/caption output stays separate as a
+model-derived F010 derivation of the exact crop object.
 
 ### Feature 006 evidence contracts
 

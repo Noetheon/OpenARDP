@@ -7,6 +7,20 @@ semantic versioning once the public package lifecycle begins.
 
 ### Added
 
+- Experimental `VisualEvidenceDescriptor 0.1.0`, deterministic visual/page-raster
+  identities and the twelfth generated JSON Schema 2020-12 root without drift in the
+  eleven prior schemas or F006/F008/F009 contracts.
+- Checksummed additive SQLite revision 8 for atomic reusable page rasters, visual
+  descriptors, crops and complete reachability roots.
+- Exact optional `visual` dependency group with `pypdfium2==5.12.1` and
+  `Pillow==12.3.0`; spawned bounded offline PDF rendering, intrinsic-rotation-aware
+  geometry and stripped single-frame RGB PNG crops.
+- Identifier-only `visual-materialize` and `visual-evidence` CLI operations plus
+  provider-free handle-only VISUAL context discovery that preserves
+  `visual_evidence_required` until explicit materialization.
+- Optional OCR/caption provider orchestration through the F010 derivation DAG with no
+  registered default, exact crop dependencies and model-derived untrusted output.
+
 - Conservative provider-free F010 block reconciliation with fixed phase ordering,
   bounded work, explicit ambiguity, version-independent lineages and the hard rule
   that reuse requires an exact canonical content digest.

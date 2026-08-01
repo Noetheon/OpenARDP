@@ -1,0 +1,1133 @@
+{
+  "$defs": {
+    "ComponentDescriptor": {
+      "additionalProperties": false,
+      "description": "Provider-neutral identity of a component that produced a record.",
+      "properties": {
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "ComponentDescriptor",
+      "type": "object"
+    },
+    "IntegrityState": {
+      "description": "Integrity evidence available for a record.",
+      "enum": [
+        "verified_sha256",
+        "unverified"
+      ],
+      "title": "IntegrityState",
+      "type": "string"
+    },
+    "JsonValue": {},
+    "OpaqueProviderPointerAnchor": {
+      "additionalProperties": false,
+      "description": "Provider-specific target that the neutral core never interprets.",
+      "properties": {
+        "anchor_type": {
+          "const": "provider_pointer",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "target"
+      ],
+      "title": "OpaqueProviderPointerAnchor",
+      "type": "object"
+    },
+    "PageRegionAnchor": {
+      "additionalProperties": false,
+      "description": "Exact fixed-point normalized rectangle on a one-based page.",
+      "properties": {
+        "anchor_type": {
+          "const": "page_region",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "normalized_ppm_top_left",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Height",
+          "type": "integer"
+        },
+        "page_number": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Page Number",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000,
+          "title": "Width",
+          "type": "integer"
+        },
+        "x": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 1000000,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "page_number",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "PageRegionAnchor",
+      "type": "object"
+    },
+    "ProviderPointer": {
+      "additionalProperties": false,
+      "description": "Opaque pointer whose meaning is scoped to one provider profile.",
+      "properties": {
+        "pointer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Pointer",
+          "type": "string"
+        },
+        "pointer_format": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Pointer Format",
+          "type": "string"
+        },
+        "provider_profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Provider Profile",
+          "type": "string"
+        },
+        "provider_profile_version": {
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "title": "Provider Profile Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_profile",
+        "provider_profile_version",
+        "pointer_format",
+        "pointer"
+      ],
+      "title": "ProviderPointer",
+      "type": "object"
+    },
+    "RepresentationScope": {
+      "additionalProperties": false,
+      "description": "Document-scoped source and parser representation identity.",
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Representation Id",
+          "type": "string"
+        },
+        "version_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "version_id",
+        "representation_id"
+      ],
+      "title": "RepresentationScope",
+      "type": "object"
+    },
+    "ResolvedVisualRegion": {
+      "additionalProperties": false,
+      "description": "Exact page crop plus truthful table-cell granularity.",
+      "properties": {
+        "cell_geometry_explicit": {
+          "default": false,
+          "title": "Cell Geometry Explicit",
+          "type": "boolean"
+        },
+        "granularity": {
+          "$ref": "#/$defs/VisualGranularity"
+        },
+        "page_region": {
+          "$ref": "#/$defs/PageRegionAnchor"
+        },
+        "provider_pointer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderPointer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "table_cell": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TableCellAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "warning_codes": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "title": "Warning Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "page_region",
+        "granularity"
+      ],
+      "title": "ResolvedVisualRegion",
+      "type": "object"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity classification carried with content.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "unknown"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "StoredObject": {
+      "additionalProperties": false,
+      "description": "Verified immutable content-addressed object metadata.",
+      "properties": {
+        "byte_length": {
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "object_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Object Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "byte_length"
+      ],
+      "title": "StoredObject",
+      "type": "object"
+    },
+    "TableCellAnchor": {
+      "additionalProperties": false,
+      "description": "Zero-based table cell scoped to an opaque native table pointer.",
+      "properties": {
+        "anchor_type": {
+          "const": "table_cell",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "column_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Column Index",
+          "type": "integer"
+        },
+        "column_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Column Span",
+          "type": "integer"
+        },
+        "row_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Row Index",
+          "type": "integer"
+        },
+        "row_span": {
+          "default": 1,
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "title": "Row Span",
+          "type": "integer"
+        },
+        "table": {
+          "$ref": "#/$defs/ProviderPointer"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "table",
+        "row_index",
+        "column_index"
+      ],
+      "title": "TableCellAnchor",
+      "type": "object"
+    },
+    "TextSpanAnchor": {
+      "additionalProperties": false,
+      "description": "Half-open code-point offsets in a provider-profile text view.",
+      "properties": {
+        "anchor_type": {
+          "const": "text_span",
+          "title": "Anchor Type",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "unicode_code_points",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "end": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "text_length": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text Length"
+        }
+      },
+      "required": [
+        "anchor_type",
+        "coordinate_system",
+        "start",
+        "end"
+      ],
+      "title": "TextSpanAnchor",
+      "type": "object"
+    },
+    "TrustClassification": {
+      "additionalProperties": false,
+      "description": "Data-only trust state that rejects evidence authority promotion.",
+      "properties": {
+        "contract_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "effective_zone": {
+          "$ref": "#/$defs/TrustZone"
+        },
+        "extensions": {
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "instruction_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Instruction Execution Allowed",
+          "type": "boolean"
+        },
+        "integrity": {
+          "$ref": "#/$defs/IntegrityState"
+        },
+        "origin_zone": {
+          "$ref": "#/$defs/TrustZone"
+        },
+        "role": {
+          "const": "data",
+          "title": "Role",
+          "type": "string"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity"
+        },
+        "stability": {
+          "const": "experimental",
+          "default": "experimental",
+          "title": "Stability",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin_zone",
+        "effective_zone",
+        "role",
+        "integrity",
+        "sensitivity"
+      ],
+      "title": "TrustClassification",
+      "type": "object"
+    },
+    "TrustZone": {
+      "description": "Security boundary assigned to content or metadata.",
+      "enum": [
+        "local_trusted",
+        "organization_trusted",
+        "external_untrusted",
+        "model_derived"
+      ],
+      "title": "TrustZone",
+      "type": "string"
+    },
+    "VisualGranularity": {
+      "description": "Truthful precision of one resolved visual region.",
+      "enum": [
+        "page_exact",
+        "region_exact",
+        "cell_exact",
+        "table_fallback"
+      ],
+      "title": "VisualGranularity",
+      "type": "string"
+    },
+    "VisualPageRaster": {
+      "additionalProperties": false,
+      "description": "One deterministic registered full-page RGB PNG derived from exact source bytes.",
+      "properties": {
+        "applied_rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Applied Rotation",
+          "type": "integer"
+        },
+        "color_mode": {
+          "const": "RGB",
+          "default": "RGB",
+          "title": "Color Mode",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "pattern": "T.+(?:Z|\\+00:00)$",
+          "title": "Created At",
+          "type": "string"
+        },
+        "media_type": {
+          "const": "image/png",
+          "default": "image/png",
+          "title": "Media Type",
+          "type": "string"
+        },
+        "native_representation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Native Representation Id",
+          "type": "string"
+        },
+        "page_number": {
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Page Number",
+          "type": "integer"
+        },
+        "pixel_height": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Pixel Height",
+          "type": "integer"
+        },
+        "pixel_width": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Pixel Width",
+          "type": "integer"
+        },
+        "raster_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Raster Id",
+          "type": "string"
+        },
+        "raster_object": {
+          "$ref": "#/$defs/StoredObject"
+        },
+        "recipe": {
+          "$ref": "#/$defs/VisualRenderRecipe"
+        },
+        "scope": {
+          "$ref": "#/$defs/RepresentationScope"
+        },
+        "source_height": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Source Height",
+          "type": "integer"
+        },
+        "source_object": {
+          "$ref": "#/$defs/StoredObject"
+        },
+        "source_rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Source Rotation",
+          "type": "integer"
+        },
+        "source_width": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Source Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "raster_id",
+        "scope",
+        "source_object",
+        "native_representation_id",
+        "page_number",
+        "source_width",
+        "source_height",
+        "source_rotation",
+        "applied_rotation",
+        "pixel_width",
+        "pixel_height",
+        "raster_object",
+        "recipe",
+        "created_at"
+      ],
+      "title": "VisualPageRaster",
+      "type": "object"
+    },
+    "VisualPixelTransform": {
+      "additionalProperties": false,
+      "description": "Auditable exact mapping from normalized page coordinates to display pixels.",
+      "properties": {
+        "applied_rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Applied Rotation",
+          "type": "integer"
+        },
+        "aspect_error_ppm": {
+          "maximum": 1000000,
+          "minimum": 0,
+          "title": "Aspect Error Ppm",
+          "type": "integer"
+        },
+        "bottom": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Bottom",
+          "type": "integer"
+        },
+        "left": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Left",
+          "type": "integer"
+        },
+        "max_aspect_error_ppm": {
+          "const": 1000,
+          "default": 1000,
+          "title": "Max Aspect Error Ppm",
+          "type": "integer"
+        },
+        "normalized_region": {
+          "$ref": "#/$defs/PageRegionAnchor"
+        },
+        "raster_height": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Raster Height",
+          "type": "integer"
+        },
+        "raster_width": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Raster Width",
+          "type": "integer"
+        },
+        "right": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Right",
+          "type": "integer"
+        },
+        "scale_denominator": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000,
+          "title": "Scale Denominator",
+          "type": "integer"
+        },
+        "scale_numerator": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000,
+          "title": "Scale Numerator",
+          "type": "integer"
+        },
+        "source_height": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Source Height",
+          "type": "integer"
+        },
+        "source_rotation": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Source Rotation",
+          "type": "integer"
+        },
+        "source_width": {
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Source Width",
+          "type": "integer"
+        },
+        "top": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Top",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "normalized_region",
+        "source_width",
+        "source_height",
+        "source_rotation",
+        "applied_rotation",
+        "scale_numerator",
+        "scale_denominator",
+        "raster_width",
+        "raster_height",
+        "left",
+        "top",
+        "right",
+        "bottom",
+        "aspect_error_ppm"
+      ],
+      "title": "VisualPixelTransform",
+      "type": "object"
+    },
+    "VisualRenderLimits": {
+      "additionalProperties": false,
+      "description": "Independent hard bounds for rendering, decoding and IPC output.",
+      "properties": {
+        "max_address_space_bytes": {
+          "default": 4294967296,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Address Space Bytes",
+          "type": "integer"
+        },
+        "max_crop_dimension": {
+          "default": 10000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Max Crop Dimension",
+          "type": "integer"
+        },
+        "max_crop_pixels": {
+          "default": 25000000,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Crop Pixels",
+          "type": "integer"
+        },
+        "max_decoded_bytes": {
+          "default": 300000000,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Decoded Bytes",
+          "type": "integer"
+        },
+        "max_encoded_bytes": {
+          "default": 104857600,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Encoded Bytes",
+          "type": "integer"
+        },
+        "max_frames": {
+          "const": 1,
+          "default": 1,
+          "title": "Max Frames",
+          "type": "integer"
+        },
+        "max_metadata_bytes": {
+          "default": 65536,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "title": "Max Metadata Bytes",
+          "type": "integer"
+        },
+        "max_open_files": {
+          "default": 64,
+          "maximum": 4096,
+          "minimum": 16,
+          "title": "Max Open Files",
+          "type": "integer"
+        },
+        "max_output_bytes": {
+          "default": 104857600,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        },
+        "max_page_dimension": {
+          "default": 20000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Max Page Dimension",
+          "type": "integer"
+        },
+        "max_page_pixels": {
+          "default": 100000000,
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991,
+          "title": "Max Page Pixels",
+          "type": "integer"
+        },
+        "max_pages": {
+          "default": 2000,
+          "exclusiveMinimum": 0,
+          "maximum": 10000,
+          "title": "Max Pages",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120.0,
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "VisualRenderLimits",
+      "type": "object"
+    },
+    "VisualRenderRecipe": {
+      "additionalProperties": false,
+      "description": "Complete deterministic page-render and crop-encoding profile.",
+      "properties": {
+        "background_rgb": {
+          "default": [
+            255,
+            255,
+            255
+          ],
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            }
+          ],
+          "title": "Background Rgb",
+          "type": "array"
+        },
+        "color_mode": {
+          "const": "RGB",
+          "default": "RGB",
+          "title": "Color Mode",
+          "type": "string"
+        },
+        "config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "draw_annotations": {
+          "const": false,
+          "default": false,
+          "title": "Draw Annotations",
+          "type": "boolean"
+        },
+        "draw_forms": {
+          "const": false,
+          "default": false,
+          "title": "Draw Forms",
+          "type": "boolean"
+        },
+        "encoder": {
+          "$ref": "#/$defs/ComponentDescriptor"
+        },
+        "limits": {
+          "$ref": "#/$defs/VisualRenderLimits"
+        },
+        "max_page_aspect_error_ppm": {
+          "const": 1000,
+          "default": 1000,
+          "title": "Max Page Aspect Error Ppm",
+          "type": "integer"
+        },
+        "metadata_policy": {
+          "const": "strip",
+          "default": "strip",
+          "title": "Metadata Policy",
+          "type": "string"
+        },
+        "renderer": {
+          "$ref": "#/$defs/ComponentDescriptor"
+        },
+        "scale_denominator": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000,
+          "title": "Scale Denominator",
+          "type": "integer"
+        },
+        "scale_numerator": {
+          "exclusiveMinimum": 0,
+          "maximum": 10000,
+          "title": "Scale Numerator",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "renderer",
+        "encoder",
+        "scale_numerator",
+        "scale_denominator",
+        "limits",
+        "config_hash"
+      ],
+      "title": "VisualRenderRecipe",
+      "type": "object"
+    },
+    "VisualUsagePolicy": {
+      "additionalProperties": false,
+      "description": "Trusted effective local/export policy independent of document metadata.",
+      "properties": {
+        "export_allowed": {
+          "title": "Export Allowed",
+          "type": "boolean"
+        },
+        "license_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "License Id"
+        },
+        "policy_config_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Policy Config Hash",
+          "type": "string"
+        },
+        "policy_provider": {
+          "$ref": "#/$defs/ComponentDescriptor"
+        },
+        "restriction_codes": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_.-]*$",
+            "type": "string"
+          },
+          "title": "Restriction Codes",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/VisualUsageScope"
+        }
+      },
+      "required": [
+        "scope",
+        "export_allowed",
+        "restriction_codes",
+        "policy_provider",
+        "policy_config_hash"
+      ],
+      "title": "VisualUsagePolicy",
+      "type": "object"
+    },
+    "VisualUsageScope": {
+      "description": "Trusted effective use boundary for one visual artifact.",
+      "enum": [
+        "local_only",
+        "export_allowed"
+      ],
+      "title": "VisualUsageScope",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/visual-evidence-descriptor-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Thin immutable visual evidence root for one accepted F006 projection.",
+  "properties": {
+    "color_mode": {
+      "const": "RGB",
+      "default": "RGB",
+      "title": "Color Mode",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "pattern": "T.+(?:Z|\\+00:00)$",
+      "title": "Created At",
+      "type": "string"
+    },
+    "crop_height": {
+      "exclusiveMinimum": 0,
+      "maximum": 100000,
+      "title": "Crop Height",
+      "type": "integer"
+    },
+    "crop_media_type": {
+      "const": "image/png",
+      "default": "image/png",
+      "title": "Crop Media Type",
+      "type": "string"
+    },
+    "crop_object": {
+      "$ref": "#/$defs/StoredObject"
+    },
+    "crop_width": {
+      "exclusiveMinimum": 0,
+      "maximum": 100000,
+      "title": "Crop Width",
+      "type": "integer"
+    },
+    "document_id": {
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "evidence_projection_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Evidence Projection Id",
+      "type": "string"
+    },
+    "evidence_reference_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Evidence Reference Id",
+      "type": "string"
+    },
+    "extensions": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "identity_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Identity Version",
+      "type": "integer"
+    },
+    "native_representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Native Representation Id",
+      "type": "string"
+    },
+    "page_raster": {
+      "$ref": "#/$defs/VisualPageRaster"
+    },
+    "recipe": {
+      "$ref": "#/$defs/VisualRenderRecipe"
+    },
+    "representation_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Representation Id",
+      "type": "string"
+    },
+    "resolved_region": {
+      "$ref": "#/$defs/ResolvedVisualRegion"
+    },
+    "source_version_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Source Version Id",
+      "type": "string"
+    },
+    "stability": {
+      "const": "experimental",
+      "default": "experimental",
+      "title": "Stability",
+      "type": "string"
+    },
+    "target_anchor": {
+      "discriminator": {
+        "mapping": {
+          "page_region": "#/$defs/PageRegionAnchor",
+          "provider_pointer": "#/$defs/OpaqueProviderPointerAnchor",
+          "table_cell": "#/$defs/TableCellAnchor",
+          "text_span": "#/$defs/TextSpanAnchor"
+        },
+        "propertyName": "anchor_type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextSpanAnchor"
+        },
+        {
+          "$ref": "#/$defs/PageRegionAnchor"
+        },
+        {
+          "$ref": "#/$defs/TableCellAnchor"
+        },
+        {
+          "$ref": "#/$defs/OpaqueProviderPointerAnchor"
+        }
+      ],
+      "title": "Target Anchor"
+    },
+    "transform": {
+      "$ref": "#/$defs/VisualPixelTransform"
+    },
+    "trust": {
+      "$ref": "#/$defs/TrustClassification"
+    },
+    "usage_policy": {
+      "$ref": "#/$defs/VisualUsagePolicy"
+    },
+    "visual_evidence_id": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Visual Evidence Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "visual_evidence_id",
+    "document_id",
+    "source_version_id",
+    "representation_id",
+    "native_representation_id",
+    "evidence_reference_id",
+    "evidence_projection_id",
+    "target_anchor",
+    "resolved_region",
+    "page_raster",
+    "transform",
+    "crop_object",
+    "crop_width",
+    "crop_height",
+    "recipe",
+    "trust",
+    "usage_policy",
+    "created_at"
+  ],
+  "title": "OpenARDP Visual Evidence Descriptor",
+  "type": "object",
+  "x-openardp-contract-version": "0.1.0"
+}

@@ -29,6 +29,7 @@ from openardp.domain.evidence import (
 )
 from openardp.domain.manifest import DocumentManifest
 from openardp.domain.relation import Relation
+from openardp.domain.visual import VISUAL_CONTRACT_VERSION, VisualEvidenceDescriptor
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIRECTORY = REPOSITORY_ROOT / "schemas"
@@ -146,10 +147,23 @@ CONTEXT_ROOT_CONTRACTS: dict[str, RootContract] = {
     ),
 }
 
+VISUAL_ROOT_CONTRACTS: dict[str, RootContract] = {
+    "visual-evidence-descriptor.schema.json": RootContract(
+        VisualEvidenceDescriptor,
+        "valid-descriptor.json",
+        "https://openardp.example/schema/visual-evidence-descriptor-0.1.0.json",
+        "OpenARDP Visual Evidence Descriptor",
+        "contract_version",
+        "x-openardp-contract-version",
+        VISUAL_CONTRACT_VERSION,
+    ),
+}
+
 ALL_ROOT_CONTRACTS = {
     **ROOT_CONTRACTS,
     **EVIDENCE_ROOT_CONTRACTS,
     **CONTEXT_ROOT_CONTRACTS,
+    **VISUAL_ROOT_CONTRACTS,
 }
 
 

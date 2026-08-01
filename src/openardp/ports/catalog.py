@@ -64,6 +64,11 @@ from openardp.domain.storage import (
     SourceKey,
     SourceVersionCommit,
 )
+from openardp.domain.visual import (
+    VisualEvidenceCommit,
+    VisualEvidenceRecord,
+    VisualPageRaster,
+)
 from openardp.ports.object_store import PersistenceError
 
 
@@ -193,6 +198,14 @@ class DerivationConflict(CatalogError):
 
 class DerivationIntegrityError(CatalogError):
     """Raised when persisted derivation facts fail closed verification."""
+
+
+class VisualCatalogConflict(CatalogError):
+    """Raised when a visual or raster identity has different immutable facts."""
+
+
+class VisualCatalogIntegrityError(CatalogError):
+    """Raised when persisted visual facts fail closed verification."""
 
 
 @runtime_checkable
@@ -555,4 +568,28 @@ class ReconciliationDerivationCatalog(Catalog, Protocol):
         artifact_id: str,
     ) -> tuple[DerivationLifecycleEvent, ...]:
         """Return append-only lifecycle events in sequence order."""
+        ...
+
+
+@runtime_checkable
+class VisualCatalog(Catalog, Protocol):
+    """Atomic persistence boundary for F011 raster and descriptor facts."""
+
+    def commit_visual_evidence(self, commit: VisualEvidenceCommit) -> VisualEvidenceRecord:
+        """Atomically insert or exactly reuse one raster and visual descriptor."""
+        ...
+
+    def load_visual_evidence(self, visual_evidence_id: str) -> VisualEvidenceCommit | None:
+        """Load one complete verified visual commit or no result."""
+        ...
+
+    def load_visual_raster(self, raster_id: str) -> VisualPageRaster | None:
+        """Load one verified page-raster record or no result."""
+        ...
+
+    def list_visual_evidence(
+        self,
+        scope: RepresentationScope,
+    ) -> tuple[VisualEvidenceRecord, ...]:
+        """List one scope's visual records in deterministic identity order."""
         ...

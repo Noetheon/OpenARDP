@@ -36,7 +36,9 @@ deterministic context compiler in
 [`008-context-compiler-receipts`](specs/008-context-compiler-receipts/spec.md), plus
 the least-privilege stdio interface in
 [`009-read-only-mcp`](specs/009-read-only-mcp/spec.md) and the provider-free lifecycle in
-[`010-reconciliation-derivation-dag`](specs/010-reconciliation-derivation-dag/spec.md):
+[`010-reconciliation-derivation-dag`](specs/010-reconciliation-derivation-dag/spec.md),
+plus explicit visual escalation in
+[`011-visual-evidence-escalation`](specs/011-visual-evidence-escalation/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -78,13 +80,22 @@ the least-privilege stdio interface in
   deterministic slot replacement and exact A→B→A reactivation;
 - CAS-first reconciliation/derivation services with bounded matching, cycle rejection,
   zero-false-reuse enforcement and no model or provider invocation.
+- experimental `VisualEvidenceDescriptor 0.1.0`, deterministic visual/raster identities
+  and checksummed catalog revision 8 with atomic page-raster reuse and reachability;
+- an exact optional `visual` extra (`pypdfium2==5.12.1`, `Pillow==12.3.0`) for bounded,
+  spawned, offline PDF page rendering and canonical single-frame RGB PNG crops;
+- explicit `visual-materialize` / `visual-evidence` CLI operations and verified
+  handle-only VISUAL context candidates; compilation never invokes the renderer;
+- provider-neutral OCR/caption orchestration with no default provider; accepted output
+  remains model-derived untrusted data and depends exactly on the retained crop.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. There is no watcher,
 cloud connector, automatic garbage collection, HTTP transport or stable custom export
-format yet. F010 also does not schedule reconciliation or execute generators; callers
-explicitly supply two READY scopes and already-generated output bytes. Those remain
-separate work packages in the
+format yet. PDF is the only concrete F011 visual renderer; DOCX/PPTX page rendering,
+built-in OCR/caption models and automatic materialization remain unsupported. F010 also
+does not schedule reconciliation or execute generators; callers explicitly supply two
+READY scopes and already-generated output bytes. Those remain separate work packages in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Quickstart
@@ -120,6 +131,8 @@ openardp context "Which exact controls are documented?" \
 openardp context-receipt <receipt-sha256> --store .openardp
 openardp context "Which exact controls are documented?" \
   --replay <receipt-sha256> --store .openardp
+openardp visual-materialize <document-uuid> <projection-sha256> --store .openardp
+openardp visual-evidence <visual-evidence-sha256> --store .openardp
 openardp mcp --store .openardp
 ```
 

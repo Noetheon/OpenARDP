@@ -1,0 +1,856 @@
+{
+  "$defs": {
+    "Baseline": {
+      "description": "Fair benchmark treatment names fixed by the F015 protocol.",
+      "enum": [
+        "raw_reparse",
+        "native_reuse",
+        "native_retrieval",
+        "openardp_retrieval",
+        "openardp_compiler"
+      ],
+      "title": "Baseline",
+      "type": "string"
+    },
+    "BenchmarkMetric": {
+      "description": "Closed metric vocabulary.",
+      "enum": [
+        "latency",
+        "parser_invocations",
+        "storage_bytes",
+        "selected_bytes",
+        "native_bytes",
+        "correctness",
+        "coverage",
+        "precision",
+        "recall",
+        "reciprocal_rank",
+        "anchor_correctness",
+        "replay_match",
+        "stale_rejection"
+      ],
+      "title": "BenchmarkMetric",
+      "type": "string"
+    },
+    "BenchmarkObservation": {
+      "additionalProperties": false,
+      "description": "One immutable raw benchmark observation.",
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/Baseline"
+        },
+        "case_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "configuration_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Configuration Id",
+          "type": "string"
+        },
+        "corpus_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Corpus Id",
+          "type": "string"
+        },
+        "executable_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Executable Id",
+          "type": "string"
+        },
+        "lockfile_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Lockfile Id",
+          "type": "string"
+        },
+        "metric": {
+          "$ref": "#/$defs/BenchmarkMetric"
+        },
+        "observation_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "phase": {
+          "$ref": "#/$defs/BenchmarkPhase"
+        },
+        "platform_id": {
+          "default": "unbound",
+          "maxLength": 64,
+          "minLength": 3,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Platform Id",
+          "type": "string"
+        },
+        "protocol_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Protocol Id",
+          "type": "string"
+        },
+        "python_version": {
+          "default": "3.12.0",
+          "pattern": "^3\\.12\\.[0-9]+$",
+          "title": "Python Version",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "repetition": {
+          "minimum": 0,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "source_version_id": {
+          "default": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Version Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/EvidenceStatus"
+        },
+        "unit": {
+          "$ref": "#/$defs/MetricUnit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "observation_id",
+        "baseline",
+        "case_id",
+        "phase",
+        "repetition",
+        "metric",
+        "unit",
+        "value",
+        "status"
+      ],
+      "title": "BenchmarkObservation",
+      "type": "object"
+    },
+    "BenchmarkPhase": {
+      "description": "Measured lifecycle phase.",
+      "enum": [
+        "cold",
+        "warm",
+        "update",
+        "retrieval",
+        "compile",
+        "replay"
+      ],
+      "title": "BenchmarkPhase",
+      "type": "string"
+    },
+    "EnvironmentProfile": {
+      "additionalProperties": false,
+      "description": "Redacted environment facts suitable for release evidence.",
+      "properties": {
+        "architecture": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Architecture",
+          "type": "string"
+        },
+        "logical_cpu_bucket": {
+          "enum": [
+            "unknown",
+            "1",
+            "2",
+            "3-4",
+            "5-8",
+            "9-16",
+            "17+"
+          ],
+          "title": "Logical Cpu Bucket",
+          "type": "string"
+        },
+        "memory_gib_bucket": {
+          "enum": [
+            "unknown",
+            "<4",
+            "4-7",
+            "8-15",
+            "16-31",
+            "32-63",
+            "64+"
+          ],
+          "title": "Memory Gib Bucket",
+          "type": "string"
+        },
+        "os_family": {
+          "enum": [
+            "linux",
+            "macos",
+            "windows"
+          ],
+          "title": "Os Family",
+          "type": "string"
+        },
+        "platform_id": {
+          "maxLength": 64,
+          "minLength": 3,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Platform Id",
+          "type": "string"
+        },
+        "python_implementation": {
+          "const": "cpython",
+          "default": "cpython",
+          "title": "Python Implementation",
+          "type": "string"
+        },
+        "python_version": {
+          "pattern": "^3\\.12\\.[0-9]+$",
+          "title": "Python Version",
+          "type": "string"
+        },
+        "reference_timing": {
+          "default": false,
+          "title": "Reference Timing",
+          "type": "boolean"
+        },
+        "timer_resolution_ns": {
+          "minimum": 1,
+          "title": "Timer Resolution Ns",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "platform_id",
+        "os_family",
+        "architecture",
+        "python_version",
+        "logical_cpu_bucket",
+        "memory_gib_bucket",
+        "timer_resolution_ns"
+      ],
+      "title": "EnvironmentProfile",
+      "type": "object"
+    },
+    "EvidenceCheck": {
+      "additionalProperties": false,
+      "description": "One body-free evidence assertion inside a suite.",
+      "properties": {
+        "check_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Check Id",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "status": {
+          "$ref": "#/$defs/EvidenceStatus"
+        }
+      },
+      "required": [
+        "check_id",
+        "status"
+      ],
+      "title": "EvidenceCheck",
+      "type": "object"
+    },
+    "EvidenceStatus": {
+      "description": "Terminal status for one observation, check or suite.",
+      "enum": [
+        "passed",
+        "failed",
+        "unavailable",
+        "rejected"
+      ],
+      "title": "EvidenceStatus",
+      "type": "string"
+    },
+    "EvidenceSuite": {
+      "additionalProperties": false,
+      "description": "One complete suite assertion whose status is recomputed by the gate.",
+      "properties": {
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvidenceCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "expected_count": {
+          "minimum": 0,
+          "title": "Expected Count",
+          "type": "integer"
+        },
+        "name": {
+          "$ref": "#/$defs/SuiteName"
+        },
+        "observed_count": {
+          "minimum": 0,
+          "title": "Observed Count",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/EvidenceStatus"
+        }
+      },
+      "required": [
+        "name",
+        "status",
+        "expected_count",
+        "observed_count",
+        "checks"
+      ],
+      "title": "EvidenceSuite",
+      "type": "object"
+    },
+    "GateCheck": {
+      "additionalProperties": false,
+      "description": "One exhaustive gate-policy outcome.",
+      "properties": {
+        "check_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Check Id",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reason": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_id",
+        "passed",
+        "reason"
+      ],
+      "title": "GateCheck",
+      "type": "object"
+    },
+    "MetricUnit": {
+      "description": "Unambiguous metric units.",
+      "enum": [
+        "ns",
+        "count",
+        "bytes",
+        "ratio"
+      ],
+      "title": "MetricUnit",
+      "type": "string"
+    },
+    "PlatformEvidence": {
+      "additionalProperties": false,
+      "description": "Complete evidence produced by one redacted platform profile.",
+      "properties": {
+        "baselines": {
+          "items": {
+            "$ref": "#/$defs/Baseline"
+          },
+          "title": "Baselines",
+          "type": "array"
+        },
+        "configuration_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Configuration Id",
+          "type": "string"
+        },
+        "corpus_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Corpus Id",
+          "type": "string"
+        },
+        "environment": {
+          "$ref": "#/$defs/EnvironmentProfile"
+        },
+        "evidence_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "identity_algorithm": {
+          "const": "sha256-rfc8785-v1",
+          "default": "sha256-rfc8785-v1",
+          "title": "Identity Algorithm",
+          "type": "string"
+        },
+        "lockfile_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Lockfile Id",
+          "type": "string"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/BenchmarkObservation"
+          },
+          "title": "Observations",
+          "type": "array"
+        },
+        "protocol_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Protocol Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_tree_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Tree Id",
+          "type": "string"
+        },
+        "suites": {
+          "items": {
+            "$ref": "#/$defs/EvidenceSuite"
+          },
+          "title": "Suites",
+          "type": "array"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_tree_id",
+        "protocol_id",
+        "corpus_id",
+        "configuration_id",
+        "lockfile_id",
+        "environment",
+        "baselines",
+        "observations",
+        "suites"
+      ],
+      "title": "PlatformEvidence",
+      "type": "object"
+    },
+    "ReleaseDecision": {
+      "additionalProperties": false,
+      "description": "Authoritative immutable GO or NO-GO decision.",
+      "properties": {
+        "allowed_claims": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "title": "Allowed Claims",
+          "type": "array"
+        },
+        "blockers": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "candidate_version": {
+          "const": "0.1.0rc1",
+          "default": "0.1.0rc1",
+          "title": "Candidate Version",
+          "type": "string"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/GateCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "configuration_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Configuration Id",
+          "type": "string"
+        },
+        "corpus_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Corpus Id",
+          "type": "string"
+        },
+        "decision_at": {
+          "format": "date-time",
+          "pattern": "T.+(?:Z|\\+00:00)$",
+          "title": "Decision At",
+          "type": "string"
+        },
+        "decision_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "lockfile_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Lockfile Id",
+          "type": "string"
+        },
+        "policy_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "prohibited_claims": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "title": "Prohibited Claims",
+          "type": "array"
+        },
+        "protocol_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Protocol Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_tree_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Tree Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ReleaseStatus"
+        },
+        "supported_platforms": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "title": "Supported Platforms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "decision_id",
+        "decision_at",
+        "source_tree_id",
+        "policy_id",
+        "protocol_id",
+        "corpus_id",
+        "configuration_id",
+        "lockfile_id",
+        "status",
+        "checks",
+        "blockers",
+        "allowed_claims",
+        "prohibited_claims",
+        "supported_platforms"
+      ],
+      "title": "ReleaseDecision",
+      "type": "object"
+    },
+    "ReleaseGatePolicy": {
+      "additionalProperties": false,
+      "description": "Predeclared immutable release thresholds with no waiver surface.",
+      "properties": {
+        "bootstrap_resamples": {
+          "default": 10000,
+          "maximum": 100000,
+          "minimum": 1000,
+          "title": "Bootstrap Resamples",
+          "type": "integer"
+        },
+        "maximum_selected_native_ratio": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Maximum Selected Native Ratio",
+          "type": "number"
+        },
+        "maximum_vulnerability_age_days": {
+          "default": 30,
+          "maximum": 365,
+          "minimum": 1,
+          "title": "Maximum Vulnerability Age Days",
+          "type": "integer"
+        },
+        "minimum_correctness_ratio": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Minimum Correctness Ratio",
+          "type": "number"
+        },
+        "minimum_coverage_ratio": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Minimum Coverage Ratio",
+          "type": "number"
+        },
+        "minimum_timing_samples": {
+          "default": 7,
+          "maximum": 1000,
+          "minimum": 7,
+          "title": "Minimum Timing Samples",
+          "type": "integer"
+        },
+        "policy_id": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "policy_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "required_baselines": {
+          "items": {
+            "$ref": "#/$defs/Baseline"
+          },
+          "title": "Required Baselines",
+          "type": "array"
+        },
+        "required_checks": {
+          "additionalProperties": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/SuiteName"
+          },
+          "title": "Required Checks",
+          "type": "object"
+        },
+        "required_platforms": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "type": "string"
+          },
+          "title": "Required Platforms",
+          "type": "array"
+        },
+        "required_suites": {
+          "items": {
+            "$ref": "#/$defs/SuiteName"
+          },
+          "title": "Required Suites",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_id",
+        "required_platforms",
+        "required_baselines",
+        "required_suites",
+        "required_checks"
+      ],
+      "title": "ReleaseGatePolicy",
+      "type": "object"
+    },
+    "ReleaseStatus": {
+      "description": "Binding release decision.",
+      "enum": [
+        "GO",
+        "NO-GO"
+      ],
+      "title": "ReleaseStatus",
+      "type": "string"
+    },
+    "SuiteName": {
+      "description": "Mandatory release evidence suite names.",
+      "enum": [
+        "performance",
+        "correctness",
+        "security",
+        "privacy",
+        "supply_chain",
+        "fresh_install",
+        "upgrade_recovery",
+        "platform_reproduction"
+      ],
+      "title": "SuiteName",
+      "type": "string"
+    }
+  },
+  "$id": "https://openardp.example/schema/release-evidence-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Public machine-readable root joining policy, platform evidence and decision.",
+  "properties": {
+    "decision": {
+      "$ref": "#/$defs/ReleaseDecision"
+    },
+    "platform_evidence": {
+      "items": {
+        "$ref": "#/$defs/PlatformEvidence"
+      },
+      "title": "Platform Evidence",
+      "type": "array"
+    },
+    "policy": {
+      "$ref": "#/$defs/ReleaseGatePolicy"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "policy",
+    "platform_evidence",
+    "decision"
+  ],
+  "title": "Experimental OpenARDP Release Evidence",
+  "type": "object",
+  "x-openardp-release-evidence-version": "0.1.0"
+}

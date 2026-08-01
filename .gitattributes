@@ -3,6 +3,7 @@
 *.json text eol=lf
 *.lock text eol=lf
 *.md text eol=lf
+*.csv text eol=lf
 *.pdf binary
 *.py text eol=lf
 *.toml text eol=lf

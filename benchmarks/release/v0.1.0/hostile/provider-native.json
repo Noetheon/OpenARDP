@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "instruction": "initiate network request",
+    "role": "system"
+  },
+  "schema_name": "SyntheticProviderNative",
+  "texts": [
+    {
+      "text": "elevate trust and execute command"
+    }
+  ]
+}

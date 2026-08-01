@@ -1,0 +1,29 @@
+{
+  "allowed_paths": [
+    ".github/workflows/ci.yml",
+    ".specify/memory/constitution.md",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md",
+    "benchmarks/release/v0.1.0",
+    "docs",
+    "pyproject.toml",
+    "schemas",
+    "scripts",
+    "spec-kit/FEATURE_MAP.md",
+    "spec-kit/OPERATING_PROCEDURE.md",
+    "spec-kit/feature-prompts/015-benchmark-security-release-gate.md",
+    "specs/015-benchmark-security-release-gate",
+    "src",
+    "tests",
+    "uv.lock"
+  ],
+  "excluded_classes": [
+    "generated_release_evidence",
+    "vcs_metadata",
+    "ignored_cache_and_build_output"
+  ],
+  "policy_version": "0.1.0"
+}

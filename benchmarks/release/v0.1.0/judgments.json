@@ -1,0 +1,72 @@
+{
+  "budgets": [
+    {
+      "budget_id": "small",
+      "maximum_bytes": 256
+    },
+    {
+      "budget_id": "medium",
+      "maximum_bytes": 512
+    },
+    {
+      "budget_id": "large",
+      "maximum_bytes": 1024
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "text-evidence",
+      "expected_anchors": [
+        "line-1"
+      ],
+      "expected_evidence_ids": [
+        "sha256:20b19d22568d44f10950364344836012897b5dce151bc5e316824745587131f2"
+      ],
+      "expected_terms": [
+        "immutable",
+        "provenance"
+      ],
+      "query_id": "query-text-evidence",
+      "task_id": "task-text-evidence"
+    },
+    {
+      "case_id": "docx-evidence",
+      "expected_anchors": [
+        "line-1",
+        "line-2"
+      ],
+      "expected_evidence_ids": [
+        "sha256:27282181d33758e97e7fe5109c38857017dbaf8285bd7f1f4baeb033da612f7f",
+        "sha256:74cd54e22d6e519973e072c2ee41799927cd1fcdc6501261806524f99acfdac8"
+      ],
+      "expected_terms": [
+        "synthetic",
+        "evidence"
+      ],
+      "query_id": "query-docx-evidence",
+      "task_id": "task-docx-evidence"
+    },
+    {
+      "case_id": "pptx-evidence",
+      "expected_anchors": [
+        "line-1",
+        "line-2"
+      ],
+      "expected_evidence_ids": [
+        "sha256:ec926048f1692b6dc51024708021beed703fd9c77097130488418f7777a9648b",
+        "sha256:6bced9f34e2a40af781732e7e1c87eaf640f5751194d2997709a311ce13cee24"
+      ],
+      "expected_terms": [
+        "synthetic",
+        "evidence"
+      ],
+      "query_id": "query-pptx-evidence",
+      "task_id": "task-pptx-evidence"
+    }
+  ],
+  "judgment_version": "0.1.0",
+  "optional_model_evaluator": {
+    "reason": "optional-evaluator-unavailable",
+    "status": "unavailable"
+  }
+}

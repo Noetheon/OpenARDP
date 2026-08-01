@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "byte_length": 883,
+      "path": "artifacts.json",
+      "sha256": "sha256:957c898f796a9431f25d71fdc64350a55158d37431064868087e533cb8107cd4"
+    },
+    {
+      "byte_length": 346,
+      "path": "claim-map.json",
+      "sha256": "sha256:b8717f9de866409af4a62d17e7e840b6ee26a8366ca1d98018172d40fdde25f4"
+    },
+    {
+      "byte_length": 3438,
+      "path": "decision.json",
+      "sha256": "sha256:2ba18e73188dd2379936171e05603e0545c69edf776c55f90d82289849f60c22"
+    },
+    {
+      "byte_length": 4167155,
+      "path": "platform-evidence.json",
+      "sha256": "sha256:e4cef447b1a3c02f6adb252894103515e621f32dac7595c13bedf949856bf564"
+    },
+    {
+      "byte_length": 4172577,
+      "path": "release-evidence.json",
+      "sha256": "sha256:391ac37e17fe5e8cf44ecd4aef10bce949c50b947adab533348978e9813a6362"
+    },
+    {
+      "byte_length": 2606,
+      "path": "report.md",
+      "sha256": "sha256:16f5d43efad364163bade38657ea2d8cad44ba5aa09527986a5a391fbf1828af"
+    },
+    {
+      "byte_length": 56140,
+      "path": "sbom.cdx.json",
+      "sha256": "sha256:4e1a45d063130d42f3a32e0b0167378ca932eb0514f17c9c1d30cfc47817eef5"
+    }
+  ],
+  "schema_version": "0.1.0"
+}

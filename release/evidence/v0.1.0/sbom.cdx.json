@@ -1,0 +1,2548 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "accelerate-2@1.14.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "accelerate",
+      "purl": "pkg:pypi/accelerate@1.14.0",
+      "type": "library",
+      "version": "1.14.0"
+    },
+    {
+      "bom-ref": "annotated-doc-3@0.0.4",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "annotated-doc",
+      "purl": "pkg:pypi/annotated-doc@0.0.4",
+      "type": "library",
+      "version": "0.0.4"
+    },
+    {
+      "bom-ref": "annotated-types-4@0.7.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "annotated-types",
+      "purl": "pkg:pypi/annotated-types@0.7.0",
+      "type": "library",
+      "version": "0.7.0"
+    },
+    {
+      "bom-ref": "antlr4-python3-runtime-5@4.9.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "antlr4-python3-runtime",
+      "purl": "pkg:pypi/antlr4-python3-runtime@4.9.3",
+      "type": "library",
+      "version": "4.9.3"
+    },
+    {
+      "bom-ref": "anyio-6@4.14.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "anyio",
+      "purl": "pkg:pypi/anyio@4.14.2",
+      "type": "library",
+      "version": "4.14.2"
+    },
+    {
+      "bom-ref": "attrs-7@26.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "attrs",
+      "purl": "pkg:pypi/attrs@26.1.0",
+      "type": "library",
+      "version": "26.1.0"
+    },
+    {
+      "bom-ref": "beautifulsoup4-8@4.15.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "beautifulsoup4",
+      "purl": "pkg:pypi/beautifulsoup4@4.15.0",
+      "type": "library",
+      "version": "4.15.0"
+    },
+    {
+      "bom-ref": "certifi-9@2026.7.22",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "certifi",
+      "purl": "pkg:pypi/certifi@2026.7.22",
+      "type": "library",
+      "version": "2026.7.22"
+    },
+    {
+      "bom-ref": "charset-normalizer-10@3.4.9",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "charset-normalizer",
+      "purl": "pkg:pypi/charset-normalizer@3.4.9",
+      "type": "library",
+      "version": "3.4.9"
+    },
+    {
+      "bom-ref": "click-11@8.4.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "click",
+      "purl": "pkg:pypi/click@8.4.2",
+      "type": "library",
+      "version": "8.4.2"
+    },
+    {
+      "bom-ref": "colorama-12@0.4.6",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "colorama",
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "type": "library",
+      "version": "0.4.6"
+    },
+    {
+      "bom-ref": "colorlog-13@6.12.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "colorlog",
+      "purl": "pkg:pypi/colorlog@6.12.0",
+      "type": "library",
+      "version": "6.12.0"
+    },
+    {
+      "bom-ref": "cuda-bindings-14@13.3.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "cuda-bindings",
+      "purl": "pkg:pypi/cuda-bindings@13.3.1",
+      "type": "library",
+      "version": "13.3.1"
+    },
+    {
+      "bom-ref": "cuda-pathfinder-15@1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "cuda-pathfinder",
+      "purl": "pkg:pypi/cuda-pathfinder@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "cuda-toolkit-16@13.0.3.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "cuda-toolkit",
+      "purl": "pkg:pypi/cuda-toolkit@13.0.3.0",
+      "type": "library",
+      "version": "13.0.3.0"
+    },
+    {
+      "bom-ref": "defusedxml-17@0.7.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "defusedxml",
+      "purl": "pkg:pypi/defusedxml@0.7.1",
+      "type": "library",
+      "version": "0.7.1"
+    },
+    {
+      "bom-ref": "dill-18@0.4.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "dill",
+      "purl": "pkg:pypi/dill@0.4.1",
+      "type": "library",
+      "version": "0.4.1"
+    },
+    {
+      "bom-ref": "doclang-19@0.7.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "doclang",
+      "purl": "pkg:pypi/doclang@0.7.3",
+      "type": "library",
+      "version": "0.7.3"
+    },
+    {
+      "bom-ref": "docling-20@2.114.0",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "docling",
+      "purl": "pkg:pypi/docling@2.114.0",
+      "type": "library",
+      "version": "2.114.0"
+    },
+    {
+      "bom-ref": "docling-core-21@2.87.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "docling-core",
+      "purl": "pkg:pypi/docling-core@2.87.1",
+      "type": "library",
+      "version": "2.87.1"
+    },
+    {
+      "bom-ref": "docling-ibm-models-22@3.13.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "docling-ibm-models",
+      "purl": "pkg:pypi/docling-ibm-models@3.13.3",
+      "type": "library",
+      "version": "3.13.3"
+    },
+    {
+      "bom-ref": "docling-parse-23@7.8.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "docling-parse",
+      "purl": "pkg:pypi/docling-parse@7.8.1",
+      "type": "library",
+      "version": "7.8.1"
+    },
+    {
+      "bom-ref": "docling-slim-24@2.114.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "docling-slim",
+      "purl": "pkg:pypi/docling-slim@2.114.0",
+      "type": "library",
+      "version": "2.114.0"
+    },
+    {
+      "bom-ref": "et-xmlfile-25@2.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "et-xmlfile",
+      "purl": "pkg:pypi/et-xmlfile@2.0.0",
+      "type": "library",
+      "version": "2.0.0"
+    },
+    {
+      "bom-ref": "faker-26@40.36.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "faker",
+      "purl": "pkg:pypi/faker@40.36.0",
+      "type": "library",
+      "version": "40.36.0"
+    },
+    {
+      "bom-ref": "filelock-27@3.32.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "filelock",
+      "purl": "pkg:pypi/filelock@3.32.0",
+      "type": "library",
+      "version": "3.32.0"
+    },
+    {
+      "bom-ref": "filetype-28@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "filetype",
+      "purl": "pkg:pypi/filetype@1.2.0",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "bom-ref": "fsspec-29@2026.6.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "fsspec",
+      "purl": "pkg:pypi/fsspec@2026.6.0",
+      "type": "library",
+      "version": "2026.6.0"
+    },
+    {
+      "bom-ref": "h11-30@0.16.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "h11",
+      "purl": "pkg:pypi/h11@0.16.0",
+      "type": "library",
+      "version": "0.16.0"
+    },
+    {
+      "bom-ref": "hf-xet-31@1.5.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "hf-xet",
+      "purl": "pkg:pypi/hf-xet@1.5.2",
+      "type": "library",
+      "version": "1.5.2"
+    },
+    {
+      "bom-ref": "httpcore-32@1.0.9",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "httpcore",
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "type": "library",
+      "version": "1.0.9"
+    },
+    {
+      "bom-ref": "httpx-33@0.28.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "httpx",
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "type": "library",
+      "version": "0.28.1"
+    },
+    {
+      "bom-ref": "huggingface-hub-34@1.24.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "huggingface-hub",
+      "purl": "pkg:pypi/huggingface-hub@1.24.0",
+      "type": "library",
+      "version": "1.24.0"
+    },
+    {
+      "bom-ref": "idna-35@3.18",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "idna",
+      "purl": "pkg:pypi/idna@3.18",
+      "type": "library",
+      "version": "3.18"
+    },
+    {
+      "bom-ref": "jinja2-36@3.1.6",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "jinja2",
+      "purl": "pkg:pypi/jinja2@3.1.6",
+      "type": "library",
+      "version": "3.1.6"
+    },
+    {
+      "bom-ref": "jsonlines-37@4.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "jsonlines",
+      "purl": "pkg:pypi/jsonlines@4.0.0",
+      "type": "library",
+      "version": "4.0.0"
+    },
+    {
+      "bom-ref": "jsonref-38@1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "jsonref",
+      "purl": "pkg:pypi/jsonref@1.1.0",
+      "type": "library",
+      "version": "1.1.0"
+    },
+    {
+      "bom-ref": "jsonschema-39@4.26.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "jsonschema",
+      "purl": "pkg:pypi/jsonschema@4.26.0",
+      "type": "library",
+      "version": "4.26.0"
+    },
+    {
+      "bom-ref": "jsonschema-specifications-40@2025.9.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "jsonschema-specifications",
+      "purl": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "type": "library",
+      "version": "2025.9.1"
+    },
+    {
+      "bom-ref": "latex2mathml-41@3.81.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "latex2mathml",
+      "purl": "pkg:pypi/latex2mathml@3.81.0",
+      "type": "library",
+      "version": "3.81.0"
+    },
+    {
+      "bom-ref": "lxml-42@6.1.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "lxml",
+      "purl": "pkg:pypi/lxml@6.1.1",
+      "type": "library",
+      "version": "6.1.1"
+    },
+    {
+      "bom-ref": "mail-parser-43@4.4.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "mail-parser",
+      "purl": "pkg:pypi/mail-parser@4.4.0",
+      "type": "library",
+      "version": "4.4.0"
+    },
+    {
+      "bom-ref": "markdown-it-py-44@4.2.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "markdown-it-py",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "bom-ref": "marko-45@2.2.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "marko",
+      "purl": "pkg:pypi/marko@2.2.3",
+      "type": "library",
+      "version": "2.2.3"
+    },
+    {
+      "bom-ref": "markupsafe-46@3.0.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "markupsafe",
+      "purl": "pkg:pypi/markupsafe@3.0.3",
+      "type": "library",
+      "version": "3.0.3"
+    },
+    {
+      "bom-ref": "mdurl-47@0.1.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "mdurl",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "mpire-48@2.10.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "mpire",
+      "purl": "pkg:pypi/mpire@2.10.2",
+      "type": "library",
+      "version": "2.10.2"
+    },
+    {
+      "bom-ref": "mpmath-49@1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "mpmath",
+      "purl": "pkg:pypi/mpmath@1.3.0",
+      "type": "library",
+      "version": "1.3.0"
+    },
+    {
+      "bom-ref": "multiprocess-50@0.70.19",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "multiprocess",
+      "purl": "pkg:pypi/multiprocess@0.70.19",
+      "type": "library",
+      "version": "0.70.19"
+    },
+    {
+      "bom-ref": "networkx-51@3.6.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "networkx",
+      "purl": "pkg:pypi/networkx@3.6.1",
+      "type": "library",
+      "version": "3.6.1"
+    },
+    {
+      "bom-ref": "numpy-52@2.5.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "numpy",
+      "purl": "pkg:pypi/numpy@2.5.1",
+      "type": "library",
+      "version": "2.5.1"
+    },
+    {
+      "bom-ref": "nvidia-cublas-53@13.1.1.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cublas",
+      "purl": "pkg:pypi/nvidia-cublas@13.1.1.3",
+      "type": "library",
+      "version": "13.1.1.3"
+    },
+    {
+      "bom-ref": "nvidia-cuda-cupti-54@13.0.85",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cuda-cupti",
+      "purl": "pkg:pypi/nvidia-cuda-cupti@13.0.85",
+      "type": "library",
+      "version": "13.0.85"
+    },
+    {
+      "bom-ref": "nvidia-cuda-nvrtc-55@13.0.88",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cuda-nvrtc",
+      "purl": "pkg:pypi/nvidia-cuda-nvrtc@13.0.88",
+      "type": "library",
+      "version": "13.0.88"
+    },
+    {
+      "bom-ref": "nvidia-cuda-runtime-56@13.0.96",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cuda-runtime",
+      "purl": "pkg:pypi/nvidia-cuda-runtime@13.0.96",
+      "type": "library",
+      "version": "13.0.96"
+    },
+    {
+      "bom-ref": "nvidia-cudnn-cu13-57@9.20.0.48",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cudnn-cu13",
+      "purl": "pkg:pypi/nvidia-cudnn-cu13@9.20.0.48",
+      "type": "library",
+      "version": "9.20.0.48"
+    },
+    {
+      "bom-ref": "nvidia-cufft-58@12.0.0.61",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cufft",
+      "purl": "pkg:pypi/nvidia-cufft@12.0.0.61",
+      "type": "library",
+      "version": "12.0.0.61"
+    },
+    {
+      "bom-ref": "nvidia-cufile-59@1.15.1.6",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cufile",
+      "purl": "pkg:pypi/nvidia-cufile@1.15.1.6",
+      "type": "library",
+      "version": "1.15.1.6"
+    },
+    {
+      "bom-ref": "nvidia-curand-60@10.4.0.35",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-curand",
+      "purl": "pkg:pypi/nvidia-curand@10.4.0.35",
+      "type": "library",
+      "version": "10.4.0.35"
+    },
+    {
+      "bom-ref": "nvidia-cusolver-61@12.0.4.66",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cusolver",
+      "purl": "pkg:pypi/nvidia-cusolver@12.0.4.66",
+      "type": "library",
+      "version": "12.0.4.66"
+    },
+    {
+      "bom-ref": "nvidia-cusparse-62@12.6.3.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cusparse",
+      "purl": "pkg:pypi/nvidia-cusparse@12.6.3.3",
+      "type": "library",
+      "version": "12.6.3.3"
+    },
+    {
+      "bom-ref": "nvidia-cusparselt-cu13-63@0.8.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-cusparselt-cu13",
+      "purl": "pkg:pypi/nvidia-cusparselt-cu13@0.8.1",
+      "type": "library",
+      "version": "0.8.1"
+    },
+    {
+      "bom-ref": "nvidia-nccl-cu13-64@2.29.7",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-nccl-cu13",
+      "purl": "pkg:pypi/nvidia-nccl-cu13@2.29.7",
+      "type": "library",
+      "version": "2.29.7"
+    },
+    {
+      "bom-ref": "nvidia-nvjitlink-65@13.3.33",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-nvjitlink",
+      "purl": "pkg:pypi/nvidia-nvjitlink@13.3.33",
+      "type": "library",
+      "version": "13.3.33"
+    },
+    {
+      "bom-ref": "nvidia-nvshmem-cu13-66@3.4.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-nvshmem-cu13",
+      "purl": "pkg:pypi/nvidia-nvshmem-cu13@3.4.5",
+      "type": "library",
+      "version": "3.4.5"
+    },
+    {
+      "bom-ref": "nvidia-nvtx-67@13.0.85",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "nvidia-nvtx",
+      "purl": "pkg:pypi/nvidia-nvtx@13.0.85",
+      "type": "library",
+      "version": "13.0.85"
+    },
+    {
+      "bom-ref": "omegaconf-68@2.3.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "omegaconf",
+      "purl": "pkg:pypi/omegaconf@2.3.1",
+      "type": "library",
+      "version": "2.3.1"
+    },
+    {
+      "bom-ref": "openardp-1@0.1.0rc1",
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "openardp",
+      "purl": "pkg:pypi/openardp@0.1.0rc1",
+      "type": "library",
+      "version": "0.1.0rc1"
+    },
+    {
+      "bom-ref": "opencv-python-69@5.0.0.93",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "opencv-python",
+      "purl": "pkg:pypi/opencv-python@5.0.0.93",
+      "type": "library",
+      "version": "5.0.0.93"
+    },
+    {
+      "bom-ref": "openpyxl-70@3.1.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "openpyxl",
+      "purl": "pkg:pypi/openpyxl@3.1.5",
+      "type": "library",
+      "version": "3.1.5"
+    },
+    {
+      "bom-ref": "packaging-71@26.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "packaging",
+      "purl": "pkg:pypi/packaging@26.2",
+      "type": "library",
+      "version": "26.2"
+    },
+    {
+      "bom-ref": "pandas-72@3.0.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pandas",
+      "purl": "pkg:pypi/pandas@3.0.5",
+      "type": "library",
+      "version": "3.0.5"
+    },
+    {
+      "bom-ref": "pillow-73@12.3.0",
+      "licenses": [
+        {
+          "expression": "MIT-CMU"
+        }
+      ],
+      "name": "pillow",
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "type": "library",
+      "version": "12.3.0"
+    },
+    {
+      "bom-ref": "pluggy-74@1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pluggy",
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "polyfactory-75@3.3.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "polyfactory",
+      "purl": "pkg:pypi/polyfactory@3.3.0",
+      "type": "library",
+      "version": "3.3.0"
+    },
+    {
+      "bom-ref": "psutil-76@7.2.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "psutil",
+      "purl": "pkg:pypi/psutil@7.2.2",
+      "type": "library",
+      "version": "7.2.2"
+    },
+    {
+      "bom-ref": "pyclipper-77@1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pyclipper",
+      "purl": "pkg:pypi/pyclipper@1.4.0",
+      "type": "library",
+      "version": "1.4.0"
+    },
+    {
+      "bom-ref": "pydantic-78@2.12.5",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic",
+      "purl": "pkg:pypi/pydantic@2.12.5",
+      "type": "library",
+      "version": "2.12.5"
+    },
+    {
+      "bom-ref": "pydantic-core-79@2.41.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pydantic-core",
+      "purl": "pkg:pypi/pydantic-core@2.41.5",
+      "type": "library",
+      "version": "2.41.5"
+    },
+    {
+      "bom-ref": "pydantic-settings-80@2.14.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pydantic-settings",
+      "purl": "pkg:pypi/pydantic-settings@2.14.2",
+      "type": "library",
+      "version": "2.14.2"
+    },
+    {
+      "bom-ref": "pygments-81@2.20.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pygments",
+      "purl": "pkg:pypi/pygments@2.20.0",
+      "type": "library",
+      "version": "2.20.0"
+    },
+    {
+      "bom-ref": "pylatexenc-82@2.11",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pylatexenc",
+      "purl": "pkg:pypi/pylatexenc@2.11",
+      "type": "library",
+      "version": "2.11"
+    },
+    {
+      "bom-ref": "pypdfium2-83@5.12.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pypdfium2",
+      "purl": "pkg:pypi/pypdfium2@5.12.1",
+      "type": "library",
+      "version": "5.12.1"
+    },
+    {
+      "bom-ref": "python-dateutil-84@2.9.0.post0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "python-dateutil",
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0",
+      "type": "library",
+      "version": "2.9.0.post0"
+    },
+    {
+      "bom-ref": "python-docx-85@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "python-docx",
+      "purl": "pkg:pypi/python-docx@1.2.0",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "bom-ref": "python-dotenv-86@1.2.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "python-dotenv",
+      "purl": "pkg:pypi/python-dotenv@1.2.2",
+      "type": "library",
+      "version": "1.2.2"
+    },
+    {
+      "bom-ref": "python-pptx-87@1.0.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "python-pptx",
+      "purl": "pkg:pypi/python-pptx@1.0.2",
+      "type": "library",
+      "version": "1.0.2"
+    },
+    {
+      "bom-ref": "pywin32-88@312",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pywin32",
+      "purl": "pkg:pypi/pywin32@312",
+      "type": "library",
+      "version": "312"
+    },
+    {
+      "bom-ref": "pyyaml-89@6.0.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "pyyaml",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "type": "library",
+      "version": "6.0.3"
+    },
+    {
+      "bom-ref": "rapidocr-90@3.9.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "rapidocr",
+      "purl": "pkg:pypi/rapidocr@3.9.2",
+      "type": "library",
+      "version": "3.9.2"
+    },
+    {
+      "bom-ref": "referencing-91@0.37.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "referencing",
+      "purl": "pkg:pypi/referencing@0.37.0",
+      "type": "library",
+      "version": "0.37.0"
+    },
+    {
+      "bom-ref": "regex-92@2026.7.19",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "regex",
+      "purl": "pkg:pypi/regex@2026.7.19",
+      "type": "library",
+      "version": "2026.7.19"
+    },
+    {
+      "bom-ref": "requests-93@2.34.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "requests",
+      "purl": "pkg:pypi/requests@2.34.2",
+      "type": "library",
+      "version": "2.34.2"
+    },
+    {
+      "bom-ref": "rfc8785-94@0.1.4",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "rfc8785",
+      "purl": "pkg:pypi/rfc8785@0.1.4",
+      "type": "library",
+      "version": "0.1.4"
+    },
+    {
+      "bom-ref": "rich-95@15.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "rich",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "bom-ref": "rpds-py-96@2026.6.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "rpds-py",
+      "purl": "pkg:pypi/rpds-py@2026.6.3",
+      "type": "library",
+      "version": "2026.6.3"
+    },
+    {
+      "bom-ref": "rtree-97@1.4.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "rtree",
+      "purl": "pkg:pypi/rtree@1.4.1",
+      "type": "library",
+      "version": "1.4.1"
+    },
+    {
+      "bom-ref": "safetensors-98@0.8.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "safetensors",
+      "purl": "pkg:pypi/safetensors@0.8.0",
+      "type": "library",
+      "version": "0.8.0"
+    },
+    {
+      "bom-ref": "scipy-99@1.18.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "scipy",
+      "purl": "pkg:pypi/scipy@1.18.0",
+      "type": "library",
+      "version": "1.18.0"
+    },
+    {
+      "bom-ref": "semchunk-100@3.2.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "semchunk",
+      "purl": "pkg:pypi/semchunk@3.2.5",
+      "type": "library",
+      "version": "3.2.5"
+    },
+    {
+      "bom-ref": "setuptools-101@83.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "setuptools",
+      "purl": "pkg:pypi/setuptools@83.0.0",
+      "type": "library",
+      "version": "83.0.0"
+    },
+    {
+      "bom-ref": "shapely-102@2.1.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "shapely",
+      "purl": "pkg:pypi/shapely@2.1.2",
+      "type": "library",
+      "version": "2.1.2"
+    },
+    {
+      "bom-ref": "shellingham-103@1.5.4",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "shellingham",
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "bom-ref": "six-104@1.17.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "six",
+      "purl": "pkg:pypi/six@1.17.0",
+      "type": "library",
+      "version": "1.17.0"
+    },
+    {
+      "bom-ref": "soupsieve-105@2.9.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "soupsieve",
+      "purl": "pkg:pypi/soupsieve@2.9.1",
+      "type": "library",
+      "version": "2.9.1"
+    },
+    {
+      "bom-ref": "sympy-106@1.14.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "sympy",
+      "purl": "pkg:pypi/sympy@1.14.0",
+      "type": "library",
+      "version": "1.14.0"
+    },
+    {
+      "bom-ref": "tabulate-107@0.10.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tabulate",
+      "purl": "pkg:pypi/tabulate@0.10.0",
+      "type": "library",
+      "version": "0.10.0"
+    },
+    {
+      "bom-ref": "tokenizers-108@0.22.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tokenizers",
+      "purl": "pkg:pypi/tokenizers@0.22.2",
+      "type": "library",
+      "version": "0.22.2"
+    },
+    {
+      "bom-ref": "torch-109@2.13.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "torch",
+      "purl": "pkg:pypi/torch@2.13.0",
+      "type": "library",
+      "version": "2.13.0"
+    },
+    {
+      "bom-ref": "torchvision-110@0.28.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "torchvision",
+      "purl": "pkg:pypi/torchvision@0.28.0",
+      "type": "library",
+      "version": "0.28.0"
+    },
+    {
+      "bom-ref": "tqdm-111@4.69.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tqdm",
+      "purl": "pkg:pypi/tqdm@4.69.1",
+      "type": "library",
+      "version": "4.69.1"
+    },
+    {
+      "bom-ref": "transformers-112@5.8.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "transformers",
+      "purl": "pkg:pypi/transformers@5.8.1",
+      "type": "library",
+      "version": "5.8.1"
+    },
+    {
+      "bom-ref": "tree-sitter-113@0.26.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tree-sitter",
+      "purl": "pkg:pypi/tree-sitter@0.26.0",
+      "type": "library",
+      "version": "0.26.0"
+    },
+    {
+      "bom-ref": "tree-sitter-c-114@0.24.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tree-sitter-c",
+      "purl": "pkg:pypi/tree-sitter-c@0.24.2",
+      "type": "library",
+      "version": "0.24.2"
+    },
+    {
+      "bom-ref": "tree-sitter-javascript-115@0.25.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tree-sitter-javascript",
+      "purl": "pkg:pypi/tree-sitter-javascript@0.25.0",
+      "type": "library",
+      "version": "0.25.0"
+    },
+    {
+      "bom-ref": "tree-sitter-python-116@0.25.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tree-sitter-python",
+      "purl": "pkg:pypi/tree-sitter-python@0.25.0",
+      "type": "library",
+      "version": "0.25.0"
+    },
+    {
+      "bom-ref": "tree-sitter-typescript-117@0.23.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tree-sitter-typescript",
+      "purl": "pkg:pypi/tree-sitter-typescript@0.23.2",
+      "type": "library",
+      "version": "0.23.2"
+    },
+    {
+      "bom-ref": "triton-118@3.7.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "triton",
+      "purl": "pkg:pypi/triton@3.7.1",
+      "type": "library",
+      "version": "3.7.1"
+    },
+    {
+      "bom-ref": "typer-119@0.24.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "typer",
+      "purl": "pkg:pypi/typer@0.24.2",
+      "type": "library",
+      "version": "0.24.2"
+    },
+    {
+      "bom-ref": "typing-extensions-120@4.16.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "typing-extensions",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "bom-ref": "typing-inspection-121@0.4.2",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "typing-inspection",
+      "purl": "pkg:pypi/typing-inspection@0.4.2",
+      "type": "library",
+      "version": "0.4.2"
+    },
+    {
+      "bom-ref": "tzdata-122@2026.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "tzdata",
+      "purl": "pkg:pypi/tzdata@2026.3",
+      "type": "library",
+      "version": "2026.3"
+    },
+    {
+      "bom-ref": "urllib3-123@2.7.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "urllib3",
+      "purl": "pkg:pypi/urllib3@2.7.0",
+      "type": "library",
+      "version": "2.7.0"
+    },
+    {
+      "bom-ref": "websockets-124@16.1.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "websockets",
+      "purl": "pkg:pypi/websockets@16.1.1",
+      "type": "library",
+      "version": "16.1.1"
+    },
+    {
+      "bom-ref": "xlsxwriter-125@3.2.9",
+      "licenses": [
+        {
+          "license": {
+            "name": "unreviewed-metadata-unavailable"
+          }
+        }
+      ],
+      "name": "xlsxwriter",
+      "purl": "pkg:pypi/xlsxwriter@3.2.9",
+      "type": "library",
+      "version": "3.2.9"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "huggingface-hub-34@1.24.0",
+        "numpy-52@2.5.1",
+        "packaging-71@26.2",
+        "psutil-76@7.2.2",
+        "pyyaml-89@6.0.3",
+        "safetensors-98@0.8.0",
+        "torch-109@2.13.0"
+      ],
+      "ref": "accelerate-2@1.14.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "annotated-doc-3@0.0.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "annotated-types-4@0.7.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "antlr4-python3-runtime-5@4.9.3"
+    },
+    {
+      "dependsOn": [
+        "idna-35@3.18",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "anyio-6@4.14.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "attrs-7@26.1.0"
+    },
+    {
+      "dependsOn": [
+        "soupsieve-105@2.9.1",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "beautifulsoup4-8@4.15.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "certifi-9@2026.7.22"
+    },
+    {
+      "dependsOn": [],
+      "ref": "charset-normalizer-10@3.4.9"
+    },
+    {
+      "dependsOn": [
+        "colorama-12@0.4.6"
+      ],
+      "ref": "click-11@8.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "colorama-12@0.4.6"
+    },
+    {
+      "dependsOn": [
+        "colorama-12@0.4.6"
+      ],
+      "ref": "colorlog-13@6.12.0"
+    },
+    {
+      "dependsOn": [
+        "cuda-pathfinder-15@1.6.0"
+      ],
+      "ref": "cuda-bindings-14@13.3.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "cuda-pathfinder-15@1.6.0"
+    },
+    {
+      "dependsOn": [
+        "nvidia-cublas-53@13.1.1.3",
+        "nvidia-cuda-cupti-54@13.0.85",
+        "nvidia-cuda-nvrtc-55@13.0.88",
+        "nvidia-cuda-runtime-56@13.0.96",
+        "nvidia-cufft-58@12.0.0.61",
+        "nvidia-cufile-59@1.15.1.6",
+        "nvidia-curand-60@10.4.0.35",
+        "nvidia-cusolver-61@12.0.4.66",
+        "nvidia-cusparse-62@12.6.3.3",
+        "nvidia-nvjitlink-65@13.3.33",
+        "nvidia-nvtx-67@13.0.85"
+      ],
+      "ref": "cuda-toolkit-16@13.0.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "defusedxml-17@0.7.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "dill-18@0.4.1"
+    },
+    {
+      "dependsOn": [
+        "lxml-42@6.1.1",
+        "typer-119@0.24.2"
+      ],
+      "ref": "doclang-19@0.7.3"
+    },
+    {
+      "dependsOn": [
+        "docling-slim-24@2.114.0"
+      ],
+      "ref": "docling-20@2.114.0"
+    },
+    {
+      "dependsOn": [
+        "defusedxml-17@0.7.1",
+        "doclang-19@0.7.3",
+        "jsonref-38@1.1.0",
+        "jsonschema-39@4.26.0",
+        "latex2mathml-41@3.81.0",
+        "pandas-72@3.0.5",
+        "pillow-73@12.3.0",
+        "pydantic-78@2.12.5",
+        "pydantic-settings-80@2.14.2",
+        "pyyaml-89@6.0.3",
+        "semchunk-100@3.2.5",
+        "tabulate-107@0.10.0",
+        "transformers-112@5.8.1",
+        "tree-sitter-113@0.26.0",
+        "tree-sitter-c-114@0.24.2",
+        "tree-sitter-javascript-115@0.25.0",
+        "tree-sitter-python-116@0.25.0",
+        "tree-sitter-typescript-117@0.23.2",
+        "typer-119@0.24.2",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "docling-core-21@2.87.1"
+    },
+    {
+      "dependsOn": [
+        "accelerate-2@1.14.0",
+        "docling-core-21@2.87.1",
+        "huggingface-hub-34@1.24.0",
+        "jsonlines-37@4.0.0",
+        "numpy-52@2.5.1",
+        "pillow-73@12.3.0",
+        "pydantic-78@2.12.5",
+        "rtree-97@1.4.1",
+        "safetensors-98@0.8.0",
+        "torch-109@2.13.0",
+        "torchvision-110@0.28.0",
+        "tqdm-111@4.69.1",
+        "transformers-112@5.8.1"
+      ],
+      "ref": "docling-ibm-models-22@3.13.3"
+    },
+    {
+      "dependsOn": [
+        "docling-core-21@2.87.1",
+        "pillow-73@12.3.0",
+        "pydantic-78@2.12.5",
+        "pywin32-88@312"
+      ],
+      "ref": "docling-parse-23@7.8.1"
+    },
+    {
+      "dependsOn": [
+        "accelerate-2@1.14.0",
+        "beautifulsoup4-8@4.15.0",
+        "certifi-9@2026.7.22",
+        "defusedxml-17@0.7.1",
+        "docling-core-21@2.87.1",
+        "docling-ibm-models-22@3.13.3",
+        "docling-parse-23@7.8.1",
+        "filetype-28@1.2.0",
+        "httpx-33@0.28.1",
+        "huggingface-hub-34@1.24.0",
+        "mail-parser-43@4.4.0",
+        "marko-45@2.2.3",
+        "numpy-52@2.5.1",
+        "openpyxl-70@3.1.5",
+        "pillow-73@12.3.0",
+        "pluggy-74@1.6.0",
+        "polyfactory-75@3.3.0",
+        "pydantic-78@2.12.5",
+        "pydantic-settings-80@2.14.2",
+        "pylatexenc-82@2.11",
+        "pypdfium2-83@5.12.1",
+        "python-docx-85@1.2.0",
+        "python-dotenv-86@1.2.2",
+        "python-pptx-87@1.0.2",
+        "rapidocr-90@3.9.2",
+        "requests-93@2.34.2",
+        "rich-95@15.0.0",
+        "rtree-97@1.4.1",
+        "scipy-99@1.18.0",
+        "torch-109@2.13.0",
+        "torchvision-110@0.28.0",
+        "tqdm-111@4.69.1",
+        "typer-119@0.24.2",
+        "websockets-124@16.1.1"
+      ],
+      "ref": "docling-slim-24@2.114.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "et-xmlfile-25@2.0.0"
+    },
+    {
+      "dependsOn": [
+        "tzdata-122@2026.3"
+      ],
+      "ref": "faker-26@40.36.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "filelock-27@3.32.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "filetype-28@1.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "fsspec-29@2026.6.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "h11-30@0.16.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "hf-xet-31@1.5.2"
+    },
+    {
+      "dependsOn": [
+        "certifi-9@2026.7.22",
+        "h11-30@0.16.0"
+      ],
+      "ref": "httpcore-32@1.0.9"
+    },
+    {
+      "dependsOn": [
+        "anyio-6@4.14.2",
+        "certifi-9@2026.7.22",
+        "httpcore-32@1.0.9",
+        "idna-35@3.18"
+      ],
+      "ref": "httpx-33@0.28.1"
+    },
+    {
+      "dependsOn": [
+        "click-11@8.4.2",
+        "filelock-27@3.32.0",
+        "fsspec-29@2026.6.0",
+        "hf-xet-31@1.5.2",
+        "httpx-33@0.28.1",
+        "packaging-71@26.2",
+        "pyyaml-89@6.0.3",
+        "tqdm-111@4.69.1",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "huggingface-hub-34@1.24.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "idna-35@3.18"
+    },
+    {
+      "dependsOn": [
+        "markupsafe-46@3.0.3"
+      ],
+      "ref": "jinja2-36@3.1.6"
+    },
+    {
+      "dependsOn": [
+        "attrs-7@26.1.0"
+      ],
+      "ref": "jsonlines-37@4.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "jsonref-38@1.1.0"
+    },
+    {
+      "dependsOn": [
+        "attrs-7@26.1.0",
+        "jsonschema-specifications-40@2025.9.1",
+        "referencing-91@0.37.0",
+        "rpds-py-96@2026.6.3"
+      ],
+      "ref": "jsonschema-39@4.26.0"
+    },
+    {
+      "dependsOn": [
+        "referencing-91@0.37.0"
+      ],
+      "ref": "jsonschema-specifications-40@2025.9.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "latex2mathml-41@3.81.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "lxml-42@6.1.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "mail-parser-43@4.4.0"
+    },
+    {
+      "dependsOn": [
+        "mdurl-47@0.1.2"
+      ],
+      "ref": "markdown-it-py-44@4.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "marko-45@2.2.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "markupsafe-46@3.0.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "mdurl-47@0.1.2"
+    },
+    {
+      "dependsOn": [
+        "multiprocess-50@0.70.19",
+        "pygments-81@2.20.0",
+        "pywin32-88@312",
+        "tqdm-111@4.69.1"
+      ],
+      "ref": "mpire-48@2.10.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "mpmath-49@1.3.0"
+    },
+    {
+      "dependsOn": [
+        "dill-18@0.4.1"
+      ],
+      "ref": "multiprocess-50@0.70.19"
+    },
+    {
+      "dependsOn": [],
+      "ref": "networkx-51@3.6.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "numpy-52@2.5.1"
+    },
+    {
+      "dependsOn": [
+        "nvidia-cuda-nvrtc-55@13.0.88"
+      ],
+      "ref": "nvidia-cublas-53@13.1.1.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-cuda-cupti-54@13.0.85"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-cuda-nvrtc-55@13.0.88"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-cuda-runtime-56@13.0.96"
+    },
+    {
+      "dependsOn": [
+        "nvidia-cublas-53@13.1.1.3"
+      ],
+      "ref": "nvidia-cudnn-cu13-57@9.20.0.48"
+    },
+    {
+      "dependsOn": [
+        "nvidia-nvjitlink-65@13.3.33"
+      ],
+      "ref": "nvidia-cufft-58@12.0.0.61"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-cufile-59@1.15.1.6"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-curand-60@10.4.0.35"
+    },
+    {
+      "dependsOn": [
+        "nvidia-cublas-53@13.1.1.3",
+        "nvidia-cusparse-62@12.6.3.3",
+        "nvidia-nvjitlink-65@13.3.33"
+      ],
+      "ref": "nvidia-cusolver-61@12.0.4.66"
+    },
+    {
+      "dependsOn": [
+        "nvidia-nvjitlink-65@13.3.33"
+      ],
+      "ref": "nvidia-cusparse-62@12.6.3.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-cusparselt-cu13-63@0.8.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-nccl-cu13-64@2.29.7"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-nvjitlink-65@13.3.33"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-nvshmem-cu13-66@3.4.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "nvidia-nvtx-67@13.0.85"
+    },
+    {
+      "dependsOn": [
+        "antlr4-python3-runtime-5@4.9.3",
+        "pyyaml-89@6.0.3"
+      ],
+      "ref": "omegaconf-68@2.3.1"
+    },
+    {
+      "dependsOn": [
+        "docling-20@2.114.0",
+        "jsonschema-39@4.26.0",
+        "pillow-73@12.3.0",
+        "pydantic-78@2.12.5",
+        "pypdfium2-83@5.12.1",
+        "rfc8785-94@0.1.4"
+      ],
+      "ref": "openardp-1@0.1.0rc1"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1"
+      ],
+      "ref": "opencv-python-69@5.0.0.93"
+    },
+    {
+      "dependsOn": [
+        "et-xmlfile-25@2.0.0"
+      ],
+      "ref": "openpyxl-70@3.1.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "packaging-71@26.2"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1",
+        "python-dateutil-84@2.9.0.post0",
+        "tzdata-122@2026.3"
+      ],
+      "ref": "pandas-72@3.0.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pillow-73@12.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pluggy-74@1.6.0"
+    },
+    {
+      "dependsOn": [
+        "faker-26@40.36.0",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "polyfactory-75@3.3.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "psutil-76@7.2.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pyclipper-77@1.4.0"
+    },
+    {
+      "dependsOn": [
+        "annotated-types-4@0.7.0",
+        "pydantic-core-79@2.41.5",
+        "typing-extensions-120@4.16.0",
+        "typing-inspection-121@0.4.2"
+      ],
+      "ref": "pydantic-78@2.12.5"
+    },
+    {
+      "dependsOn": [
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "pydantic-core-79@2.41.5"
+    },
+    {
+      "dependsOn": [
+        "pydantic-78@2.12.5",
+        "python-dotenv-86@1.2.2",
+        "typing-inspection-121@0.4.2"
+      ],
+      "ref": "pydantic-settings-80@2.14.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pygments-81@2.20.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pylatexenc-82@2.11"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pypdfium2-83@5.12.1"
+    },
+    {
+      "dependsOn": [
+        "six-104@1.17.0"
+      ],
+      "ref": "python-dateutil-84@2.9.0.post0"
+    },
+    {
+      "dependsOn": [
+        "lxml-42@6.1.1",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "python-docx-85@1.2.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "python-dotenv-86@1.2.2"
+    },
+    {
+      "dependsOn": [
+        "lxml-42@6.1.1",
+        "pillow-73@12.3.0",
+        "typing-extensions-120@4.16.0",
+        "xlsxwriter-125@3.2.9"
+      ],
+      "ref": "python-pptx-87@1.0.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pywin32-88@312"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pyyaml-89@6.0.3"
+    },
+    {
+      "dependsOn": [
+        "colorlog-13@6.12.0",
+        "numpy-52@2.5.1",
+        "omegaconf-68@2.3.1",
+        "opencv-python-69@5.0.0.93",
+        "pillow-73@12.3.0",
+        "pyclipper-77@1.4.0",
+        "pyyaml-89@6.0.3",
+        "requests-93@2.34.2",
+        "shapely-102@2.1.2",
+        "six-104@1.17.0",
+        "tqdm-111@4.69.1"
+      ],
+      "ref": "rapidocr-90@3.9.2"
+    },
+    {
+      "dependsOn": [
+        "attrs-7@26.1.0",
+        "rpds-py-96@2026.6.3",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "referencing-91@0.37.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "regex-92@2026.7.19"
+    },
+    {
+      "dependsOn": [
+        "certifi-9@2026.7.22",
+        "charset-normalizer-10@3.4.9",
+        "idna-35@3.18",
+        "urllib3-123@2.7.0"
+      ],
+      "ref": "requests-93@2.34.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "rfc8785-94@0.1.4"
+    },
+    {
+      "dependsOn": [
+        "markdown-it-py-44@4.2.0",
+        "pygments-81@2.20.0"
+      ],
+      "ref": "rich-95@15.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "rpds-py-96@2026.6.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "rtree-97@1.4.1"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1",
+        "torch-109@2.13.0"
+      ],
+      "ref": "safetensors-98@0.8.0"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1"
+      ],
+      "ref": "scipy-99@1.18.0"
+    },
+    {
+      "dependsOn": [
+        "mpire-48@2.10.2",
+        "tqdm-111@4.69.1"
+      ],
+      "ref": "semchunk-100@3.2.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "setuptools-101@83.0.0"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1"
+      ],
+      "ref": "shapely-102@2.1.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "shellingham-103@1.5.4"
+    },
+    {
+      "dependsOn": [],
+      "ref": "six-104@1.17.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "soupsieve-105@2.9.1"
+    },
+    {
+      "dependsOn": [
+        "mpmath-49@1.3.0"
+      ],
+      "ref": "sympy-106@1.14.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tabulate-107@0.10.0"
+    },
+    {
+      "dependsOn": [
+        "huggingface-hub-34@1.24.0"
+      ],
+      "ref": "tokenizers-108@0.22.2"
+    },
+    {
+      "dependsOn": [
+        "cuda-bindings-14@13.3.1",
+        "cuda-toolkit-16@13.0.3.0",
+        "filelock-27@3.32.0",
+        "fsspec-29@2026.6.0",
+        "jinja2-36@3.1.6",
+        "networkx-51@3.6.1",
+        "nvidia-cudnn-cu13-57@9.20.0.48",
+        "nvidia-cusparselt-cu13-63@0.8.1",
+        "nvidia-nccl-cu13-64@2.29.7",
+        "nvidia-nvshmem-cu13-66@3.4.5",
+        "setuptools-101@83.0.0",
+        "sympy-106@1.14.0",
+        "triton-118@3.7.1",
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "torch-109@2.13.0"
+    },
+    {
+      "dependsOn": [
+        "numpy-52@2.5.1",
+        "pillow-73@12.3.0",
+        "torch-109@2.13.0"
+      ],
+      "ref": "torchvision-110@0.28.0"
+    },
+    {
+      "dependsOn": [
+        "colorama-12@0.4.6"
+      ],
+      "ref": "tqdm-111@4.69.1"
+    },
+    {
+      "dependsOn": [
+        "huggingface-hub-34@1.24.0",
+        "numpy-52@2.5.1",
+        "packaging-71@26.2",
+        "pyyaml-89@6.0.3",
+        "regex-92@2026.7.19",
+        "safetensors-98@0.8.0",
+        "tokenizers-108@0.22.2",
+        "tqdm-111@4.69.1",
+        "typer-119@0.24.2"
+      ],
+      "ref": "transformers-112@5.8.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tree-sitter-113@0.26.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tree-sitter-c-114@0.24.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tree-sitter-javascript-115@0.25.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tree-sitter-python-116@0.25.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tree-sitter-typescript-117@0.23.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "triton-118@3.7.1"
+    },
+    {
+      "dependsOn": [
+        "annotated-doc-3@0.0.4",
+        "click-11@8.4.2",
+        "rich-95@15.0.0",
+        "shellingham-103@1.5.4"
+      ],
+      "ref": "typer-119@0.24.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "typing-extensions-120@4.16.0"
+    },
+    {
+      "dependsOn": [
+        "typing-extensions-120@4.16.0"
+      ],
+      "ref": "typing-inspection-121@0.4.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "tzdata-122@2026.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "urllib3-123@2.7.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "websockets-124@16.1.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "xlsxwriter-125@3.2.9"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "name": "openardp",
+      "type": "application",
+      "version": "0.1.0rc1"
+    },
+    "tools": [
+      {
+        "name": "uv",
+        "vendor": "Astral",
+        "version": "0.11.31"
+      }
+    ]
+  },
+  "serialNumber": "urn:uuid:1bbb5357-2e10-c69d-28db-205e431d663c",
+  "specVersion": "1.5",
+  "version": 1
+}

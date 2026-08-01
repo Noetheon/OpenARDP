@@ -44,6 +44,16 @@ EXPECTED_ACTIONS = {
         "c771a70e6277c0a99b617c7a806ffedaca235ff9",
         "v9.0.0",
     ),
+    (
+        "actions/upload-artifact",
+        "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        "v7.0.1",
+    ),
+    (
+        "actions/download-artifact",
+        "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+        "v8.0.1",
+    ),
 }
 F005A_FEATURE_SEQUENCE = (
     "005A-strategic-realignment",
@@ -194,12 +204,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f014_governance_and_prior_contracts_are_present_and_frozen(
+def test_f015_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active interchange governance, accepted ADRs and frozen contracts."""
+    """Require active release governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/014-export-interchange-experiment"
+    assert active["feature_directory"] == "specs/015-benchmark-security-release-gate"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -241,7 +251,9 @@ def test_f014_governance_and_prior_contracts_are_present_and_frozen(
     for name, expected in F014_ADDITIVE_SCHEMA_HASHES.items():
         actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
         assert actual == expected
-    assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 13
+    assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 14
+    assert (repository_root / "schemas/openardp-release-evidence.schema.json").is_file()
+    assert (repository_root / "release/evidence/v0.1.0/decision.json").is_file()
     migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
         encoding="utf-8"
     )
@@ -414,9 +426,9 @@ def test_ci_actions_are_immutable_and_reviewed(repository_root: Path) -> None:
     """Pin every third-party action to its reviewed release commit."""
     content = (repository_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     uses_lines = [line for line in content.splitlines() if "uses:" in line]
-    references = {match.groups() for match in ACTION_REFERENCE.finditer(content)}
+    references = [match.groups() for match in ACTION_REFERENCE.finditer(content)]
     assert len(references) == len(uses_lines)
-    assert references == EXPECTED_ACTIONS
+    assert set(references) == EXPECTED_ACTIONS
 
 
 def test_ci_uses_locked_uncached_authoritative_gates(repository_root: Path) -> None:

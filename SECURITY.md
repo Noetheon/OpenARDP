@@ -2,10 +2,13 @@
 
 ## Supported status
 
-The current repository baseline supports its build, validation and governance tooling. OpenARDP document ingestion is not
-implemented, and this repository is not production software. Do not process sensitive or hostile documents until the
-parser isolation, path/resource limits and adversarial tests in [docs/06_SECURITY_THREAT_MODEL.md](docs/06_SECURITY_THREAT_MODEL.md)
-are implemented and released.
+The repository implements the bounded local runtime through Feature 014 and the
+Feature 015 security/release evidence gate. It is still pre-release software: the
+committed `0.1.0rc1` decision is `NO-GO`, and no production or universal-security claim
+is permitted. Do not process sensitive or adversarial production documents merely
+because the regression suites pass; parser isolation is defense in depth and the
+declared residual risks in
+[docs/06_SECURITY_MODEL_V2.md](docs/06_SECURITY_MODEL_V2.md) remain binding.
 
 ## Report a vulnerability privately
 
@@ -63,3 +66,8 @@ exposing confidential source material.
 - Initial MCP is read-only; parsers require isolation before hostile inputs are supported.
 
 See the complete [threat model](docs/06_SECURITY_THREAT_MODEL.md) for future product controls and residual risk.
+
+The exact Feature 015 control manifest is
+[`benchmarks/release/v0.1.0/security-controls.json`](benchmarks/release/v0.1.0/security-controls.json),
+and the current machine decision is
+[`release/evidence/v0.1.0/decision.json`](release/evidence/v0.1.0/decision.json).

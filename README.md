@@ -44,7 +44,9 @@ foreground local watcher in
 verified retention and recovery in
 [`013-retention-recovery-migrations`](specs/013-retention-recovery-migrations/spec.md),
 and the experimental BagIt exchange profile in
-[`014-export-interchange-experiment`](specs/014-export-interchange-experiment/spec.md):
+[`014-export-interchange-experiment`](specs/014-export-interchange-experiment/spec.md),
+followed by the fail-closed evidence gate in
+[`015-benchmark-security-release-gate`](specs/015-benchmark-security-release-gate/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -111,6 +113,14 @@ and the experimental BagIt exchange profile in
   package verification, fresh read-only snapshot import and no custom `.ardp` suffix;
 - a strict public interchange schema and offline deterministic valid/invalid vector
   corpus covering integrity, paths, resource bounds, compatibility and trust.
+- candidate `0.1.0rc1`, a frozen five-baseline synthetic benchmark protocol, exact
+  mechanical judgments, deterministic bootstrap statistics and immutable platform
+  evidence identities;
+- closed `release-evidence`, `release-gate` and `release-report` CLI operations, a
+  strict public release-evidence schema, security/privacy control manifest and bounded
+  wheel/sdist inspection;
+- a normalized CycloneDX 1.5 SBOM with all locked components, explicit per-component
+  license review state, three-platform CI evidence jobs and one aggregate no-waiver gate.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. F012 watching is a
@@ -123,8 +133,29 @@ explicitly experimental BagIt profile and does not merge into a live workspace. 
 the only concrete F011 visual renderer; DOCX/PPTX page rendering,
 built-in OCR/caption models and automatic materialization remain unsupported. F010 also
 does not schedule reconciliation or execute generators; callers explicitly supply two
-READY scopes and already-generated output bytes. Those remain separate work packages in the
+READY scopes and already-generated output bytes. Feature 015 does not authorize a
+release: the committed candidate decision is `NO-GO` because required evidence remains
+incomplete. Those boundaries and remaining work packages are recorded in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
+
+## Evidence-backed claim status
+
+The current allowed claim IDs are `local-first`, `evidence-preserving` and
+`experimental-contracts`. They map to the verified
+[`claim-map.json`](release/evidence/v0.1.0/claim-map.json). Performance leadership,
+universal security, three-platform support, third-party reproduction and v0.1 release
+readiness are not claimed; the authoritative
+[`decision.json`](release/evidence/v0.1.0/decision.json) is `NO-GO`.
+The committed local capture contains 4,222 raw observations and verified local
+security/privacy, artifact/install and upgrade/rollback evidence. Remaining blockers
+are three-platform completion, license/current-vulnerability review and the frozen
+bounded-context value threshold.
+
+Machine mapping: allowed `claim:evidence-preserving`,
+`claim:experimental-contracts`, `claim:local-first`; prohibited
+`claim:enterprise-performance`, `claim:measured-parser-reuse`,
+`claim:third-party-reproduced`, `claim:three-platform-supported`,
+`claim:universal-security`, `claim:v0.1-release-ready`.
 
 ## Quickstart
 
@@ -174,6 +205,13 @@ openardp package-export --request ./synthetic-export-request.json \
 openardp package-verify --package ./synthetic-package.zip --json
 openardp package-import --package ./synthetic-package.zip \
   --destination ./synthetic-imported-snapshot --json
+openardp release-evidence --corpus benchmarks/release/v0.1.0 \
+  --source-root . --output ../openardp-platform-evidence --json
+openardp release-gate --policy benchmarks/release/v0.1.0/gate-policy.json \
+  --evidence ../openardp-platform-evidence --output ../openardp-decision \
+  --decision-at 2026-08-01T00:00:00Z --json
+openardp release-report --decision ../openardp-decision/decision.json \
+  --output ../openardp-decision --json
 ```
 
 PDF additionally requires `--docling-model-root` and
@@ -200,6 +238,11 @@ metadata/results, and included bytes require affirmative redistribution assertio
 uv run pre-commit run --all-files
 uv run python scripts/validate_repository.py
 uv run --locked python scripts/generate_schemas.py --check
+uv run python scripts/generate_release_corpus.py --check
+uv run python scripts/generate_dependency_review.py --check
+uv run python scripts/generate_release_sbom.py --check
+uv run python scripts/generate_release_evidence.py --check
+uv run python scripts/validate_release_evidence.py release/evidence/v0.1.0
 uv build
 ```
 

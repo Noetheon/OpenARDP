@@ -1,0 +1,789 @@
+{
+  "components": [
+    {
+      "component": "accelerate==1.14.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "annotated-doc==0.0.4",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "annotated-types==0.7.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "antlr4-python3-runtime==4.9.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "anyio==4.14.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "attrs==26.1.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "beautifulsoup4==4.15.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "certifi==2026.7.22",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "charset-normalizer==3.4.9",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "click==8.4.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "colorama==0.4.6",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "colorlog==6.12.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "cuda-bindings==13.3.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "cuda-pathfinder==1.6.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "cuda-toolkit==13.0.3.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "defusedxml==0.7.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "dill==0.4.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "doclang==0.7.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "docling-core==2.87.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "docling-ibm-models==3.13.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "docling-parse==7.8.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "docling-slim==2.114.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "docling==2.114.0",
+      "direct": true,
+      "disposition": "approved",
+      "license_expression": "MIT"
+    },
+    {
+      "component": "et-xmlfile==2.0.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "faker==40.36.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "filelock==3.32.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "filetype==1.2.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "fsspec==2026.6.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "h11==0.16.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "hf-xet==1.5.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "httpcore==1.0.9",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "httpx==0.28.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "huggingface-hub==1.24.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "idna==3.18",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "jinja2==3.1.6",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "jsonlines==4.0.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "jsonref==1.1.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "jsonschema-specifications==2025.9.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "jsonschema==4.26.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "latex2mathml==3.81.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "lxml==6.1.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "mail-parser==4.4.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "markdown-it-py==4.2.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "marko==2.2.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "markupsafe==3.0.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "mdurl==0.1.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "mpire==2.10.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "mpmath==1.3.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "multiprocess==0.70.19",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "networkx==3.6.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "numpy==2.5.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cublas==13.1.1.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cuda-cupti==13.0.85",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cuda-nvrtc==13.0.88",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cuda-runtime==13.0.96",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cudnn-cu13==9.20.0.48",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cufft==12.0.0.61",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cufile==1.15.1.6",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-curand==10.4.0.35",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cusolver==12.0.4.66",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cusparse==12.6.3.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-cusparselt-cu13==0.8.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-nccl-cu13==2.29.7",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-nvjitlink==13.3.33",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-nvshmem-cu13==3.4.5",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "nvidia-nvtx==13.0.85",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "omegaconf==2.3.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "openardp==0.1.0rc1",
+      "direct": true,
+      "disposition": "approved",
+      "license_expression": "Apache-2.0"
+    },
+    {
+      "component": "opencv-python==5.0.0.93",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "openpyxl==3.1.5",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "packaging==26.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pandas==3.0.5",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pillow==12.3.0",
+      "direct": true,
+      "disposition": "approved",
+      "license_expression": "MIT-CMU"
+    },
+    {
+      "component": "pluggy==1.6.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "polyfactory==3.3.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "psutil==7.2.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pyclipper==1.4.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pydantic-core==2.41.5",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pydantic-settings==2.14.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pydantic==2.12.5",
+      "direct": true,
+      "disposition": "approved",
+      "license_expression": "MIT"
+    },
+    {
+      "component": "pygments==2.20.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pylatexenc==2.11",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pypdfium2==5.12.1",
+      "direct": true,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "python-dateutil==2.9.0.post0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "python-docx==1.2.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "python-dotenv==1.2.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "python-pptx==1.0.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pywin32==312",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "pyyaml==6.0.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "rapidocr==3.9.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "referencing==0.37.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "regex==2026.7.19",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "requests==2.34.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "rfc8785==0.1.4",
+      "direct": true,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "rich==15.0.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "rpds-py==2026.6.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "rtree==1.4.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "safetensors==0.8.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "scipy==1.18.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "semchunk==3.2.5",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "setuptools==83.0.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "shapely==2.1.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "shellingham==1.5.4",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "six==1.17.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "soupsieve==2.9.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "sympy==1.14.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tabulate==0.10.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tokenizers==0.22.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "torch==2.13.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "torchvision==0.28.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tqdm==4.69.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "transformers==5.8.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tree-sitter-c==0.24.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tree-sitter-javascript==0.25.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tree-sitter-python==0.25.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tree-sitter-typescript==0.23.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tree-sitter==0.26.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "triton==3.7.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "typer==0.24.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "typing-extensions==4.16.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "typing-inspection==0.4.2",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "tzdata==2026.3",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "urllib3==2.7.0",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "websockets==16.1.1",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    },
+    {
+      "component": "xlsxwriter==3.2.9",
+      "direct": false,
+      "disposition": "deferred",
+      "license_state": "unreviewed-metadata-unavailable"
+    }
+  ],
+  "generator": "scripts/generate_dependency_review.py",
+  "maintenance_review": {
+    "direct_dependencies_complete": true,
+    "transitive_maintenance_review": "deferred",
+    "workflow_actions": [
+      {
+        "action": "actions/checkout",
+        "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "disposition": "pinned"
+      },
+      {
+        "action": "astral-sh/setup-uv",
+        "commit": "c771a70e6277c0a99b617c7a806ffedaca235ff9",
+        "disposition": "pinned"
+      },
+      {
+        "action": "actions/upload-artifact",
+        "commit": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        "disposition": "pinned"
+      },
+      {
+        "action": "actions/download-artifact",
+        "commit": "3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+        "disposition": "pinned"
+      }
+    ]
+  },
+  "review_version": "0.1.0",
+  "vulnerability_snapshot": {
+    "findings": [],
+    "observed_at": "1970-01-01T00:00:00Z",
+    "reason": "current-snapshot-not-committed",
+    "schema": "OSV-1.7.4",
+    "status": "unavailable"
+  }
+}

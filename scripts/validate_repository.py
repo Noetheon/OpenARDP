@@ -93,6 +93,27 @@ _F005A_ADOPTION_SOURCES = {
     "spec-kit/FEATURE_MAP_V3.md": "FEATURE_MAP.md",
     "spec-kit/OPERATING_PROCEDURE_V3.md": "OPERATING_PROCEDURE.md",
 }
+_F015_REQUIRED_FILES = (
+    "benchmarks/release/v0.1.0/claim-policy.json",
+    "benchmarks/release/v0.1.0/corpus-manifest.json",
+    "benchmarks/release/v0.1.0/dependency-review.json",
+    "benchmarks/release/v0.1.0/gate-policy.json",
+    "benchmarks/release/v0.1.0/judgments.json",
+    "benchmarks/release/v0.1.0/protocol.json",
+    "benchmarks/release/v0.1.0/security-controls.json",
+    "benchmarks/release/v0.1.0/source-tree-policy.json",
+    "release/evidence/v0.1.0/checksums.json",
+    "release/evidence/v0.1.0/claim-map.json",
+    "release/evidence/v0.1.0/decision.json",
+    "release/evidence/v0.1.0/manifest.json",
+    "release/evidence/v0.1.0/report.md",
+    "release/evidence/v0.1.0/sbom.cdx.json",
+    "schemas/openardp-release-evidence.schema.json",
+    "scripts/generate_release_corpus.py",
+    "scripts/generate_release_evidence.py",
+    "scripts/generate_release_sbom.py",
+    "scripts/validate_release_evidence.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -480,6 +501,84 @@ def _validate_mcp_fixtures(root: Path) -> list[Diagnostic]:
     return diagnostics
 
 
+def _validate_f015_release_inputs(root: Path) -> list[Diagnostic]:
+    """Require one complete versioned F015 input/evidence registry and candidate state."""
+    diagnostics: list[Diagnostic] = []
+    for relative in _F015_REQUIRED_FILES:
+        if not (root / relative).is_file():
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV011",
+                    relative,
+                    "required F015 release input or evidence file is missing",
+                )
+            )
+    policy_path = root / "benchmarks/release/v0.1.0/gate-policy.json"
+    decision_path = root / "release/evidence/v0.1.0/decision.json"
+    claim_map_path = root / "release/evidence/v0.1.0/claim-map.json"
+    schema_path = root / "schemas/openardp-release-evidence.schema.json"
+    try:
+        policy = json.loads(policy_path.read_bytes())
+        decision = json.loads(decision_path.read_bytes())
+        claim_map = json.loads(claim_map_path.read_bytes())
+        schema = json.loads(schema_path.read_bytes())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV012",
+                "release/evidence/v0.1.0",
+                "F015 release JSON is malformed",
+            )
+        )
+        return diagnostics
+    expected = {
+        "policy_version": policy.get("policy_version"),
+        "candidate_version": decision.get("candidate_version"),
+        "schema_version": schema.get("x-openardp-release-evidence-version"),
+    }
+    if expected != {
+        "policy_version": "0.1.0",
+        "candidate_version": "0.1.0rc1",
+        "schema_version": "0.1.0",
+    }:
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV012",
+                "release/evidence/v0.1.0",
+                "F015 versions do not match the frozen candidate",
+            )
+        )
+    policy_id = policy.get("policy_id")
+    if not isinstance(policy_id, str) or policy_id == "sha256:" + "0" * 64:
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV012",
+                "benchmarks/release/v0.1.0/gate-policy.json",
+                "F015 policy identity is not frozen",
+            )
+        )
+    readme_path = root / "README.md"
+    if readme_path.is_file():
+        readme = readme_path.read_text(encoding="utf-8")
+        claims = claim_map.get("allowed", []) + claim_map.get("prohibited", [])
+        if not isinstance(claims, list) or any(
+            not isinstance(claim, str) or f"claim:{claim}" not in readme for claim in claims
+        ):
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV013",
+                    "README.md",
+                    "README claim IDs do not match the generated claim map",
+                )
+            )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -562,6 +661,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
                 )
     diagnostics.extend(_validate_f005a_governance(root))
     diagnostics.extend(_validate_mcp_fixtures(root))
+    diagnostics.extend(_validate_f015_release_inputs(root))
     return _sort_diagnostics(root, diagnostics)
 
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openardp"
-version = "0.0.1"
+version = "0.1.0rc1"
 description = "Local-first foundation for reusable, provenance-rich agent-ready documents"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -46,6 +46,14 @@ preview-features = ["centralized-project-envs"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/openardp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "LICENSE",
+  "README.md",
+  "pyproject.toml",
+  "src/openardp",
+]
 
 [tool.ruff]
 target-version = "py312"

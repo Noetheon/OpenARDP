@@ -1,0 +1,81 @@
+{
+  "corpus_version": "0.1.0",
+  "generator": "scripts/generate_release_corpus.py",
+  "judgments_sha256": "sha256:fccefc96da59c1ec3c909a8d1ad2ccfd207b44ebcbb384ea26d7070c2ee79278",
+  "license": "Apache-2.0",
+  "records": [
+    {
+      "byte_length": 36814,
+      "case_id": "docx-evidence",
+      "license": "Apache-2.0",
+      "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "path": "tests/fixtures/rich/synthetic.docx",
+      "sha256": "sha256:dbd04208ecefe67cf7e8b668c509554cab1eae421f334cc563fb535419e54cd3"
+    },
+    {
+      "byte_length": 66,
+      "case_id": "hostile-image-alt",
+      "license": "Apache-2.0",
+      "media_type": "text/plain",
+      "path": "benchmarks/release/v0.1.0/hostile/image-alt.txt",
+      "sha256": "sha256:924d7385e834da6ca43c4df2ed203880da13627d2aab7f9d4430be052578df14"
+    },
+    {
+      "byte_length": 68,
+      "case_id": "hostile-metadata",
+      "license": "Apache-2.0",
+      "media_type": "text/plain",
+      "path": "benchmarks/release/v0.1.0/hostile/metadata.txt",
+      "sha256": "sha256:c1ea54e5761706948717199e62d343a0b61b8f3d238e86004c13166f6c04596b"
+    },
+    {
+      "byte_length": 128,
+      "case_id": "hostile-prompt",
+      "license": "Apache-2.0",
+      "media_type": "text/plain",
+      "path": "benchmarks/release/v0.1.0/hostile/prompt-injection.txt",
+      "sha256": "sha256:a352f0b77f2cdea606fd62b5cbabe841091017ec7efca08815556227f64aac7c"
+    },
+    {
+      "byte_length": 216,
+      "case_id": "hostile-provider-native",
+      "license": "Apache-2.0",
+      "media_type": "application/json",
+      "path": "benchmarks/release/v0.1.0/hostile/provider-native.json",
+      "sha256": "sha256:6366afd926b94a38c5ece692b594f1f8e81e1e4a938078ea9edc05133400b70c"
+    },
+    {
+      "byte_length": 42,
+      "case_id": "hostile-table",
+      "license": "Apache-2.0",
+      "media_type": "text/csv",
+      "path": "benchmarks/release/v0.1.0/hostile/table.csv",
+      "sha256": "sha256:03cc4ee3620706ea4ab36193f4717c628374d8ac2c05de3b182e538c836f73cf"
+    },
+    {
+      "byte_length": 29362,
+      "case_id": "pptx-evidence",
+      "license": "Apache-2.0",
+      "media_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "path": "tests/fixtures/rich/synthetic.pptx",
+      "sha256": "sha256:0d76359ae389a2e417139405a583fb8d46cb2ea51a0515cb71c05cfc773dcd83"
+    },
+    {
+      "byte_length": 120,
+      "case_id": "text-evidence",
+      "license": "Apache-2.0",
+      "media_type": "text/plain",
+      "path": "benchmarks/release/v0.1.0/sources/evidence.txt",
+      "sha256": "sha256:2f2c1000708148f816bb769bbeb9730e2837e3262acbdab88194b2acd42b2d74"
+    },
+    {
+      "byte_length": 166,
+      "case_id": "text-evidence-edit",
+      "license": "Apache-2.0",
+      "media_type": "text/plain",
+      "path": "benchmarks/release/v0.1.0/sources/evidence-edited.txt",
+      "sha256": "sha256:ec6222e316bdeafd91c70ca982ec79c867f9e64447223a17101a134448f70bbb"
+    }
+  ],
+  "synthetic_only": true
+}

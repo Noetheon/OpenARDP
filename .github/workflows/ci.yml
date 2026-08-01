@@ -60,3 +60,134 @@ jobs:
 
       - name: Verify gates did not change tracked files
         run: git diff --exit-code
+
+  release-evidence:
+    name: Release evidence (${{ matrix.platform }})
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            reference: --reference-timing
+          - os: macos-latest
+            platform: macos
+            reference: ""
+          - os: windows-latest
+            platform: windows
+            reference: ""
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.31"
+          python-version: "3.12"
+          enable-cache: false
+
+      - name: Synchronize locked release environment
+        run: uv sync --extra visual --locked
+
+      - name: Validate corpus, schema, release inputs and security controls
+        run: >-
+          uv run --locked pytest --no-cov
+          tests/test_release_evidence_drift.py
+          tests/contract/test_release_schema.py
+          tests/integration/test_release_benchmarks.py
+          tests/integration/test_release_correctness.py
+          tests/integration/test_release_reproduction.py
+          tests/integration/test_release_supply_chain.py
+
+      - name: Execute the frozen security control registry
+        run: >-
+          uv run --locked python scripts/run_release_security_controls.py
+          --controls benchmarks/release/v0.1.0/security-controls.json
+          --junit .release-security-junit.xml
+
+      - name: Build candidate distributions
+        run: uv build
+
+      - name: Reproduce clean offline wheel install
+        run: |
+          uv venv .release-download-venv --python 3.12 --seed
+          uv run --python .release-download-venv --no-project --no-sync python -m pip download --dest .release-wheelhouse dist/openardp-0.1.0rc1-py3-none-any.whl
+          uv venv .release-venv --python 3.12
+          uv pip install --python .release-venv --offline --no-index --no-cache --find-links .release-wheelhouse dist/openardp-0.1.0rc1-py3-none-any.whl
+          uv run --python .release-venv --no-project --no-sync python -c "import openardp; from openardp.interfaces.cli import main; assert main(['--help']) == 0"
+
+      - name: Generate body-free platform evidence
+        run: |
+          uv run --locked python scripts/generate_ci_suite_results.py --output .release-suite-results.json --junit .release-security-junit.xml --artifacts dist --install-environment .release-venv
+          uv run --locked openardp release-evidence --corpus benchmarks/release/v0.1.0 --output release-evidence-${{ matrix.platform }} --source-root . --suite-results .release-suite-results.json ${{ matrix.reference }} --json
+
+      - name: Upload immutable platform evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence-${{ matrix.platform }}
+          path: release-evidence-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release-gate:
+    name: Aggregate release gate
+    permissions:
+      contents: read
+    needs: release-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.31"
+          python-version: "3.12"
+          enable-cache: false
+
+      - name: Synchronize locked release environment
+        run: uv sync --locked
+
+      - name: Download platform evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: release-evidence-*
+          path: collected-evidence
+
+      - name: Evaluate all-platform decision
+        run: >-
+          uv run --locked openardp release-gate
+          --policy benchmarks/release/v0.1.0/gate-policy.json
+          --evidence collected-evidence/release-evidence-linux
+          --evidence collected-evidence/release-evidence-macos
+          --evidence collected-evidence/release-evidence-windows
+          --output aggregate-decision
+          --decision-at 2026-08-01T00:00:00Z
+          --json
+
+      - name: Generate and verify decision projections
+        run: |
+          uv run --locked openardp release-report --decision aggregate-decision/decision.json --output aggregate-decision --json
+          uv run --locked openardp release-report --decision aggregate-decision/decision.json --output aggregate-decision --check --json
+          uv run --locked python -c "import json; from pathlib import Path; value=json.loads(Path('aggregate-decision/decision.json').read_bytes()); assert value['status'] == 'NO-GO'; assert 'mandatory-suite-failed' in value['blockers']"
+
+      - name: Upload aggregate decision
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-gate-decision
+          path: aggregate-decision
+          if-no-files-found: error
+          retention-days: 14

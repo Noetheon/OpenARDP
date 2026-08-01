@@ -1,0 +1,26 @@
+{
+  "artifacts": [
+    {
+      "artifact_type": "wheel",
+      "byte_length": 348635,
+      "filename": "openardp-0.1.0rc1-py3-none-any.whl",
+      "member_count": 83,
+      "member_inventory_id": "sha256:57911c931fca73a2fba0f7856580c8999128fcca6221cf0f95a22cf4977c2069",
+      "sha256": "sha256:e1bba06468be2b172210a3c3b38d55fae3c310d20b678a2b275aaedd6fc308ae",
+      "status": "passed"
+    },
+    {
+      "artifact_type": "sdist",
+      "byte_length": 299951,
+      "filename": "openardp-0.1.0rc1.tar.gz",
+      "member_count": 89,
+      "member_inventory_id": "sha256:2bc041af7ce3c50c15223c4ad2e953e00ee7550301757c96d6bb467eb121c271",
+      "sha256": "sha256:da62726a9f9dcee570f05d9d9b527830f63a3e1600dbb2e9d0630d8cfe978f1d",
+      "status": "passed"
+    }
+  ],
+  "candidate_version": "0.1.0rc1",
+  "previous_version": "0.0.1",
+  "schema_version": "0.1.0",
+  "status": "passed"
+}

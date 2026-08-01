@@ -1,0 +1,1 @@
+{"allowed":["evidence-preserving","experimental-contracts","local-first"],"decision_id":"sha256:1d69c1918557c900893e857ecce6253a027ed54271c399a3027283272d73ecf6","prohibited":["enterprise-performance","measured-parser-reuse","third-party-reproduced","three-platform-supported","universal-security","v0.1-release-ready"],"schema_version":"0.1.0"}

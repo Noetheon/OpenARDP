@@ -5,6 +5,24 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 015 — benchmark, security and v0.1 release gate
+
+- Set the application candidate to `0.1.0rc1` and froze a synthetic five-baseline
+  protocol, three document families, three byte budgets, exact judgments, 10,000-sample
+  deterministic bootstrap policy and canonical candidate source-tree identity.
+- Added strict release-evidence models/schema/storage, body-free platform observations,
+  exhaustive no-waiver `GO`/`NO-GO` evaluation, generated human/claim projections and
+  the `release-evidence`, `release-gate` and `release-report` CLI commands.
+- Added exact security-control manifests, hostile/privacy fixtures, bounded artifact
+  inspection, complete locked-component inventory, per-component license state,
+  normalized CycloneDX 1.5 SBOM and three-platform aggregate CI evidence jobs.
+- The committed local capture contains 4,222 raw observations and passes performance,
+  exact mechanical quality, 44 security-control cases, five privacy canary classes,
+  candidate artifact/offline-install and executable upgrade/rollback suites.
+- The binding decision remains `NO-GO`: three-platform evidence, a complete current
+  license/vulnerability review and bounded-context value are not all established. Final
+  `0.1.0`, tagging and prohibited performance/security/support claims remain blocked.
+
 ### Feature 014 — export and interchange experiment
 
 - Selected RFC 8493 BagIt 1.0 plus an experimental OpenARDP profile `0.1.0` after an

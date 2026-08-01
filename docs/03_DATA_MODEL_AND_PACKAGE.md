@@ -1,8 +1,8 @@
 # Data model and package specification
 
 **Status:** Canonical data-model guidance. Feature 013 adds internal maintenance,
-retention and recovery records without changing the twelve public roots. Export packaging is an experiment owned
-by Feature 014, not a current stable format.
+retention and recovery records. Feature 014 adds one experimental public interchange
+record/profile `0.1.0`; it is not a stable or universal format.
 
 ## 1. Design goals
 
@@ -17,7 +17,8 @@ by Feature 014, not a current stable format.
 ## 2. Runtime versus export experiment
 
 The implemented runtime store is content-addressed and deduplicated. No custom portable package has been selected.
-Feature 014 evaluates existing packaging profiles and a minimal custom archive against concrete exchange requirements.
+Feature 014 selected BagIt 1.0 plus a narrow OpenARDP profile after evaluating existing
+packaging profiles and a minimal custom archive against concrete exchange requirements.
 The earlier illustrative tree is retained only as a non-binding candidate:
 
 ```text
@@ -375,3 +376,16 @@ only canonical object identities, closed reasons, counts, byte lengths and UTC t
 They do not make derived indexes authoritative and do not weaken immutable source or CAS
 identity. The internal `openardp-backup-v1` manifest is a recovery artifact, not a public
 interchange schema.
+
+# Feature 014 portable snapshot projection
+
+`openardp-package.json` is a closed RFC 8785 canonical tag record. It declares the
+independent export-profile/schema versions, package/scope identities, sorted thin
+source/native/evidence/derivation records, data-role trust, exact asset identities,
+separate source/provider-native include/reference/omit dispositions and a closed
+relationship graph. Included assets use one SHA-256-derived payload path. References
+remain inert; omission and sender license/permission assertions remain data.
+
+BagIt payload and tag manifests list exact SHA-256 digests; the portable record also
+lists asset length/digest/path. Import requires both views to agree. Imported snapshots
+stay separate from the runtime database/CAS and do not alter workspace revision 10.

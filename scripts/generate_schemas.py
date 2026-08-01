@@ -27,6 +27,10 @@ from openardp.domain.evidence import (
     NativeRepresentation,
     TrustClassification,
 )
+from openardp.domain.interchange import (
+    INTERCHANGE_SCHEMA_VERSION,
+    InterchangePackage,
+)
 from openardp.domain.manifest import DocumentManifest
 from openardp.domain.relation import Relation
 from openardp.domain.visual import VISUAL_CONTRACT_VERSION, VisualEvidenceDescriptor
@@ -159,11 +163,24 @@ VISUAL_ROOT_CONTRACTS: dict[str, RootContract] = {
     ),
 }
 
+INTERCHANGE_ROOT_CONTRACTS: dict[str, RootContract] = {
+    "openardp-interchange-package.schema.json": RootContract(
+        InterchangePackage,
+        "minimal.json",
+        "https://openardp.example/schema/interchange-package-0.1.0.json",
+        "Experimental OpenARDP Interchange Package",
+        "schema_version",
+        "x-openardp-export-profile-version",
+        INTERCHANGE_SCHEMA_VERSION,
+    ),
+}
+
 ALL_ROOT_CONTRACTS = {
     **ROOT_CONTRACTS,
     **EVIDENCE_ROOT_CONTRACTS,
     **CONTEXT_ROOT_CONTRACTS,
     **VISUAL_ROOT_CONTRACTS,
+    **INTERCHANGE_ROOT_CONTRACTS,
 }
 
 

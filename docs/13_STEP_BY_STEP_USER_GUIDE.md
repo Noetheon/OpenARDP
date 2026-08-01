@@ -80,5 +80,23 @@ contain source paths or URLs.
 The default inbound-frame, pending-frame, response and deadline bounds are 64 KiB, 64,
 1 MiB and 30 seconds. `--response-cap-bytes` accepts 65,536 through 4,194,304 and `--deadline-ms`
 accepts 1,000 through 120,000. Body-bearing results are explicitly marked untrusted;
-errors and audit records omit bodies, queries, tasks and paths. Feature 010 is the next
-dependency-ordered work package. Do not reuse the pre-v3.1 numbering.
+errors and audit records omit bodies, queries, tasks and paths. Features 010–013 add
+reconciliation/derivation lifecycle, visual escalation, local watching/jobs and explicit
+retention/recovery.
+
+Feature 014 adds an experimental BagIt profile. Build an export request containing the
+closed portable package record plus a local `asset_sources` mapping, then run:
+
+```bash
+uv run openardp package-export --request REQUEST.json --destination PACKAGE.zip --json
+uv run openardp package-verify --package PACKAGE.zip --json
+uv run openardp package-import --package PACKAGE.zip \
+  --destination FRESH_SNAPSHOT --json
+uv run python scripts/generate_interchange_vectors.py --check
+```
+
+Only explicitly permitted synthetic or redistributable assets should be included. The
+snapshot is not a live workspace, integrity is not authenticity/license verification,
+and no package command fetches references or accepts document-driven execution. Feature
+015 benchmark/security/release evidence is the next dependency-ordered work package.
+Do not reuse the pre-v3.1 numbering.

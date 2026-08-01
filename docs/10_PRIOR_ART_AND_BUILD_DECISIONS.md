@@ -61,5 +61,15 @@ delta reconciliation, not assume save-event semantics.
 | Context compiler | yes | project differentiator |
 | Incremental derivation DAG | yes | project differentiator |
 | OneDrive/SharePoint source sync | adapter | Microsoft Graph |
-| Export/interchange | experiment | evaluate RO-Crate/OCFL/BagIt before a custom format |
+| Export/interchange | narrow profile experiment | BagIt 1.0 + profile 0.1.0; no custom suffix; RO-Crate mapping remains optional |
 | Office rendering/editing | not MVP | evaluate Open XML/Pandoc/Quarto later |
+
+## F014 export/interchange outcome
+
+The common decision matrix selected BagIt 1.0 plus a narrow profile because it supplies
+the needed complete payload inventory with existing tooling and no new core dependency.
+RO-Crate 1.2 is semantically richer but not necessarily an exhaustive inventory; OCFL
+1.1 is a versioned preservation layout rather than a one-shot exchange; a custom
+archive duplicates BagIt. The implementation uses ordinary deterministic `.zip`, a
+closed canonical semantic tag, inert references and fresh verified snapshot import.
+It does not claim general BagIt/RO-Crate conformance or live-workspace interchange.

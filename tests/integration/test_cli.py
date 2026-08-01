@@ -195,6 +195,41 @@ def test_search_and_reindex_json_commands(
     assert rejected["ok"] is False
 
 
+def test_workspace_backup_and_restore_json_commands(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Expose paired recovery without overloading quarantine restore authority."""
+    source = tmp_path / "source"
+    assert main(["init", "--store", str(source)]) == 0
+    capsys.readouterr()
+
+    code, backed_up, stderr = _invoke_json(
+        capsys,
+        [
+            "workspace-backup",
+            "--store",
+            str(source),
+            "--destination",
+            str(tmp_path / "backup"),
+        ],
+    )
+    assert (code, backed_up["ok"], stderr) == (0, True, "")
+
+    code, restored, stderr = _invoke_json(
+        capsys,
+        [
+            "workspace-restore",
+            "--backup",
+            str(tmp_path / "backup"),
+            "--destination",
+            str(tmp_path / "restored"),
+        ],
+    )
+    assert (code, restored["ok"], stderr) == (0, True, "")
+    assert (tmp_path / "restored" / ".openardp-workspace.json").is_file()
+
+
 def test_json_usage_and_not_found_failures_are_single_sanitized_envelopes(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

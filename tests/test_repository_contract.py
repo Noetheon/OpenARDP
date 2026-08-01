@@ -189,12 +189,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f012_governance_and_prior_contracts_are_present_and_frozen(
+def test_f013_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require the active watcher lifecycle, accepted ADRs and frozen prior contracts."""
+    """Require active maintenance governance, accepted ADRs and frozen contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/012-local-watcher-and-jobs"
+    assert active["feature_directory"] == "specs/013-retention-recovery-migrations"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -222,6 +222,11 @@ def test_f012_governance_and_prior_contracts_are_present_and_frozen(
     ).read_text(encoding="utf-8")
     assert "Status: Accepted for Feature 012" in f012_adr
     assert "Date: 2026-08-01" in f012_adr
+    f013_adr = (repository_root / "docs/adr/0014-retention-recovery-maintenance.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Status: Accepted for Feature 013" in f013_adr
+    assert "Date: 2026-08-01" in f013_adr
     assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
     assert len(tuple((repository_root / "schemas").glob("*.schema.json"))) == 12
     migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
@@ -231,6 +236,8 @@ def test_f012_governance_and_prior_contracts_are_present_and_frozen(
     assert 'name="visual-evidence"' in migration_source
     assert "MIGRATION_9 = Migration(" in migration_source
     assert 'name="local-watcher-and-cancellable-jobs"' in migration_source
+    assert "MIGRATION_10 = Migration(" in migration_source
+    assert 'name="retention-recovery-maintenance"' in migration_source
     for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected

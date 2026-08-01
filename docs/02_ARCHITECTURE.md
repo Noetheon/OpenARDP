@@ -298,3 +298,18 @@ policy and task drift fail with closed mismatch codes instead of silent recompil
 All failure paths use the sanitized ports taxonomy with bounded cancellation
 checkpoints; pre-published objects from interrupted runs remain unreachable immutable
 recovery candidates until Feature 013 retention tooling.
+
+## Delivered Feature 013 retention and recovery
+
+`MaintenanceService` first compares transactional catalog roots/holds with a bounded,
+verified active/quarantine inventory. Dry-run plans are content-identified values;
+reversible movement and irreversible commit use complete SQLite intent before exact
+filesystem transitions, with ordinary writes fenced until replay reaches a terminal
+state. Only a named expired batch plus separate acknowledgement can create delete intent.
+
+`LocalWorkspace` now separates fresh current initialization, validate-only open and
+explicit migration. Backup holds a writer reservation while SQLite's online backup API
+captures the catalog, streams every managed object, excludes disposable FTS state and
+publishes `COMPLETE` last in an exclusively created destination. Restore verifies the
+canonical manifest, complete allowlisted tree, catalog history, roots and object hashes,
+then publishes the workspace marker last to a fresh disjoint destination.

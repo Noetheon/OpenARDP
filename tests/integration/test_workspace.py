@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -78,3 +79,56 @@ def test_initialize_rejects_foreign_nonempty_root(tmp_path: Path) -> None:
     with pytest.raises(WorkspaceIncompatible, match="workspace is incompatible"):
         LocalWorkspace.initialize(root, now=NOW)
     assert sentinel.read_text(encoding="utf-8") == "keep"
+
+
+def test_open_preserves_every_regular_byte_and_mtime(tmp_path: Path) -> None:
+    """Validate a current workspace without hidden repair or journal publication."""
+    root = tmp_path / "workspace"
+    workspace = LocalWorkspace.initialize(root, now=NOW)
+    workspace.object_store.put_chunks((b"immutable",))
+    before = {
+        path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in root.rglob("*")
+        if path.is_file() and not path.name.endswith(("-shm", "-wal"))
+    }
+
+    opened = LocalWorkspace.open(root)
+
+    after = {
+        path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in root.rglob("*")
+        if path.is_file() and not path.name.endswith(("-shm", "-wal"))
+    }
+    assert opened.catalog.schema_version() == CURRENT_SCHEMA_VERSION
+    assert after == before
+
+
+def test_newer_catalog_fails_all_workspace_entrypoints_without_mutation(
+    tmp_path: Path,
+) -> None:
+    """Reject unsupported forward state through open and init byte-for-byte."""
+    root = tmp_path / "workspace"
+    LocalWorkspace.initialize(root, now=NOW)
+    with sqlite3.connect(root / "catalog.sqlite3") as connection:
+        connection.execute(
+            "INSERT INTO schema_migrations(version, name, checksum, applied_at) "
+            "VALUES (11, 'future-revision', ?, '2026-07-22T12:00:00.000000Z')",
+            ("sha256:" + "f" * 64,),
+        )
+    before = {
+        path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+    with pytest.raises(WorkspaceIncompatible):
+        LocalWorkspace.open(root)
+    with pytest.raises(WorkspaceIncompatible):
+        LocalWorkspace.initialize(root, now=NOW)
+
+    after = {
+        path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+    assert after == before

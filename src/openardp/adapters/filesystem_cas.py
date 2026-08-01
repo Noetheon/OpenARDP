@@ -38,16 +38,22 @@ _DEFAULT_CHUNK_SIZE = 1024 * 1024
 class FilesystemObjectStore:
     """Immutable exact-byte CAS below one local app-owned storage root."""
 
-    def __init__(self, root: Path) -> None:
-        """Create or validate the managed store directories."""
+    def __init__(self, root: Path, *, create: bool = True) -> None:
+        """Create or validate managed directories without hidden open-time repair."""
         configured = root.expanduser()
-        configured.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if create:
+            configured.mkdir(parents=True, exist_ok=True, mode=0o700)
+        elif not self._lexists(configured):
+            raise UnsafeStoreEntry("managed storage root is missing")
         self._root = configured.resolve(strict=True)
         self._objects = self._root / "objects"
         self._algorithm_root = self._objects / "sha256"
         self._staging = self._root / "staging"
         for directory in (self._objects, self._algorithm_root, self._staging):
-            self._ensure_directory(directory)
+            if create:
+                self._ensure_directory(directory)
+            else:
+                self._assert_directory(directory)
 
     @property
     def root(self) -> Path:

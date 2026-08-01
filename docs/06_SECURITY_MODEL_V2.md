@@ -166,3 +166,13 @@ viewer-fidelity differences remain residual risks.
   opens no listener and performs no default network or model call. Network/shared POSIX
   mounts that cannot be identified portably remain explicitly unsupported rather than
   receiving a correctness claim.
+# Feature 013 destructive-authority boundary
+
+Ordinary CAS and catalog ports have no deletion operation. Exact physical removal is
+isolated in the maintenance adapter and is invoked only after a complete persisted
+`COMMIT` intent, elapsed minimum grace, a final transactional root/hold check and a
+separate operator acknowledgement. Generic recovery may replay existing intent but may
+not synthesize deletion authority. Backup manifests and paths are untrusted input;
+restore validates canonical relative paths, complete inventory, hashes and catalog
+history before publishing to a fresh disjoint directory. This is logical removal, not a
+secure-erasure claim.

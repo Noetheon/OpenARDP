@@ -166,12 +166,65 @@ class SearchService:
         )
         return ReindexReport(scopes=tuple(reports))
 
+    def rebuild_global(
+        self,
+        *,
+        admit: Callable[[int], None] | None = None,
+    ) -> ReindexReport:
+        """Verify the complete READY corpus then replace all index rows atomically."""
+        scopes = self._catalog.list_ready_scopes()
+        now = self._clock()
+        entries: list[SearchIndexEntry] = []
+        texts: list[str] = []
+        reports: list[ReindexScopeReport] = []
+        for scope in scopes:
+            scope_entries, scope_texts = self._prepare_scope(scope, now=now)
+            entries.extend(scope_entries)
+            texts.extend(scope_texts)
+            reports.append(
+                ReindexScopeReport(
+                    scope=scope,
+                    outcome=ReindexOutcome.REBUILT,
+                    failure_code=None,
+                    entry_count=len(scope_entries),
+                )
+            )
+        if admit is not None:
+            admit(sum(len(text.encode("utf-8")) for text in texts))
+        self._catalog.replace_global_index(tuple(entries), tuple(texts), now=now)
+        return ReindexReport(scopes=tuple(reports))
+
     def _reindex_scope(
         self,
         scope: RepresentationScope,
         *,
         now: datetime,
     ) -> tuple[int, ReindexOutcome]:
+        entries, texts = self._prepare_scope(scope, now=now)
+        coverage = self._catalog.index_coverage(scopes=(scope,))
+        stored = self._catalog.list_scope_index_entries(scope)
+        if (
+            coverage
+            and coverage[0].is_covered
+            and {item.ordinal: item.text_hash for item in stored}
+            == {item.ordinal: item.text_hash for item in entries}
+        ):
+            return len(entries), ReindexOutcome.CURRENT
+        count = self._catalog.replace_scope_index(
+            scope,
+            tuple(entries),
+            tuple(texts),
+            now=now,
+        )
+        return count, ReindexOutcome.REBUILT
+
+    def _prepare_scope(
+        self,
+        scope: RepresentationScope,
+        *,
+        now: datetime,
+    ) -> tuple[list[SearchIndexEntry], list[str]]:
+        """Verify and project one authoritative READY scope without catalog writes."""
         aggregate = self._catalog.load_representation(scope)
         if aggregate is None or aggregate.representation.state is not RepresentationState.READY:
             raise RepresentationNotFound("ready representation does not exist")
@@ -205,22 +258,7 @@ class SearchService:
                 )
             )
             texts.append(text)
-        coverage = self._catalog.index_coverage(scopes=(scope,))
-        stored = self._catalog.list_scope_index_entries(scope)
-        if (
-            coverage
-            and coverage[0].is_covered
-            and {item.ordinal: item.text_hash for item in stored}
-            == {item.ordinal: item.text_hash for item in entries}
-        ):
-            return len(entries), ReindexOutcome.CURRENT
-        count = self._catalog.replace_scope_index(
-            scope,
-            tuple(entries),
-            tuple(texts),
-            now=now,
-        )
-        return count, ReindexOutcome.REBUILT
+        return entries, texts
 
     def _resolve_filters(
         self,

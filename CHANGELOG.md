@@ -5,6 +5,18 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 016 — alternate parser conformance spike
+
+- Added a bounded standard-library evidence consumer that runs under Python isolated/no-site
+  mode without OpenARDP, Pydantic or RFC8785 imports and independently validates all seven
+  valid roots, eight invalid roots, one record set and six F006 identity vectors.
+- Added a deterministic non-Docling TXT/CSV producer with complete retained native JSON plus
+  thin text, page-region, table-cell and opaque-pointer evidence accepted by the reference
+  contracts on the reverse path.
+- Added fail-closed conformance evidence and repository drift validation. The decision is
+  `supported_for_scoped_claim`; arbitrary parser interchangeability, semantic anchor
+  equivalence, production readiness and contract stabilization remain prohibited claims.
+
 ### Feature 015 — benchmark, security and v0.1 release gate
 
 - Set the application candidate to `0.1.0rc1` and froze a synthetic five-baseline

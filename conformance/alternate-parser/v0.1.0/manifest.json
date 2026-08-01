@@ -1,0 +1,82 @@
+{
+  "expected": {
+    "decision": "alternate-parser/v0.1.0/expected/decision.json",
+    "record_set": "alternate-parser/v0.1.0/expected/alternate-record-set.json"
+  },
+  "implementation": {
+    "path": "scripts/alternate_evidence_process.py",
+    "sha256": "sha256:9ab9be10ba0726dccc3f0843e0a61c84513280f153187f3367e3b82231085c49"
+  },
+  "inputs": {
+    "evidence_manifest": {
+      "path": "evidence/v0.1.0/manifest.json",
+      "sha256": "sha256:3f66c12d82c62bdee2dd968592e412e7a3dd80e3ccb93411f1cf5e98646a1832"
+    },
+    "identity_vectors": {
+      "path": "evidence/v0.1.0/canonicalization-vectors.json",
+      "sha256": "sha256:da1c718da44c6e51f3ec2e7aafcd94de4b59dad8b3c02e442eb02527a8729e97"
+    },
+    "sources": [
+      {
+        "key": "text",
+        "kind": "text",
+        "media_type": "text/plain",
+        "path": "alternate-parser/v0.1.0/sources/sample.txt",
+        "sha256": "sha256:c21bb5442022549c1a1770186f858c4e12353a6b0fdf3ffbe9e5efa2f83f11e7"
+      },
+      {
+        "key": "table",
+        "kind": "csv",
+        "media_type": "text/csv",
+        "path": "alternate-parser/v0.1.0/sources/sample.csv",
+        "sha256": "sha256:632f168406a75dd506bf8fb18a4bdf73a788d74d0f9a392397590172348765ec"
+      }
+    ]
+  },
+  "invalid_categories": {
+    "invalid/malformed-pointer.json": "pointer_control",
+    "invalid/native-identity-drift.json": "identity_mismatch",
+    "invalid/page-out-of-bounds.json": "page_bounds",
+    "invalid/stale-projection-source.json": "scope_mismatch",
+    "invalid/trust-escalation.json": "trust_escalation",
+    "invalid/unknown-direct-field.json": "unknown_field",
+    "invalid/unnamespaced-extension.json": "extension_namespace",
+    "invalid/unsupported-major-trust.json": "contract_version"
+  },
+  "limits": {
+    "max_execution_seconds": 10,
+    "max_file_bytes": 1048576,
+    "max_files": 128,
+    "max_output_bytes": 1048576,
+    "max_request_bytes": 1048576,
+    "max_total_bytes": 8388608
+  },
+  "profile_version": "0.1.0",
+  "required_coverage": {
+    "anchors": [
+      "page_region",
+      "provider_pointer",
+      "table_cell",
+      "text_span"
+    ],
+    "directions": [
+      "alternate_to_reference",
+      "reference_to_alternate"
+    ],
+    "identity_vectors": 6,
+    "invalid_roots": 8,
+    "models": [
+      "evidence_projection",
+      "evidence_reference",
+      "native_representation",
+      "trust_classification"
+    ],
+    "observations": 26,
+    "record_sets": 1,
+    "source_kinds": [
+      "csv",
+      "text"
+    ],
+    "valid_roots": 7
+  }
+}

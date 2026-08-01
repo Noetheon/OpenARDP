@@ -6,6 +6,8 @@ import argparse
 import json
 import os
 import re
+import subprocess
+import sys
 import tomllib
 import unicodedata
 from collections.abc import Iterable, Sequence
@@ -113,6 +115,15 @@ _F015_REQUIRED_FILES = (
     "scripts/generate_release_evidence.py",
     "scripts/generate_release_sbom.py",
     "scripts/validate_release_evidence.py",
+)
+_F016_REQUIRED_FILES = (
+    "conformance/alternate-parser/v0.1.0/expected/alternate-record-set.json",
+    "conformance/alternate-parser/v0.1.0/expected/decision.json",
+    "conformance/alternate-parser/v0.1.0/manifest.json",
+    "conformance/alternate-parser/v0.1.0/sources/sample.csv",
+    "conformance/alternate-parser/v0.1.0/sources/sample.txt",
+    "scripts/alternate_evidence_process.py",
+    "scripts/validate_alternate_conformance.py",
 )
 
 
@@ -579,6 +590,49 @@ def _validate_f015_release_inputs(root: Path) -> list[Diagnostic]:
     return diagnostics
 
 
+def _validate_f016_conformance(root: Path) -> list[Diagnostic]:
+    """Require and regenerate-check the bounded F016 conformance evidence."""
+    diagnostics: list[Diagnostic] = []
+    missing = [relative for relative in _F016_REQUIRED_FILES if not (root / relative).is_file()]
+    for relative in missing:
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV014",
+                relative,
+                "required F016 conformance input or evidence file is missing",
+            )
+        )
+    if missing:
+        return diagnostics
+    script = root / "scripts" / "validate_alternate_conformance.py"
+    try:
+        completed = subprocess.run(  # noqa: S603 - exact interpreter and repository script
+            [sys.executable, str(script), "--check"],
+            cwd=root,
+            env={
+                key: value
+                for key, value in os.environ.items()
+                if key in {"PATH", "SYSTEMROOT", "WINDIR"}
+            },
+            capture_output=True,
+            check=False,
+            timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        completed = None
+    if completed is None or completed.returncode != 0:
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV015",
+                "conformance/alternate-parser/v0.1.0",
+                "F016 generated conformance evidence is invalid or drifted",
+            )
+        )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -662,6 +716,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f005a_governance(root))
     diagnostics.extend(_validate_mcp_fixtures(root))
     diagnostics.extend(_validate_f015_release_inputs(root))
+    diagnostics.extend(_validate_f016_conformance(root))
     return _sort_diagnostics(root, diagnostics)
 
 

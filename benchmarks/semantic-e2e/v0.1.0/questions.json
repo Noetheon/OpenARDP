@@ -1,0 +1,254 @@
+{
+  "schema_version": "0.1.0",
+  "benchmark_version": "0.1.0",
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "questions": [
+    {
+      "question_id": "Q01", "language": "en", "stratum": "direct",
+      "question": "What are the six initial principles in NASA's ethical AI framework?",
+      "operator_query": "Fair Explainable Transparent Accountable Secure Safe Human-Centric Societally Beneficial Scientifically Ethically Robust",
+      "reference_answer": "Fair; Explainable and Transparent; Accountable; Secure and Safe; Human-Centric and Societally Beneficial; Scientifically and Ethically Robust.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pdf"],
+      "required_sources": ["nasa-ethical-ai-framework"], "acceptable_sources": ["nasa-ethical-ai-framework"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ethical-ai-framework", "variants": ["Fair. AI systems must include considerations regarding how to treat people"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-ethical-ai-framework", "variants": ["Explainable and Transparent. Solutions must clearly state if, when, and how an AI system is involved"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-ethical-ai-framework", "variants": ["Accountable. Organizations and individuals must be accountable for the systems they create"], "required": true},
+        {"atom_id": "A04", "source_key": "nasa-ethical-ai-framework", "variants": ["Secure and Safe. AI systems must respect privacy and do no harm"], "required": true},
+        {"atom_id": "A05", "source_key": "nasa-ethical-ai-framework", "variants": ["Human-Centric and Societally Beneficial. AI systems must obey human legal systems"], "required": true},
+        {"atom_id": "A06", "source_key": "nasa-ethical-ai-framework", "variants": ["AI systems must be Scientifically and Ethically Robust"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-ethical-ai-framework", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "Exact NASA NTRS technical memorandum containing the declared framework."}]
+    },
+    {
+      "question_id": "Q02", "language": "en", "stratum": "paraphrase",
+      "question": "Who should keep ultimate control of machine decisions for the foreseeable future?",
+      "operator_query": "humans must remain in charge foreseeable future",
+      "reference_answer": "Humans must remain in charge for the foreseeable future.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pdf"],
+      "required_sources": ["nasa-ethical-ai-framework"], "acceptable_sources": ["nasa-ethical-ai-framework"],
+      "support_atoms": [{"atom_id": "A01", "source_key": "nasa-ethical-ai-framework", "variants": ["humans must remain in charge, which this group sees as especially valuable for NASA's employment of AI for the foreseeable future"], "required": true}],
+      "source_fitness": [{"source_key": "nasa-ethical-ai-framework", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "Exact NASA document directly states the retained-control requirement."}]
+    },
+    {
+      "question_id": "Q03", "language": "en", "stratum": "source_discrimination",
+      "question": "Which external framework did NASA use as its ethical-AI baseline, and why was it chosen?",
+      "operator_query": "selected Gartner framework baseline generalized well avoided overlap succinctly map NASA needs",
+      "reference_answer": "NASA selected Gartner because its elements generalized well, avoided overlap and mapped succinctly to NASA's needs.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pdf"],
+      "required_sources": ["nasa-ethical-ai-framework"], "acceptable_sources": ["nasa-ethical-ai-framework"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ethical-ai-framework", "variants": ["We selected the Gartner framework as our baseline"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-ethical-ai-framework", "variants": ["because its elements generalized well, avoided overlap among themselves, and could succinctly map to NASA's needs"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-ethical-ai-framework", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The NASA authors directly document their baseline selection."}]
+    },
+    {
+      "question_id": "Q04", "language": "de", "stratum": "cross_language",
+      "question": "Welches zusätzliche NASA-spezifische Robustheitsprinzip ergänzt den übernommenen Rahmen?",
+      "operator_query": "NASA-specific principle Scientifically Ethically Robust scientific method tested documented peer reviewed",
+      "reference_answer": "Scientifically and Ethically Robust.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pdf"],
+      "required_sources": ["nasa-ethical-ai-framework"], "acceptable_sources": ["nasa-ethical-ai-framework"],
+      "support_atoms": [{"atom_id": "A01", "source_key": "nasa-ethical-ai-framework", "variants": ["we add a NASA-specific principle: AI systems must be Scientifically and Ethically Robust"], "required": true}],
+      "source_fitness": [{"source_key": "nasa-ethical-ai-framework", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "Exact NASA source for the NASA-specific addition."}]
+    },
+    {
+      "question_id": "Q05", "language": "en", "stratum": "direct",
+      "question": "Which five workshop test cases were identified as the best?",
+      "operator_query": "best test cases selecting Decadal Survey priorities unidentified science topics label discoverability observation capabilities proposal reviewers advisory committees",
+      "reference_answer": "Decadal Survey priorities; new science topics; literature/proposal labelling and discoverability; observation capabilities; and bias mitigation in reviewer/advisory membership selection.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["docx"],
+      "required_sources": ["nasa-ai-strategic-planning-workshop"], "acceptable_sources": ["nasa-ai-strategic-planning-workshop"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Use of AI to assist in selecting Decadal Survey priorities"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Use of AI to identify new, or previously unidentified, science topics for prioritization"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Using AI to better label and increase discoverability of scientific literature and proposals"], "required": true},
+        {"atom_id": "A04", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Use of AI to enhance current observation capabilities for scientific missions"], "required": true},
+        {"atom_id": "A05", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Using AI to mitigate biases in selection of proposal reviewers and membership of advisory committees"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-ai-strategic-planning-workshop", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The workshop report directly enumerates the five cases."}]
+    },
+    {
+      "question_id": "Q06", "language": "en", "stratum": "paraphrase",
+      "question": "What shared technical capability underpins most of the top-rated workshop cases?",
+      "operator_query": "Natural Language Processing common capability most best top-rated test cases",
+      "reference_answer": "Natural Language Processing (NLP).",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["docx"],
+      "required_sources": ["nasa-ai-strategic-planning-workshop"], "acceptable_sources": ["nasa-ai-strategic-planning-workshop"],
+      "support_atoms": [{"atom_id": "A01", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Natural Language Processing (NLP) is a common capability found in most of the ”best” (top-rated) test cases", "Natural Language Processing (NLP) is a common capability found in most of the \"best\" (top-rated) test cases"], "required": true}],
+      "source_fitness": [{"source_key": "nasa-ai-strategic-planning-workshop", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The report's analysis directly identifies NLP."}]
+    },
+    {
+      "question_id": "Q07", "language": "en", "stratum": "direct",
+      "question": "What four criteria were used to classify the workshop test cases?",
+      "operator_query": "criteria Technical Feasibility Data Availability Sufficiency Explainability Value Customer",
+      "reference_answer": "Technical Feasibility; Data Availability and Sufficiency; Explainability; Value to Customer.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["docx"],
+      "required_sources": ["nasa-ai-strategic-planning-workshop"], "acceptable_sources": ["nasa-ai-strategic-planning-workshop"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Technical Feasibility"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Data Availability and Sufficiency"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Explainability"], "required": true},
+        {"atom_id": "A04", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Value to Customer"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-ai-strategic-planning-workshop", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The report directly lists the classification criteria."}]
+    },
+    {
+      "question_id": "Q08", "language": "de", "stratum": "cross_language",
+      "question": "Wie setzte sich die Liste der zehn zentralen Herausforderungen aus sieben und drei Einträgen zusammen?",
+      "operator_query": "top seven most interesting challenges three additional organizing committee rounding out list 10 key challenges",
+      "reference_answer": "Sieben von der Gruppe ausgewählte Herausforderungen wurden um drei vom Organisationskomitee hinzugefügte ergänzt.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["docx"],
+      "required_sources": ["nasa-ai-strategic-planning-workshop"], "acceptable_sources": ["nasa-ai-strategic-planning-workshop"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["We thus arrived at the top seven most interesting challenges"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["Three additional challenges that the organizing committee felt were important"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-ai-strategic-planning-workshop", "variants": ["rounding out our list of 10 “key challenges”", "rounding out our list of 10 \"key challenges\""], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-ai-strategic-planning-workshop", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The report directly explains the seven-plus-three construction."}]
+    },
+    {
+      "question_id": "Q09", "language": "en", "stratum": "direct",
+      "question": "Which three roles make ML and AI application a team sport?",
+      "operator_query": "ML AI Application Team Sport Data Engineers ML Engineers Subject Matter Experts",
+      "reference_answer": "Data Engineers, ML Engineers and Subject Matter Experts.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pptx"],
+      "required_sources": ["nasa-open-science-and-ai"], "acceptable_sources": ["nasa-open-science-and-ai"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-open-science-and-ai", "variants": ["Data Engineers"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-open-science-and-ai", "variants": ["ML Engineer"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-open-science-and-ai", "variants": ["Subject Matter Experts"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-open-science-and-ai", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The NASA presentation directly labels all three roles."}]
+    },
+    {
+      "question_id": "Q10", "language": "en", "stratum": "paraphrase",
+      "question": "What knowledge-management failure does the presentation identify, and what change does it recommend?",
+      "operator_query": "Sprawl information process artifacts knowledge adhoc systematic implicit explicit captured reproducibility reuse",
+      "reference_answer": "Information and process knowledge sprawl in ad-hoc storage should be replaced by systematic capture that turns implicit knowledge into explicit knowledge.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pptx"],
+      "required_sources": ["nasa-open-science-and-ai"], "acceptable_sources": ["nasa-open-science-and-ai"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-open-science-and-ai", "variants": ["Sprawl of information - both process artifacts and knowledge stored in adhoc and not in a systematic manner"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-open-science-and-ai", "variants": ["Ensure to turn implicit knowledge into explicit knowledge"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-open-science-and-ai", "variants": ["both research artifacts and processes are captured in a systematic manner for reproducibility and reuse"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-open-science-and-ai", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The presentation's key-takeaway slide directly states the problem and response."}]
+    },
+    {
+      "question_id": "Q11", "language": "en", "stratum": "direct",
+      "question": "Which three open-science focus concepts are highlighted?",
+      "operator_query": "Focus Open Participation Accessibility Reproducibility",
+      "reference_answer": "Open Participation, Accessibility and Reproducibility.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pptx"],
+      "required_sources": ["nasa-open-science-and-ai"], "acceptable_sources": ["nasa-open-science-and-ai"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-open-science-and-ai", "variants": ["Open Participation"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-open-science-and-ai", "variants": ["Accessibility"], "required": true},
+        {"atom_id": "A03", "source_key": "nasa-open-science-and-ai", "variants": ["Reproducibility"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "nasa-open-science-and-ai", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The focus slide directly highlights these concepts."}]
+    },
+    {
+      "question_id": "Q12", "language": "en", "stratum": "multi_source",
+      "question": "Across the NASA ethics framework and open-science presentation, what practices keep AI work trustworthy and reusable?",
+      "operator_query": "AI systems documented humans monitor guide systematic captured research artifacts processes reproducibility reuse",
+      "reference_answer": "Keep humans in charge and document AI systems; systematically capture research artifacts and processes for reproducibility and reuse.",
+      "answerable": true, "temporal_scope": "historical_document", "required_formats": ["pdf", "pptx"],
+      "required_sources": ["nasa-ethical-ai-framework", "nasa-open-science-and-ai"], "acceptable_sources": ["nasa-ethical-ai-framework", "nasa-open-science-and-ai"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "nasa-ethical-ai-framework", "variants": ["AI systems must be documented"], "required": true},
+        {"atom_id": "A02", "source_key": "nasa-open-science-and-ai", "variants": ["both research artifacts and processes are captured in a systematic manner for reproducibility and reuse"], "required": true}
+      ],
+      "source_fitness": [
+        {"source_key": "nasa-ethical-ai-framework", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "Primary NASA framework for documentation practice."},
+        {"source_key": "nasa-open-science-and-ai", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "Primary NASA presentation for systematic capture and reuse."}
+      ]
+    },
+    {
+      "question_id": "Q13", "language": "en", "stratum": "source_discrimination",
+      "question": "When is the GitHub KEV mirror updated relative to CISA's canonical source?",
+      "operator_query": "updated shortly after canonical source weekdays normal US Eastern business hours synchronized within minutes",
+      "reference_answer": "Shortly after the canonical source, typically on weekdays during normal US Eastern business hours when entries change, with both sources synchronized within minutes.",
+      "answerable": true, "temporal_scope": "frozen_snapshot", "required_formats": ["md"],
+      "required_sources": ["cisa-kev-readme"], "acceptable_sources": ["cisa-kev-readme"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "cisa-kev-readme", "variants": ["this repo is updated shortly after the canonical source at cisa.gov is updated"], "required": true},
+        {"atom_id": "A02", "source_key": "cisa-kev-readme", "variants": ["weekdays during normal US Eastern business hours"], "required": true},
+        {"atom_id": "A03", "source_key": "cisa-kev-readme", "variants": ["synchronized within minutes of each other"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "cisa-kev-readme", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The exact CISA repository README defines mirror timing."}]
+    },
+    {
+      "question_id": "Q14", "language": "en", "stratum": "source_discrimination",
+      "question": "Does the KEV CC0 dedication waive trademark rights or guarantee that the data are accurate?",
+      "operator_query": "No trademark rights waived Work as-is no warranties accuracy",
+      "reference_answer": "No. Trademark rights are not waived, and the work is offered as-is without accuracy warranties.",
+      "answerable": true, "temporal_scope": "frozen_snapshot", "required_formats": ["txt"],
+      "required_sources": ["cisa-kev-license"], "acceptable_sources": ["cisa-kev-license"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "cisa-kev-license", "variants": ["No trademark or patent rights held by Affirmer are waived"], "required": true},
+        {"atom_id": "A02", "source_key": "cisa-kev-license", "variants": ["Affirmer offers the Work as-is and makes no representations or warranties of any kind concerning the Work"], "required": true},
+        {"atom_id": "A03", "source_key": "cisa-kev-license", "variants": ["the absence of latent or other defects, accuracy"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "cisa-kev-license", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The exact CC0 text controls these limitations; this is factual benchmark interpretation, not legal advice."}]
+    },
+    {
+      "question_id": "Q15", "language": "en", "stratum": "direct",
+      "question": "What action and due date does the frozen KEV catalog give for Log4Shell CVE-2021-44228?",
+      "operator_query": "CVE-2021-44228 Apply updates remove affected assets agency networks 2021-12-24",
+      "reference_answer": "Apply available updates or remove affected assets from agency networks; due 2021-12-24.",
+      "answerable": true, "temporal_scope": "frozen_snapshot", "required_formats": ["csv"],
+      "required_sources": ["cisa-known-exploited-vulnerabilities"], "acceptable_sources": ["cisa-known-exploited-vulnerabilities"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "cisa-known-exploited-vulnerabilities", "variants": ["Apply updates; OR 2) remove affected assets from agency networks"], "required": true},
+        {"atom_id": "A02", "source_key": "cisa-known-exploited-vulnerabilities", "variants": ["2021-12-24"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "cisa-known-exploited-vulnerabilities", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The frozen official CISA data row directly provides action and due date."}]
+    },
+    {
+      "question_id": "Q16", "language": "en", "stratum": "direct",
+      "question": "What ransomware-use status and due date does the frozen KEV row give for PAN-OS CVE-2024-3400?",
+      "operator_query": "CVE-2024-3400 knownRansomwareCampaignUse Known dueDate 2024-04-19",
+      "reference_answer": "Known ransomware campaign use; due 2024-04-19.",
+      "answerable": true, "temporal_scope": "frozen_snapshot", "required_formats": ["csv"],
+      "required_sources": ["cisa-known-exploited-vulnerabilities"], "acceptable_sources": ["cisa-known-exploited-vulnerabilities"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "cisa-known-exploited-vulnerabilities", "variants": ["Known"], "required": true},
+        {"atom_id": "A02", "source_key": "cisa-known-exploited-vulnerabilities", "variants": ["2024-04-19"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "cisa-known-exploited-vulnerabilities", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The frozen official CISA data row directly provides both fields."}]
+    },
+    {
+      "question_id": "Q17", "language": "en", "stratum": "unsupported",
+      "question": "What budget did NASA approve for deploying AGI in 2027?",
+      "operator_query": "NASA approved AGI deployment budget 2027",
+      "reference_answer": "The locked corpus contains no such approval or budget and must not support an answer.",
+      "answerable": false, "temporal_scope": "current_live", "required_formats": ["pdf"],
+      "required_sources": [], "acceptable_sources": [], "support_atoms": [], "source_fitness": []
+    },
+    {
+      "question_id": "Q18", "language": "en", "stratum": "unsupported",
+      "question": "Which vulnerability was added most recently to the live KEV catalog today?",
+      "operator_query": "live KEV catalog today most recently added vulnerability",
+      "reference_answer": "A frozen 2026-07-29 snapshot cannot establish today's live most-recent addition.",
+      "answerable": false, "temporal_scope": "current_live", "required_formats": ["csv"],
+      "required_sources": [], "acceptable_sources": [], "support_atoms": [], "source_fitness": []
+    },
+    {
+      "question_id": "Q19", "language": "en", "stratum": "source_discrimination",
+      "question": "Should additions or deletions of KEV entries be requested through pull requests to the mirror repository?",
+      "operator_query": "not repo requesting additions deletions KEV entries pull requests",
+      "reference_answer": "No. Repository issues and PRs address technical issues; KEV additions or deletions are managed directly by CISA.",
+      "answerable": true, "temporal_scope": "frozen_snapshot", "required_formats": ["md"],
+      "required_sources": ["cisa-kev-readme"], "acceptable_sources": ["cisa-kev-readme"],
+      "support_atoms": [
+        {"atom_id": "A01", "source_key": "cisa-kev-readme", "variants": ["this is not a repo for requesting additions or deletions of KEV entries"], "required": true},
+        {"atom_id": "A02", "source_key": "cisa-kev-readme", "variants": ["The KEV is managed by CISA directly"], "required": true}
+      ],
+      "source_fitness": [{"source_key": "cisa-kev-readme", "publisher_authority": 2, "directness": 2, "temporal_fit": 2, "integrity": 2, "reuse_basis": 2, "rationale": "The repository README directly defines contribution scope."}]
+    }
+  ],
+  "question_set_id": "sha256:e251354b95bcd59d68604cd4a1cf0a5e2300dabdf8145844e2e2a0bb5703bdce"
+}

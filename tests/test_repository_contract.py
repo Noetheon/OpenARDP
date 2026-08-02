@@ -208,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f024_governance_and_prior_contracts_are_present_and_frozen(
+def test_f025_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
     """Require active benchmark governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/024-redistributable-realworld-corpus"
+    assert active["feature_directory"] == "specs/025-semantic-e2e-source-evaluation"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -264,6 +264,9 @@ def test_f024_governance_and_prior_contracts_are_present_and_frozen(
     assert (repository_root / "spec-kit/feature-prompts/023-offline-pdf-model-bundle.md").is_file()
     assert (
         repository_root / "spec-kit/feature-prompts/024-redistributable-realworld-corpus.md"
+    ).is_file()
+    assert (
+        repository_root / "spec-kit/feature-prompts/025-semantic-e2e-source-evaluation.md"
     ).is_file()
     f021_adr = (repository_root / "docs/adr/0017-freshness-integrity-coverage.md").read_text(
         encoding="utf-8"

@@ -239,3 +239,16 @@ cap for the real 932,085-byte source. The result retains identities, counts, anc
 timings and conservative RSS, never source/native/extracted bodies. An independent validator regenerates all summaries,
 decision and report. `REALWORLD_BASELINE_READY` is limited to exact structural/offline behavior for this corpus and cannot
 stand in for F025 semantic relevance, answer correctness, citation/source quality or broad population accuracy.
+
+## 14. F025 semantic and source-quality protocol
+
+F025 freezes nineteen diagnostic questions and 46 minimal support atoms before execution. Untouched questions and
+human-curated operator terms share the exact corpus, compiler mode, 256 KiB budget, 64-candidate cap and evaluation
+rules. The operator treatment is manual assistance, never labelled semantic retrieval. CSV remains an explicit product
+coverage failure, and two unanswerable questions measure false-positive context rather than rewarding plausible prose.
+
+Answer-support recall, full support, precision, reciprocal rank, expected-source recall, citation integrity, abstention,
+German recall and source fitness use exact integer fractions. Two fresh workspaces must produce identical non-timing
+rows. The stdlib-only validator independently recomputes row identities, aggregates, policy, report and manifest hashes.
+The committed `SEMANTIC_E2E_NOT_READY` result is intentionally unfavorable: it proves that exact evidence/citations do
+not by themselves make the current lexical selector ready for realistic semantic use.

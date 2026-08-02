@@ -5,6 +5,19 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 025 — semantic end-to-end source evaluation
+
+- Added nineteen frozen, human-reviewed English/German questions with exact support atoms, source roles, temporal scope
+  and pre-run READY/CONDITIONAL/NOT_READY policy over the exact F024 corpus.
+- Added two strictly separated product treatments: untouched natural-language questions and frozen manual lexical terms;
+  no LLM, embeddings, translation, query expansion, reranking or network access is hidden in the benchmark.
+- Added exact citation re-resolution, question-specific source fitness, unanswerable false-positive penalties and
+  explicit CSV `unsupported_format` rows, plus a stdlib-only independent result validator.
+- The two-workspace reference result is `SEMANTIC_E2E_NOT_READY`: direct full support/atom recall/precision are
+  35.3%/32.6%/1.1%; operator assistance reaches 82.4% full support but misses the 90% atom/source conditional gates.
+  Citation integrity and supported-format ingestion are 100%, separating a sound evidence substrate from inadequate
+  semantic retrieval.
+
 ### Feature 024 — redistributable real-world corpus
 
 - Added a 6,634,970-byte, six-format NASA/CISA corpus with exact unmodified publisher bytes, RFC 8785/SHA-256 lock,

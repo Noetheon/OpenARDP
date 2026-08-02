@@ -278,6 +278,36 @@ _F024_REQUIRED_FILES = (
     "tests/unit/test_realworld_corpus.py",
     "tests/unit/test_realworld_corpus_benchmark.py",
 )
+_F025_REQUIRED_FILES = (
+    "benchmarks/semantic-e2e/v0.1.0/README.md",
+    "benchmarks/semantic-e2e/v0.1.0/protocol.json",
+    "benchmarks/semantic-e2e/v0.1.0/questions.json",
+    "benchmarks/semantic-e2e/v0.1.0/questions.schema.json",
+    "benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/observations.json",
+    "benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/run-manifest.json",
+    "benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/summary.json",
+    "docs/24_SEMANTIC_E2E_EVALUATION.md",
+    "scripts/run_semantic_e2e_benchmark.py",
+    "scripts/semantic_e2e_benchmark.py",
+    "scripts/semantic_e2e_evaluation.py",
+    "scripts/validate_semantic_e2e_benchmark.py",
+    "spec-kit/feature-prompts/025-semantic-e2e-source-evaluation.md",
+    "specs/025-semantic-e2e-source-evaluation/analysis.md",
+    "specs/025-semantic-e2e-source-evaluation/data-model.md",
+    "specs/025-semantic-e2e-source-evaluation/implementation-notes.md",
+    "specs/025-semantic-e2e-source-evaluation/plan.md",
+    "specs/025-semantic-e2e-source-evaluation/quickstart.md",
+    "specs/025-semantic-e2e-source-evaluation/research.md",
+    "specs/025-semantic-e2e-source-evaluation/spec.md",
+    "specs/025-semantic-e2e-source-evaluation/tasks.md",
+    "tests/integration/test_semantic_e2e_benchmark.py",
+    "tests/integration/test_semantic_e2e_reference.py",
+    "tests/security/test_semantic_e2e_boundaries.py",
+    "tests/test_semantic_e2e_drift.py",
+    "tests/unit/test_semantic_e2e_benchmark.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -868,6 +898,20 @@ def _validate_f024_realworld_corpus(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f025_semantic_evaluation(root: Path) -> list[Diagnostic]:
+    """Require the complete F025 question, result and independent-validation boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV021",
+            relative,
+            "required F025 semantic evaluation artifact is missing",
+        )
+        for relative in _F025_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -956,6 +1000,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f019_ci_governance(root))
     diagnostics.extend(_validate_f020_product_benchmark(root))
     diagnostics.extend(_validate_f024_realworld_corpus(root))
+    diagnostics.extend(_validate_f025_semantic_evaluation(root))
     return _sort_diagnostics(root, diagnostics)
 
 

@@ -142,6 +142,37 @@ def test_late_same_plan_caller_converges_after_stale_initial_read(
     assert workspace.catalog.claim_quarantine(plan, now=NOW).state.value == "SUCCEEDED"
 
 
+def test_prepared_batch_read_converges_when_operation_finishes_before_active_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Re-read the batch when an active operation becomes terminal between snapshots."""
+    workspace, policy, _stored = _candidate_workspace(tmp_path)
+    service = MaintenanceService(workspace.maintenance_store, workspace.catalog)
+    plan = service.plan(policy=policy, now=NOW)
+    winner = service.quarantine(plan, now=NOW)
+    stale = winner.model_copy(update={"state": QuarantineBatchState.PREPARED})
+    lookup = workspace.catalog.quarantine_batch_for_plan
+    calls = 0
+
+    def initially_prepared(plan_id: str) -> object:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return stale
+        return lookup(plan_id)
+
+    monkeypatch.setattr(workspace.catalog, "quarantine_batch_for_plan", initially_prepared)
+    converged = MaintenanceService(
+        workspace.maintenance_store,
+        workspace.catalog,
+    ).quarantine(plan, now=NOW)
+
+    assert converged == winner
+    assert calls == 2
+    assert workspace.catalog.active_maintenance_operation() is None
+
+
 def test_twenty_same_batch_restores_converge(tmp_path: Path) -> None:
     """Serialize duplicate restores into one exact active ownership state."""
     workspace, policy, _stored = _candidate_workspace(tmp_path)

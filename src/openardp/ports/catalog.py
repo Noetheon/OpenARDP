@@ -20,6 +20,7 @@ from openardp.domain.derivation_lifecycle import (
 from openardp.domain.ingestion import (
     DocumentHead,
     DocumentHeadUpdate,
+    DocumentStatusSnapshot,
     DocumentSummary,
     IngestionDisposition,
     IngestionEvent,
@@ -329,6 +330,13 @@ class Catalog(Protocol):
 
     def get_document_head(self, document_id: UUID) -> DocumentHead | None:
         """Return the current successful observation for one document."""
+        ...
+
+    def get_document_status_snapshot(
+        self,
+        document_id: UUID,
+    ) -> DocumentStatusSnapshot | None:
+        """Return one atomic document, head and representation-header snapshot."""
         ...
 
     def list_document_summaries(self) -> tuple[DocumentSummary, ...]:

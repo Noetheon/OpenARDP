@@ -86,6 +86,7 @@ ADAPTER_MODULES = {
     "release_security",
     "release_supply_chain",
     "sqlite_catalog",
+    "sqlite_document_queries",
     "sqlite_migrations",
     "text_parser",
     "visual_pdfium",
@@ -111,7 +112,7 @@ SERVICE_MODULES = {
     "visual_interpretation",
     "watcher",
 }
-INTERFACE_MODULES = {"cli", "mcp_protocol", "mcp_server"}
+INTERFACE_MODULES = {"cli", "cli_query_arguments", "mcp_protocol", "mcp_server"}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:

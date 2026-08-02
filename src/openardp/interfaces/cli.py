@@ -61,7 +61,7 @@ from openardp.domain.context_compilation import (
     ContextSelectionPolicy,
 )
 from openardp.domain.identity import canonical_json_bytes
-from openardp.domain.ingestion import RichMediaType
+from openardp.domain.ingestion import RichMediaType, StatusMode
 from openardp.domain.interchange import AssetDisposition, InterchangeLimits, InterchangePackage
 from openardp.domain.maintenance import InventoryLimits, ReclamationPlan, RetentionPolicy
 from openardp.domain.release import (
@@ -76,6 +76,7 @@ from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
+from openardp.interfaces.cli_query_arguments import add_query_arguments
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
@@ -419,40 +420,7 @@ def _parser() -> _ArgumentParser:
     release_report.add_argument("--check", action="store_true")
     release_report.add_argument("--json", action="store_true", dest="json_output")
 
-    list_parser = subparsers.add_parser("list", help="list body-free document summaries")
-    _common_options(list_parser)
-
-    status = subparsers.add_parser("status", help="compare current source freshness")
-    status.add_argument("target")
-    _common_options(status)
-
-    outline = subparsers.add_parser("outline", help="show one structural document outline")
-    outline.add_argument("document_id")
-    outline.add_argument("--version")
-    _common_options(outline)
-
-    get = subparsers.add_parser("get", help="retrieve one exact current block")
-    get.add_argument("block_id")
-    _common_options(get)
-
-    search = subparsers.add_parser("search", help="exact lexical search over prepared evidence")
-    search.add_argument("query")
-    search.add_argument("--document")
-    search.add_argument("--version")
-    search.add_argument("--all-versions", action="store_true")
-    search.add_argument("--kind")
-    search.add_argument("--trust")
-    search.add_argument("--page", type=int)
-    search.add_argument("--slide", type=int)
-    search.add_argument("--limit", type=int)
-    _common_options(search)
-
-    reindex = subparsers.add_parser(
-        "reindex",
-        help="rebuild lexical index rows from verified READY evidence",
-    )
-    reindex.add_argument("--document")
-    _common_options(reindex)
+    add_query_arguments(subparsers, common_options=_common_options)
 
     evidence = subparsers.add_parser(
         "evidence",
@@ -1505,7 +1473,10 @@ def _execute_query(
     if command == "list":
         return query.list_documents()
     if command == "status":
-        return query.status(str(arguments.target))
+        return query.status(
+            str(arguments.target),
+            mode=StatusMode.FULL if arguments.full_integrity else StatusMode.HEAD,
+        )
     if command == "outline":
         return query.outline(
             _parse_uuid(str(arguments.document_id)),
@@ -1645,7 +1616,7 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
             print(f"{item['document_id']}\t{source['locator']}\t{item['state'] or 'UNPREPARED'}")
     elif command == "status":
         assert isinstance(converted, dict)
-        print(str(converted["freshness"]))
+        print(f"{converted['freshness']}\t{converted['integrity_coverage']}")
     elif command == "outline":
         assert isinstance(converted, list)
         for item in converted:

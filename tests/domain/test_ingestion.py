@@ -27,6 +27,7 @@ from openardp.domain.ingestion import (
     IngestionDisposition,
     IngestionEvent,
     IngestionResult,
+    IntegrityCoverage,
     OutlineItem,
     ParsedBlock,
     ParsedTextDocument,
@@ -40,6 +41,7 @@ from openardp.domain.ingestion import (
     RepresentationState,
     SourceFreshness,
     SourceStatus,
+    StatusMode,
     TextMediaType,
     deterministic_block_id,
 )
@@ -539,6 +541,7 @@ def test_status_and_outline_are_body_minimizing() -> None:
     """Keep progressive navigation contracts free of paragraph bodies."""
     status = SourceStatus(
         freshness=SourceFreshness.CURRENT,
+        integrity_coverage=IntegrityCoverage.HEAD,
         document_id=DOCUMENT_ID,
         head=_scope(),
         observed_version_id=VERSION_ID,
@@ -555,4 +558,30 @@ def test_status_and_outline_are_body_minimizing() -> None:
         line_end=1,
     )
     assert status.freshness is SourceFreshness.CURRENT
+    assert status.integrity_coverage is IntegrityCoverage.HEAD
+    assert tuple(IntegrityCoverage) == (
+        IntegrityCoverage.NONE,
+        IntegrityCoverage.HEAD,
+        IntegrityCoverage.FULL,
+    )
+    assert tuple(StatusMode) == (StatusMode.HEAD, StatusMode.FULL)
     assert not hasattr(outline, "text")
+
+
+def test_status_rejects_impossible_integrity_claims() -> None:
+    """Prevent unregistered and failed results from claiming checked artifacts."""
+    with pytest.raises(ValidationError, match="unregistered status requires NONE"):
+        SourceStatus(
+            freshness=SourceFreshness.NOT_REGISTERED,
+            integrity_coverage=IntegrityCoverage.HEAD,
+            checked_at=NOW,
+        )
+    with pytest.raises(ValidationError, match="failed integrity cannot claim FULL"):
+        SourceStatus(
+            freshness=SourceFreshness.INTEGRITY_ERROR,
+            integrity_coverage=IntegrityCoverage.FULL,
+            document_id=DOCUMENT_ID,
+            head=_scope(),
+            observed_version_id=VERSION_ID,
+            checked_at=NOW,
+        )

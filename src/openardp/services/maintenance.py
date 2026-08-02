@@ -200,35 +200,37 @@ class MaintenanceService:
         if existing is not None and existing.state is QuarantineBatchState.QUARANTINED:
             return existing
         if existing is not None:
-            active = self._catalog.active_maintenance_operation()
-            if (
-                active is not None
-                and active.kind is MaintenanceOperationKind.QUARANTINE
-                and active.subject_id == plan.plan_id
-            ):
-                return self._apply_move(active, now=now)
-            raise RecoveryRequired("quarantine batch requires explicit recovery")
+            return self._resume_or_converge_quarantine(plan.plan_id, now=now)
         current = self.plan(policy=plan.policy, now=now)
         if current.plan_id != plan.plan_id:
             existing = self._catalog.quarantine_batch_for_plan(plan.plan_id)
             if existing is not None and existing.state is QuarantineBatchState.QUARANTINED:
                 return existing
             if existing is not None:
-                active = self._catalog.active_maintenance_operation()
-                if (
-                    active is not None
-                    and active.kind is MaintenanceOperationKind.QUARANTINE
-                    and active.subject_id == plan.plan_id
-                ):
-                    return self._apply_move(active, now=now)
-                refreshed = self._catalog.quarantine_batch_for_plan(plan.plan_id)
-                if refreshed is not None and refreshed.state is QuarantineBatchState.QUARANTINED:
-                    return refreshed
-                raise RecoveryRequired("quarantine batch requires explicit recovery")
+                return self._resume_or_converge_quarantine(plan.plan_id, now=now)
             raise StalePlan("reclamation plan no longer matches workspace state")
         operation = self._catalog.claim_quarantine(plan, now=now)
         self._fault("after_quarantine_claim")
         return self._apply_move(operation, now=now)
+
+    def _resume_or_converge_quarantine(
+        self,
+        plan_id: str,
+        *,
+        now: datetime,
+    ) -> QuarantineBatch:
+        """Resume active intent or observe a winner that completed between reads."""
+        active = self._catalog.active_maintenance_operation()
+        if (
+            active is not None
+            and active.kind is MaintenanceOperationKind.QUARANTINE
+            and active.subject_id == plan_id
+        ):
+            return self._apply_move(active, now=now)
+        refreshed = self._catalog.quarantine_batch_for_plan(plan_id)
+        if refreshed is not None and refreshed.state is QuarantineBatchState.QUARANTINED:
+            return refreshed
+        raise RecoveryRequired("quarantine batch requires explicit recovery")
 
     def restore(self, batch_id: UUID, *, now: datetime) -> QuarantineBatch:
         """Persist exact restore intent and return every entry to active storage."""

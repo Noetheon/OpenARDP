@@ -11,6 +11,7 @@ from uuid import UUID
 import pytest
 
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
+from openardp.adapters.sqlite_document_queries import load_document_status_snapshot
 from openardp.adapters.sqlite_migrations import (
     CURRENT_SCHEMA_VERSION,
     MIGRATION_1,
@@ -340,6 +341,12 @@ def test_ready_commit_is_atomic_idempotent_and_queryable(tmp_path: Path) -> None
     assert result.aggregate.blocks[0].block_id == commit.blocks[0].block.block_id
     assert catalog.load_representation(commit.scope) == result.aggregate
     assert catalog.get_document_head(DOCUMENT_ID) == result.head
+    snapshot = catalog.get_document_status_snapshot(DOCUMENT_ID)
+    assert snapshot is not None
+    assert snapshot.document.document_id == DOCUMENT_ID
+    assert snapshot.head == result.head
+    assert snapshot.representation == result.aggregate.representation
+    assert not hasattr(snapshot, "blocks")
     assert catalog.list_ingestion_events(DOCUMENT_ID) == (result.event,)
     assert catalog.list_document_summaries()[0].block_count == 1
     roots = catalog.reference_snapshot(observed_at=NOW).object_ids
@@ -455,6 +462,85 @@ def test_head_tracks_a_to_b_to_a_by_observation_not_first_commit_time(tmp_path: 
         ingested_at=NOW + timedelta(minutes=2, seconds=1),
         disposition=IngestionDisposition.CACHE_HIT,
     )
+    assert catalog.get_document_head(DOCUMENT_ID).scope == commit_a.scope  # type: ignore[union-attr]
+
+
+def test_status_snapshot_does_not_mix_a_concurrently_replaced_head(tmp_path: Path) -> None:
+    """Bind head and representation to one SQLite snapshot across a concurrent update."""
+    catalog = _catalog(tmp_path / "catalog.sqlite3")
+    commit_a = _ready_commit()
+    claim_a = _claim(catalog, commit_a.scope)
+    catalog.commit_ready_representation(
+        commit_a,
+        owner_id="worker-a",
+        lease_token=TOKEN_A,
+        expected_revision=claim_a.representation.revision,
+        disposition=IngestionDisposition.COMMITTED,
+    )
+    _add_version(catalog, VERSION_B)
+    commit_b = _ready_commit(
+        VERSION_B,
+        observed_at=NOW + timedelta(minutes=1),
+        ready_at=NOW + timedelta(minutes=1, seconds=1),
+    )
+    claim_b = _claim(catalog, commit_b.scope, token=TOKEN_B, now=NOW + timedelta(minutes=1))
+    catalog.commit_ready_representation(
+        commit_b,
+        owner_id="worker-a",
+        lease_token=TOKEN_B,
+        expected_revision=claim_b.representation.revision,
+        disposition=IngestionDisposition.COMMITTED,
+    )
+    replacement_committed = False
+
+    def replace_head_during_read(
+        connection: sqlite3.Connection,
+        scope: RepresentationScope,
+    ) -> sqlite3.Row | None:
+        nonlocal replacement_committed
+        try:
+            with sqlite3.connect(catalog.path, timeout=0.0) as writer:
+                writer.execute(
+                    "UPDATE document_heads SET version_id = ?, representation_id = ?, "
+                    "revision = revision + 1 WHERE document_id = ?",
+                    (
+                        commit_a.scope.version_id,
+                        commit_a.scope.representation_id,
+                        str(DOCUMENT_ID),
+                    ),
+                )
+        except sqlite3.OperationalError as error:
+            assert "locked" in str(error)
+        else:
+            replacement_committed = True
+        return catalog._load_representation_row(connection, scope)
+
+    with catalog._read_connection() as connection:
+        snapshot = load_document_status_snapshot(
+            connection,
+            DOCUMENT_ID,
+            load_document=catalog._load_document_by_id,
+            load_representation_row=replace_head_during_read,
+            convert_head=catalog._head_from_row,
+            convert_representation=catalog._representation_from_row,
+        )
+
+    assert snapshot is not None
+    assert snapshot.head is not None
+    assert snapshot.representation is not None
+    assert snapshot.head.scope == commit_b.scope
+    assert snapshot.representation.scope == commit_b.scope
+    if not replacement_committed:
+        with sqlite3.connect(catalog.path) as writer:
+            writer.execute(
+                "UPDATE document_heads SET version_id = ?, representation_id = ?, "
+                "revision = revision + 1 WHERE document_id = ?",
+                (
+                    commit_a.scope.version_id,
+                    commit_a.scope.representation_id,
+                    str(DOCUMENT_ID),
+                ),
+            )
     assert catalog.get_document_head(DOCUMENT_ID).scope == commit_a.scope  # type: ignore[union-attr]
 
 

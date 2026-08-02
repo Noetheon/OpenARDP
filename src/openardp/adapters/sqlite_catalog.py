@@ -17,6 +17,15 @@ from uuid import UUID, uuid5
 
 from pydantic import SecretStr, ValidationError
 
+from openardp.adapters.sqlite_document_queries import (
+    list_document_summaries as project_document_summaries,
+)
+from openardp.adapters.sqlite_document_queries import (
+    load_document_head as project_document_head,
+)
+from openardp.adapters.sqlite_document_queries import (
+    load_document_status_snapshot as project_document_status_snapshot,
+)
 from openardp.adapters.sqlite_migrations import MIGRATIONS, Migration
 from openardp.domain.block import BlockKind
 from openardp.domain.common import ComponentDescriptor, GenerationProvenance, TrustZone
@@ -45,6 +54,7 @@ from openardp.domain.ingestion import (
     DocumentHead,
     DocumentHeadUpdate,
     DocumentRepresentation,
+    DocumentStatusSnapshot,
     DocumentSummary,
     IngestionDisposition,
     IngestionEvent,
@@ -1822,55 +1832,27 @@ class SQLiteCatalog:
     def get_document_head(self, document_id: UUID) -> DocumentHead | None:
         """Return the current successful representation observation."""
         with self._read_connection() as connection:
-            row = connection.execute(
-                "SELECT * FROM document_heads WHERE document_id = ?",
-                (str(document_id),),
-            ).fetchone()
-            return self._head_from_row(row) if row is not None else None
+            return project_document_head(connection, document_id, convert=self._head_from_row)
+
+    def get_document_status_snapshot(
+        self,
+        document_id: UUID,
+    ) -> DocumentStatusSnapshot | None:
+        """Return document, current head and its header without loading projections."""
+        with self._read_connection() as connection:
+            return project_document_status_snapshot(
+                connection,
+                document_id,
+                load_document=self._load_document_by_id,
+                load_representation_row=self._load_representation_row,
+                convert_head=self._head_from_row,
+                convert_representation=self._representation_from_row,
+            )
 
     def list_document_summaries(self) -> tuple[DocumentSummary, ...]:
         """Return deterministic document metadata without block bodies."""
         with self._read_connection() as connection:
-            rows = connection.execute(
-                "SELECT d.*, h.version_id, h.representation_id, h.last_ingested_at, "
-                "r.state, r.block_count, r.warning_codes_json FROM documents AS d "
-                "LEFT JOIN document_heads AS h ON h.document_id = d.document_id "
-                "LEFT JOIN document_representations AS r ON r.document_id = h.document_id "
-                "AND r.version_id = h.version_id AND r.representation_id = h.representation_id "
-                "ORDER BY d.connector, d.source_locator, d.document_id"
-            ).fetchall()
-            summaries: list[DocumentSummary] = []
-            for row in rows:
-                document_id = UUID(str(row["document_id"]))
-                has_head = row["representation_id"] is not None
-                warnings = self._warning_codes(str(row["warning_codes_json"])) if has_head else ()
-                summaries.append(
-                    DocumentSummary(
-                        document_id=document_id,
-                        source_key=SourceKey(
-                            connector=str(row["connector"]),
-                            locator=str(row["source_locator"]),
-                        ),
-                        head=(
-                            RepresentationScope(
-                                document_id=document_id,
-                                version_id=str(row["version_id"]),
-                                representation_id=str(row["representation_id"]),
-                            )
-                            if has_head
-                            else None
-                        ),
-                        state=(RepresentationState(str(row["state"])) if has_head else None),
-                        block_count=int(row["block_count"]) if has_head else 0,
-                        warning_count=len(warnings),
-                        last_ingested_at=(
-                            decode_storage_datetime(str(row["last_ingested_at"]))
-                            if has_head
-                            else None
-                        ),
-                    )
-                )
-            return tuple(summaries)
+            return project_document_summaries(connection, warning_codes=self._warning_codes)
 
     def resolve_ready_representation(
         self,

@@ -75,7 +75,7 @@
       "test_nodes": [
         "tests/integration/test_backup_restore.py::test_backup_capacity_rejection_cleans_only_owned_staging",
         "tests/integration/test_backup_restore.py::test_backup_interruption_before_publication_leaves_no_destination",
-        "tests/integration/test_backup_restore.py::test_explicit_revision_nine_migration_publishes_verified_rollback",
+        "tests/integration/test_backup_restore.py::test_explicit_revision_ten_migration_publishes_verified_rollback",
         "tests/integration/test_context_compiler.py::test_cancellation_at_bounded_phases_leaves_no_partial_state",
         "tests/integration/test_f010_catalog.py::test_head_changes_stale_exact_transitive_closure_and_reactivate_a_b_a",
         "tests/integration/test_f010_catalog.py::test_reconciliation_faults_expose_no_partial_catalog_rows",

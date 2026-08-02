@@ -1,0 +1,14 @@
+{
+  "baseline_version": "0.1.0",
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "known_before_run": [
+    "F020 used deterministic synthetic rich fixtures and did not establish real-world parsing quality.",
+    "F023 established offline PDF execution for one synthetic PDF with an external validated model bundle.",
+    "F016 CSV evidence production is scoped, experimental and capped at a 1 MiB response; F024 therefore uses a body-free bounded probe for this 932085-byte real source.",
+    "Six English public-sector files cannot represent general document-population or semantic-answer quality."
+  ],
+  "payload_bytes": 6634970,
+  "payload_count": 6,
+  "publisher_families": ["CISA", "NASA NTRS"],
+  "required_formats": ["csv", "docx", "md", "pdf", "pptx", "txt"]
+}

@@ -1,0 +1,18 @@
+{
+  "copyright": {
+    "contains_third_party_material": false,
+    "determination_type": "GOV_PUBLIC_USE_PERMITTED",
+    "third_party_permissions_produced": false
+  },
+  "distribution_date": "2021-12-13T06:00:00Z",
+  "download": {
+    "draft": false,
+    "media_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "name": "Open Science and AI.pptx",
+    "url": "https://ntrs.nasa.gov/api/citations/20210025005/downloads/Open%20Science%20and%20AI.pptx"
+  },
+  "ntrs_id": "20210025005",
+  "record_url": "https://ntrs.nasa.gov/citations/20210025005",
+  "snapshot_profile": "openardp-ntrs-selection-v1",
+  "title": "Open Science and AI"
+}

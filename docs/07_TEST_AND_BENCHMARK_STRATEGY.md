@@ -225,3 +225,17 @@ native identity, pages, evidence counts, anchors and native pointers. The indepe
 statistics, closed thresholds, result-file hashes and the Markdown report without importing the producer. A ready result
 therefore means that this exact synthetic PDF works offline with this exact package—not that arbitrary real PDFs, OCR,
 semantic answers, citations or redistribution rights have been validated.
+
+## 13. F024 redistributable real-world structural protocol
+
+F024 freezes six exact NASA/CISA publisher originals/6,634,970 bytes across PDF, DOCX, PPTX, CSV, Markdown and plain
+text. The corpus lock binds source revision/URL, SHA-256, size, descriptive metadata, rights mapping and retained evidence
+files into one RFC 8785 identity. Offline verification is a closed-tree prerequisite; connected reproduction is a
+separate allowlisted, bounded, absent-destination maintenance operation.
+
+Each asset receives two fresh body-free observations. Core text and rich formats use their delivered isolated parsers;
+CSV uses an isolated F024 structural probe because F016's complete-artifact output correctly exceeds its 1 MiB response
+cap for the real 932,085-byte source. The result retains identities, counts, anchor classes, bounded-pointer counts,
+timings and conservative RSS, never source/native/extracted bodies. An independent validator regenerates all summaries,
+decision and report. `REALWORLD_BASELINE_READY` is limited to exact structural/offline behavior for this corpus and cannot
+stand in for F025 semantic relevance, answer correctness, citation/source quality or broad population accuracy.

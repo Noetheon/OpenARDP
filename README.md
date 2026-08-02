@@ -57,7 +57,8 @@ the behavior-preserving maintenance pass in
 [`020-product-value-benchmark`](specs/020-product-value-benchmark/spec.md), and the measured status-path correction in
 [`021-incremental-freshness`](specs/021-incremental-freshness/spec.md), the storage-layout correction in
 [`022-storage-amplification`](specs/022-storage-amplification/spec.md), and the explicit offline PDF model package in
-[`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md):
+[`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md), and the licensed real-world corpus in
+[`024-redistributable-realworld-corpus`](specs/024-redistributable-realworld-corpus/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -75,8 +76,10 @@ F022 reduced the F020 text-workspace logical amplification by 64.77–65.21 perc
 search, freshness, reuse, edit/revert and context-replay behavior. F023 now provisions the exact five-file Docling PDF
 profile outside Git, transfers it as a deterministic independently verified package and proves actual offline PDF use.
 The committed F023 run is `PDF_OFFLINE_READY`: 384,428,156 model bytes, 2,310 package-overhead bytes, three deterministic
-fresh-worker conversions and 4.169/4.271-second wall p50/p95. This remains synthetic readiness evidence; F024/F025 own
-real-world and semantic quality.
+fresh-worker conversions and 4.169/4.271-second wall p50/p95. F024 now adds a 6,634,970-byte NASA/CISA corpus with exact
+rights/provenance records and a validated `REALWORLD_BASELINE_READY` result across PDF, DOCX, PPTX, CSV, Markdown and
+plain text. Its 12 structural observations are deterministic and offline; one oversized PPTX native pointer is correctly
+retained as bounded. Semantic questions, ranking, citation quality and source grading remain F025.
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;

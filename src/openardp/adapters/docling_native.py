@@ -54,6 +54,7 @@ _MAX_POINTER_LENGTH = 2_048
 _MAX_POINTER_DEPTH = 64
 _MAX_RESOLVED_BYTES = 8_388_608
 _PPM_SCALE = Decimal(1_000_000)
+_MAX_PROVIDER_BBOX_OVERSHOOT_PPM = Decimal(100)
 _HEADING_LABELS = frozenset({"title", "section_header", "heading"})
 _TEXT_LABELS = frozenset(
     {
@@ -398,11 +399,7 @@ def project_native_document(
         if native_document.get("schema_name") != "DoclingDocument":
             raise ValueError
         pages = _object(native_document, "pages")
-        node_collections = [
-            _array(native_document, "texts"),
-            _array(native_document, "tables"),
-            _array(native_document, "pictures"),
-        ]
+        node_collections = _native_node_collections(native_document)
         _validate_node_graph(node_collections)
     except (TypeError, ValueError):
         raise InvalidRichParserOutput("rich parser output invalid") from None
@@ -424,14 +421,16 @@ def project_native_document(
         parent_ordinal = _parent_ordinal(item, ordinal_by_pointer)
         native_pointer = _provider_pointer(pointer)
         kind = RichEvidenceKind.HEADING if label in _HEADING_LABELS else RichEvidenceKind.TEXT
+        anchor, anchor_warnings = _candidate_anchor(item, native_pointer, pages, warnings)
         candidate = RichEvidenceCandidate(
             ordinal=len(candidates),
             parent_ordinal=parent_ordinal,
             kind=kind,
-            anchor=_anchor_for_item(item, native_pointer, pages),
+            anchor=anchor,
             retrieval_media_type="text/plain",
             retrieval_text=text,
             native_pointer=native_pointer,
+            warning_codes=anchor_warnings,
         )
         _append_bounded(candidates, candidate, limits)
         ordinal_by_pointer[pointer] = candidate.ordinal
@@ -462,7 +461,7 @@ def project_native_document(
                 column = _strict_non_negative_int(cell.get("start_col_offset_idx"))
                 row_span = _strict_positive_int(cell.get("row_span", 1))
                 column_span = _strict_positive_int(cell.get("col_span", 1))
-                anchor = TableCellAnchor(
+                cell_anchor = TableCellAnchor(
                     anchor_type="table_cell",
                     table=table_pointer,
                     row_index=row,
@@ -475,7 +474,7 @@ def project_native_document(
             candidate = RichEvidenceCandidate(
                 ordinal=len(candidates),
                 kind=RichEvidenceKind.TABLE_CELL,
-                anchor=anchor,
+                anchor=cell_anchor,
                 retrieval_media_type="text/plain",
                 retrieval_text=text,
                 native_pointer=native_pointer,
@@ -488,14 +487,16 @@ def project_native_document(
         retrieval = canonical_json_bytes(
             {"kind": "picture", "pointer": f"#/pictures/{picture_index}"}
         ).decode("utf-8")
+        anchor, anchor_warnings = _candidate_anchor(picture, native_pointer, pages, warnings)
         candidate = RichEvidenceCandidate(
             ordinal=len(candidates),
             parent_ordinal=_parent_ordinal(picture, ordinal_by_pointer),
             kind=RichEvidenceKind.PICTURE,
-            anchor=_anchor_for_item(picture, native_pointer, pages),
+            anchor=anchor,
             retrieval_media_type="application/json",
             retrieval_text=retrieval,
             native_pointer=native_pointer,
+            warning_codes=anchor_warnings,
         )
         _append_bounded(candidates, candidate, limits)
         ordinal_by_pointer[pointer] = candidate.ordinal
@@ -600,14 +601,34 @@ def _anchor_for_item(
     item: dict[str, JsonValue],
     pointer: ProviderPointer,
     pages: dict[str, JsonValue],
-) -> OpaqueProviderPointerAnchor | PageRegionAnchor:
+) -> tuple[OpaqueProviderPointerAnchor | PageRegionAnchor, tuple[str, ...]]:
     provenance = item.get("prov")
     if isinstance(provenance, list) and provenance:
         first = provenance[0]
         if not isinstance(first, dict):
             raise InvalidRichParserOutput("rich parser output invalid")
-        return page_region_from_provenance(first, pages=pages)
-    return OpaqueProviderPointerAnchor(anchor_type="provider_pointer", target=pointer)
+        try:
+            anchor, repair_warning = _page_region_and_clamped(first, pages=pages)
+        except InvalidRichParserOutput:
+            return (
+                OpaqueProviderPointerAnchor(anchor_type="provider_pointer", target=pointer),
+                ("provider_bbox_unusable",),
+            )
+        warnings = (repair_warning,) if repair_warning is not None else ()
+        return anchor, warnings
+    return OpaqueProviderPointerAnchor(anchor_type="provider_pointer", target=pointer), ()
+
+
+def _candidate_anchor(
+    item: dict[str, JsonValue],
+    pointer: ProviderPointer,
+    pages: dict[str, JsonValue],
+    warnings: set[str],
+) -> tuple[OpaqueProviderPointerAnchor | PageRegionAnchor, tuple[str, ...]]:
+    """Resolve one candidate anchor and retain any bounded repair warning."""
+    anchor, anchor_warnings = _anchor_for_item(item, pointer, pages)
+    warnings.update(anchor_warnings)
+    return anchor, anchor_warnings
 
 
 def page_region_from_provenance(
@@ -616,6 +637,16 @@ def page_region_from_provenance(
     pages: Mapping[str, object],
 ) -> PageRegionAnchor:
     """Convert one finite Docling rectangle to fixed-point top-left coordinates."""
+    anchor, _repair_warning = _page_region_and_clamped(provenance, pages=pages)
+    return anchor
+
+
+def _page_region_and_clamped(
+    provenance: Mapping[str, object],
+    *,
+    pages: Mapping[str, object],
+) -> tuple[PageRegionAnchor, str | None]:
+    """Normalize one rectangle and report bounded provider rounding repair."""
     try:
         page_number = _strict_positive_int(provenance.get("page_no"))
         page = pages[str(page_number)]
@@ -644,25 +675,48 @@ def page_region_from_provenance(
             height = bottom - top
         else:
             raise ValueError
-        if x < 0 or y < 0 or width <= 0 or height <= 0:
+        if width <= 0 or height <= 0:
             raise ValueError
-        if x + width > page_width or y + height > page_height:
+        x_end = x + width
+        y_end = y + height
+        x_tolerance = page_width * _MAX_PROVIDER_BBOX_OVERSHOOT_PPM / _PPM_SCALE
+        y_tolerance = page_height * _MAX_PROVIDER_BBOX_OVERSHOOT_PPM / _PPM_SCALE
+        if x >= page_width or y >= page_height or x_end <= 0 or y_end <= 0:
             raise ValueError
-        values = (
-            _normalized_ppm(x, page_width),
-            _normalized_ppm(y, page_height),
-            _normalized_ppm(width, page_width),
-            _normalized_ppm(height, page_height),
-        )
-        return PageRegionAnchor(
+        bounded_x = min(max(x, Decimal(0)), page_width)
+        bounded_y = min(max(y, Decimal(0)), page_height)
+        bounded_x_end = min(max(x_end, Decimal(0)), page_width)
+        bounded_y_end = min(max(y_end, Decimal(0)), page_height)
+        if bounded_x_end <= bounded_x or bounded_y_end <= bounded_y:
+            raise ValueError
+        x_ppm = _normalized_ppm(bounded_x, page_width)
+        y_ppm = _normalized_ppm(bounded_y, page_height)
+        x_end_ppm = _normalized_ppm(bounded_x_end, page_width)
+        y_end_ppm = _normalized_ppm(bounded_y_end, page_height)
+        anchor = PageRegionAnchor(
             anchor_type="page_region",
             coordinate_system="normalized_ppm_top_left",
             page_number=page_number,
-            x=values[0],
-            y=values[1],
-            width=values[2],
-            height=values[3],
+            x=x_ppm,
+            y=y_ppm,
+            width=x_end_ppm - x_ppm,
+            height=y_end_ppm - y_ppm,
         )
+        changed = (bounded_x, bounded_y, bounded_x_end, bounded_y_end) != (
+            x,
+            y,
+            x_end,
+            y_end,
+        )
+        if not changed:
+            return anchor, None
+        tiny_rounding = (
+            x >= -x_tolerance
+            and y >= -y_tolerance
+            and x_end <= page_width + x_tolerance
+            and y_end <= page_height + y_tolerance
+        )
+        return anchor, "provider_bbox_clamped" if tiny_rounding else "provider_bbox_clipped"
     except (KeyError, TypeError, ValueError, InvalidOperation, ValidationError):
         raise InvalidRichParserOutput("rich parser output invalid") from None
 
@@ -723,6 +777,13 @@ def _array(document: dict[str, JsonValue], key: str) -> list[dict[str, JsonValue
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise ValueError(f"{key} must be an array of objects")
     return cast("list[dict[str, JsonValue]]", value)
+
+
+def _native_node_collections(
+    document: dict[str, JsonValue],
+) -> list[list[dict[str, JsonValue]]]:
+    """Return the three ordered native collections projected as evidence."""
+    return [_array(document, key) for key in ("texts", "tables", "pictures")]
 
 
 def _object(document: dict[str, JsonValue], key: str) -> dict[str, JsonValue]:

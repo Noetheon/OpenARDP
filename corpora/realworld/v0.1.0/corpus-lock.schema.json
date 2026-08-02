@@ -1,0 +1,78 @@
+{
+  "$id": "https://openardp.org/schemas/realworld-corpus-lock-0.1.0.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aggregate_payload_bytes": {"minimum": 0, "type": "integer"},
+    "assets": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "authors": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
+          "byte_length": {"minimum": 1, "type": "integer"},
+          "expected_content_types": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
+          "format": {"enum": ["csv", "docx", "md", "pdf", "pptx", "txt"]},
+          "key": {"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "type": "string"},
+          "media_type": {"minLength": 3, "type": "string"},
+          "path": {"pattern": "^sources/[A-Za-z0-9._-]+$", "type": "string"},
+          "publication_date": {"format": "date", "type": "string"},
+          "publisher": {"minLength": 1, "type": "string"},
+          "rights_id": {"pattern": "^[a-z0-9.-]+$", "type": "string"},
+          "sha256": {"pattern": "^sha256:[0-9a-f]{64}$", "type": "string"},
+          "source_record_url": {"format": "uri", "pattern": "^https://", "type": "string"},
+          "source_revision": {"minLength": 1, "type": "string"},
+          "source_url": {"format": "uri", "pattern": "^https://", "type": "string"},
+          "title": {"minLength": 1, "type": "string"}
+        },
+        "required": ["authors", "byte_length", "expected_content_types", "format", "key", "media_type", "path", "publication_date", "publisher", "rights_id", "sha256", "source_record_url", "source_revision", "source_url", "title"],
+        "type": "object"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "type": "array"
+    },
+    "corpus_id": {"pattern": "^sha256:[0-9a-f]{64}$", "type": "string"},
+    "corpus_name": {"const": "openardp-realworld"},
+    "corpus_version": {"const": "0.1.0"},
+    "evidence_files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "byte_length": {"minimum": 1, "type": "integer"},
+          "media_type": {"const": "application/json"},
+          "path": {"pattern": "^evidence/[A-Za-z0-9._-]+\\.json$", "type": "string"},
+          "sha256": {"pattern": "^sha256:[0-9a-f]{64}$", "type": "string"}
+        },
+        "required": ["byte_length", "media_type", "path", "sha256"],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "extensions": {"type": "object"},
+    "payload_root": {"const": "sources"},
+    "required_formats": {"const": ["csv", "docx", "md", "pdf", "pptx", "txt"]},
+    "rights": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {"enum": ["CC0-1.0", "NASA-NTRS-PUBLIC-USE"]},
+          "evidence_url": {"format": "uri", "pattern": "^https://", "type": "string"},
+          "notice": {"minLength": 1, "type": "string"},
+          "publisher": {"minLength": 1, "type": "string"},
+          "restrictions": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
+          "review_assertion": {"const": "human_review_required_not_legal_advice"},
+          "rights_id": {"pattern": "^[a-z0-9.-]+$", "type": "string"}
+        },
+        "required": ["basis", "evidence_url", "notice", "publisher", "restrictions", "review_assertion", "rights_id"],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema_version": {"const": "0.1.0"}
+  },
+  "required": ["aggregate_payload_bytes", "assets", "corpus_id", "corpus_name", "corpus_version", "evidence_files", "extensions", "payload_root", "required_formats", "rights", "schema_version"],
+  "title": "OpenARDP redistributable real-world corpus lock",
+  "type": "object"
+}

@@ -229,6 +229,55 @@ _F020_REQUIRED_FILES = (
     "tests/integration/test_product_benchmark.py",
     "tests/unit/test_product_benchmark.py",
 )
+_F024_REQUIRED_FILES = (
+    "benchmarks/realworld-corpus/v0.1.0/README.md",
+    "benchmarks/realworld-corpus/v0.1.0/baseline.json",
+    "benchmarks/realworld-corpus/v0.1.0/protocol.json",
+    "benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64/observations.json",
+    "benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64/run-manifest.json",
+    "benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64/summary.json",
+    "corpora/realworld/v0.1.0/README.md",
+    "corpora/realworld/v0.1.0/THIRD_PARTY_NOTICES.md",
+    "corpora/realworld/v0.1.0/corpus-lock.json",
+    "corpora/realworld/v0.1.0/corpus-lock.schema.json",
+    "corpora/realworld/v0.1.0/evidence/cisa-kev-revision.json",
+    "corpora/realworld/v0.1.0/evidence/nasa-ntrs-20210012886.json",
+    "corpora/realworld/v0.1.0/evidence/nasa-ntrs-20210014231.json",
+    "corpora/realworld/v0.1.0/evidence/nasa-ntrs-20210025005.json",
+    "corpora/realworld/v0.1.0/sources/cisa-kev-license.txt",
+    "corpora/realworld/v0.1.0/sources/cisa-kev-readme.md",
+    "corpora/realworld/v0.1.0/sources/cisa-known-exploited-vulnerabilities.csv",
+    "corpora/realworld/v0.1.0/sources/nasa-ai-strategic-planning-workshop.docx",
+    "corpora/realworld/v0.1.0/sources/nasa-ethical-ai-framework.pdf",
+    "corpora/realworld/v0.1.0/sources/nasa-open-science-and-ai.pptx",
+    "docs/23_REALWORLD_CORPUS.md",
+    "scripts/fetch_realworld_corpus.py",
+    "scripts/realworld_corpus.py",
+    "scripts/realworld_corpus_benchmark.py",
+    "scripts/realworld_corpus_benchmark_evaluation.py",
+    "scripts/realworld_csv_probe.py",
+    "scripts/run_realworld_corpus_benchmark.py",
+    "scripts/validate_realworld_corpus.py",
+    "scripts/validate_realworld_corpus_benchmark.py",
+    "spec-kit/feature-prompts/024-redistributable-realworld-corpus.md",
+    "specs/024-redistributable-realworld-corpus/analysis.md",
+    "specs/024-redistributable-realworld-corpus/data-model.md",
+    "specs/024-redistributable-realworld-corpus/implementation-notes.md",
+    "specs/024-redistributable-realworld-corpus/plan.md",
+    "specs/024-redistributable-realworld-corpus/quickstart.md",
+    "specs/024-redistributable-realworld-corpus/research.md",
+    "specs/024-redistributable-realworld-corpus/spec.md",
+    "specs/024-redistributable-realworld-corpus/tasks.md",
+    "tests/integration/test_realworld_corpus.py",
+    "tests/integration/test_realworld_corpus_benchmark.py",
+    "tests/integration/test_realworld_corpus_reference.py",
+    "tests/security/test_realworld_corpus_boundaries.py",
+    "tests/test_realworld_corpus_drift.py",
+    "tests/unit/test_realworld_corpus.py",
+    "tests/unit/test_realworld_corpus_benchmark.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -466,7 +515,14 @@ def _discover_markdown(root: Path) -> list[Path]:
         path
         for path in root.rglob("*.md")
         if not (_EXCLUDED_DIRECTORIES & set(path.relative_to(root).parts))
+        and not _is_vendored_corpus_source(path.relative_to(root))
     )
+
+
+def _is_vendored_corpus_source(relative_path: Path) -> bool:
+    """Identify exact external payloads whose internal links are not ours to rewrite."""
+    parts = relative_path.parts
+    return len(parts) >= 5 and parts[0:2] == ("corpora", "realworld") and parts[3] == "sources"
 
 
 def validate_markdown(root: Path, paths: Iterable[Path] | None = None) -> list[Diagnostic]:
@@ -798,6 +854,20 @@ def _validate_f020_product_benchmark(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f024_realworld_corpus(root: Path) -> list[Diagnostic]:
+    """Require the complete F024 corpus and structural-result boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV020",
+            relative,
+            "required F024 real-world corpus artifact is missing",
+        )
+        for relative in _F024_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -885,6 +955,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f017_design(root))
     diagnostics.extend(_validate_f019_ci_governance(root))
     diagnostics.extend(_validate_f020_product_benchmark(root))
+    diagnostics.extend(_validate_f024_realworld_corpus(root))
     return _sort_diagnostics(root, diagnostics)
 
 

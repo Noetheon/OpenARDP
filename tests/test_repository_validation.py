@@ -63,6 +63,23 @@ def test_link_examples_in_inline_and_fenced_code_are_ignored(tmp_path: Path) -> 
     assert validate_markdown(tmp_path, [source]) == []
 
 
+def test_vendored_realworld_markdown_payload_is_not_rewritten_or_link_checked(
+    tmp_path: Path,
+) -> None:
+    """Exclude exact external corpus payloads while retaining owned-doc checks."""
+    _write(
+        tmp_path / "corpora/realworld/v0.1.0/sources/vendor.md",
+        "[upstream-relative-link](not-in-corpus.md)\n",
+    )
+    owned = _write(tmp_path / "README.md", "[missing-owned-target](missing.md)\n")
+
+    diagnostics = validate_markdown(tmp_path)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].path == owned
+    assert diagnostics[0].code == "MD006"
+
+
 @pytest.mark.parametrize(
     ("target", "expected_code"),
     (

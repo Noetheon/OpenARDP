@@ -70,6 +70,7 @@ F005A_FEATURE_SEQUENCE = (
     "016-alternate-parser-conformance-spike",
     "017-microsoft-graph-design-spike",
     "018-repository-hygiene",
+    "019-ci-cost-optimization",
 )
 HISTORICAL_FEATURE_PROMPTS = (
     "001-repository-baseline.md",
@@ -205,12 +206,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f018_governance_and_prior_contracts_are_present_and_frozen(
+def test_f019_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active hygiene governance, accepted ADRs and frozen prior contracts."""
+    """Require active CI governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/018-repository-hygiene"
+    assert active["feature_directory"] == "specs/019-ci-cost-optimization"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -254,8 +255,12 @@ def test_f018_governance_and_prior_contracts_are_present_and_frozen(
     assert "Status: Accepted for Feature 017" in f017_adr
     assert "does not authorize production Graph access" in f017_adr
     assert (repository_root / "spec-kit/feature-prompts/018-repository-hygiene.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/019-ci-cost-optimization.md").is_file()
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
+    assert (repository_root / "quality/ci-policy.json").is_file()
+    assert (repository_root / "quality/ci-cost-baseline-2026-08-01.json").is_file()
+    assert (repository_root / "scripts/audit_ci.py").is_file()
     assert (repository_root / "schemas/visual-evidence-descriptor.schema.json").is_file()
     for name, expected in F014_ADDITIVE_SCHEMA_HASHES.items():
         actual = hashlib.sha256((repository_root / "schemas" / name).read_bytes()).hexdigest()
@@ -468,43 +473,99 @@ def test_pre_commit_runs_the_authoritative_gates(repository_root: Path) -> None:
 
 
 def test_ci_is_cross_platform_and_least_privilege(repository_root: Path) -> None:
-    """Require a read-only three-platform workflow without persistent credentials."""
-    content = (repository_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "pull_request_target" not in content
-    assert "pull_request:" in content
-    assert "permissions:\n  contents: read" in content
-    assert "fail-fast: false" in content
-    assert "timeout-minutes:" in content
-    assert "os: [ubuntu-latest, macos-latest, windows-latest]" in content
-    assert 'python-version: "3.12"' in content
-    assert "persist-credentials: false" in content
+    """Require read-only core and release workflows with hardened checkout."""
+    workflows = (
+        repository_root / ".github/workflows/ci.yml",
+        repository_root / ".github/workflows/release-evidence.yml",
+    )
+    for workflow in workflows:
+        content = workflow.read_text(encoding="utf-8")
+        assert "pull_request_target" not in content
+        assert "permissions:\n  contents: read" in content
+        assert "timeout-minutes:" in content
+        assert 'python-version: "3.12"' in content
+        assert "persist-credentials: false" in content
+        assert "enable-cache: true" in content
+        assert "cache-dependency-glob: uv.lock" in content
+        assert "uv cache prune --ci" in content
 
 
 def test_ci_actions_are_immutable_and_reviewed(repository_root: Path) -> None:
     """Pin every third-party action to its reviewed release commit."""
-    content = (repository_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    content = "\n".join(
+        (repository_root / path).read_text(encoding="utf-8")
+        for path in (".github/workflows/ci.yml", ".github/workflows/release-evidence.yml")
+    )
     uses_lines = [line for line in content.splitlines() if "uses:" in line]
     references = [match.groups() for match in ACTION_REFERENCE.finditer(content)]
     assert len(references) == len(uses_lines)
     assert set(references) == EXPECTED_ACTIONS
 
 
-def test_ci_uses_locked_uncached_authoritative_gates(repository_root: Path) -> None:
-    """Prevent CI from mutating dependency state or drifting from local checks."""
+def test_ci_uses_locked_authoritative_gates_once(repository_root: Path) -> None:
+    """Keep one authoritative Linux gate and complete paid-platform tests."""
     content = (repository_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    required_steps = (
-        "enable-cache: false",
-        "uv sync --all-extras --locked",
+    authoritative_steps = (
         "uv run --locked pre-commit validate-config",
         "uv run --locked ruff check .",
         "uv run --locked ruff format --check .",
         "uv run --locked mypy src",
-        "uv run --locked pytest",
         "uv build",
-        "git diff --exit-code",
     )
-    for step in required_steps:
-        assert step in content
+    for step in authoritative_steps:
+        assert content.count(step) == 1
+    assert content.count("uv sync --all-extras --locked") == 4
+    assert content.splitlines().count("        run: uv run --locked pytest") == 1
+    assert content.count("git diff --exit-code") == 4
+    assert content.count("uv cache prune --ci") == 4
+    assert content.count("uv run --locked pytest --no-cov") == 2
+    assert "name: Quality (ubuntu-latest)" in content
+    assert "name: Quality (macos-latest)" in content
+    assert "name: Quality (windows-latest)" in content
+    assert "needs.preflight.outputs.scope == 'full'" in content
+    assert "github.event.pull_request.draft == false" in content
+    assert "ready_for_review" in content
+    assert "pull_request:\n    types:" in content
+    assert "paths-ignore:" not in content
+
+
+def test_ci_keeps_stable_preflight_and_main_without_matrix_duplication(
+    repository_root: Path,
+) -> None:
+    """Run core integrity everywhere while limiting final matrices to ready PRs."""
+    content = (repository_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "name: Preflight" in content
+    assert "branches: [main]" in content
+    assert "github.event_name == 'pull_request'" in content
+    assert "github.event_name == 'push'" not in content.split("quality-ubuntu:", maxsplit=1)[1]
+    assert "python3 scripts/audit_ci.py classify" in content
+    assert "python scripts/audit_ci.py audit" in content
+
+
+def test_release_evidence_has_bounded_triggers_and_unchanged_gate(
+    repository_root: Path,
+) -> None:
+    """Keep expensive all-platform evidence at deliberate release boundaries."""
+    content = (repository_root / ".github/workflows/release-evidence.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "workflow_dispatch:" in content
+    assert 'tags: ["v*"]' in content
+    assert "pull_request:" in content
+    assert "paths:" in content
+    assert "github.event.pull_request.draft == false" in content
+    assert "fail-fast: false" in content
+    assert content.count("platform:") == 3
+    for platform in ("linux", "macos", "windows"):
+        assert f"release-evidence-{platform}" in content
+    assert "needs: release-evidence" in content
+    assert "assert value['status'] == 'NO-GO'" in content
+    assert "retention-days: 14" in content
+    aggregate = content.split("  release-gate:", maxsplit=1)[1]
+    assert "Install uv and Python without downstream cache contention" in aggregate
+    assert "enable-cache: true" not in aggregate
+    assert "cache-dependency-glob: uv.lock" not in aggregate
+    assert "uv cache prune --ci" not in aggregate
 
 
 def test_f005a_constitution_is_ratified_and_canonical(repository_root: Path) -> None:

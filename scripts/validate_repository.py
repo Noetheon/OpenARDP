@@ -16,9 +16,37 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 if __package__:
-    from scripts.audit_maintainability import PolicyError, audit_repository, load_policy
+    from scripts.audit_ci import (
+        CIAuditError,
+    )
+    from scripts.audit_ci import (
+        audit_repository as audit_ci,
+    )
+    from scripts.audit_ci import (
+        load_policy as load_ci_policy,
+    )
+    from scripts.audit_maintainability import (
+        PolicyError,
+    )
+    from scripts.audit_maintainability import (
+        audit_repository as audit_maintainability,
+    )
+    from scripts.audit_maintainability import (
+        load_policy as load_maintainability_policy,
+    )
 else:
-    from audit_maintainability import PolicyError, audit_repository, load_policy
+    from audit_ci import CIAuditError
+    from audit_ci import audit_repository as audit_ci
+    from audit_ci import load_policy as load_ci_policy
+    from audit_maintainability import (
+        PolicyError,
+    )
+    from audit_maintainability import (
+        audit_repository as audit_maintainability,
+    )
+    from audit_maintainability import (
+        load_policy as load_maintainability_policy,
+    )
 
 _EXCLUDED_DIRECTORIES = {
     ".git",
@@ -153,6 +181,24 @@ _F017_REQUIRED_FILES = (
     "tests/domain/test_graph.py",
     "tests/integration/test_graph_sync.py",
     "tests/security/test_graph_boundaries.py",
+)
+_F019_REQUIRED_FILES = (
+    ".github/workflows/release-evidence.yml",
+    "docs/18_CI_COST_AND_QUALITY.md",
+    "quality/ci-cost-baseline-2026-08-01.json",
+    "quality/ci-policy.json",
+    "scripts/audit_ci.py",
+    "spec-kit/feature-prompts/019-ci-cost-optimization.md",
+    "specs/019-ci-cost-optimization/analysis.md",
+    "specs/019-ci-cost-optimization/contracts/ci-execution-policy.md",
+    "specs/019-ci-cost-optimization/data-model.md",
+    "specs/019-ci-cost-optimization/implementation-notes.md",
+    "specs/019-ci-cost-optimization/plan.md",
+    "specs/019-ci-cost-optimization/quickstart.md",
+    "specs/019-ci-cost-optimization/research.md",
+    "specs/019-ci-cost-optimization/spec.md",
+    "specs/019-ci-cost-optimization/tasks.md",
+    "tests/unit/test_ci_audit.py",
 )
 
 
@@ -695,6 +741,20 @@ def _validate_f017_design(root: Path) -> list[Diagnostic]:
     return diagnostics
 
 
+def _validate_f019_ci_governance(root: Path) -> list[Diagnostic]:
+    """Require the complete F019 CI policy and evidence boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV018",
+            relative,
+            "required F019 CI governance artifact is missing",
+        )
+        for relative in _F019_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -780,6 +840,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f015_release_inputs(root))
     diagnostics.extend(_validate_f016_conformance(root))
     diagnostics.extend(_validate_f017_design(root))
+    diagnostics.extend(_validate_f019_ci_governance(root))
     return _sort_diagnostics(root, diagnostics)
 
 
@@ -788,7 +849,12 @@ def validate_repository(root: Path) -> list[Diagnostic]:
     root = Path(os.path.abspath(root))
     return _sort_diagnostics(
         root,
-        [*validate_markdown(root), *validate_governance(root), *_validate_maintainability(root)],
+        [
+            *validate_markdown(root),
+            *validate_governance(root),
+            *_validate_maintainability(root),
+            *_validate_ci(root),
+        ],
     )
 
 
@@ -796,7 +862,7 @@ def _validate_maintainability(root: Path) -> list[Diagnostic]:
     """Project deterministic structural findings into repository diagnostics."""
     policy_path = root / "quality/maintainability-policy.json"
     try:
-        findings = audit_repository(root, load_policy(policy_path))
+        findings = audit_maintainability(root, load_maintainability_policy(policy_path))
     except PolicyError as error:
         return [
             Diagnostic(
@@ -817,6 +883,33 @@ def _validate_maintainability(root: Path) -> list[Diagnostic]:
                 f"maintainability limit violated: actual={finding.actual!r}, "
                 f"allowed={finding.allowed!r}"
             ),
+        )
+        for finding in findings
+    ]
+
+
+def _validate_ci(root: Path) -> list[Diagnostic]:
+    """Project deterministic CI policy findings into repository diagnostics."""
+    policy_path = root / "quality/ci-policy.json"
+    try:
+        findings = audit_ci(root, load_ci_policy(policy_path))
+    except CIAuditError as error:
+        return [
+            Diagnostic(
+                path=policy_path,
+                line=1,
+                code="CI001",
+                target="ci-policy",
+                message=str(error),
+            )
+        ]
+    return [
+        Diagnostic(
+            path=root / finding.path,
+            line=1,
+            code="CI002",
+            target=finding.code,
+            message=f"CI invariant violated: marker={finding.marker}",
         )
         for finding in findings
     ]

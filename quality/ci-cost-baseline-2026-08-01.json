@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "observed_date": "2026-08-01",
+  "captured_at": "2026-08-02T00:00:00Z",
+  "source": "Noetheon/OpenARDP GitHub Actions API aggregate; per-job elapsed minutes rounded upward",
+  "run_count": 34,
+  "job_count": 158,
+  "runner_prices_usd_per_minute": {
+    "linux": "0.006",
+    "windows": "0.010",
+    "macos": "0.062"
+  },
+  "rounded_minutes": {
+    "linux": 277,
+    "windows": 463,
+    "macos": 199
+  },
+  "gross_cost_usd": "18.630",
+  "model": {
+    "minimum_reduction_percent": "55.0",
+    "maximum_reduction_percent": "65.0",
+    "projected_cost_low_usd": "6.520",
+    "projected_cost_high_usd": "8.384",
+    "limitations": [
+      "This is a gross runner-price model, not the repository owner's invoice.",
+      "Included usage, discounts, taxes, cache hits, job rounding and future prices can change realized cost.",
+      "The range assumes draft iteration, one final ready run, no duplicate main matrix and release evidence only at a release boundary."
+    ]
+  }
+}

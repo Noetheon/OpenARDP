@@ -11,7 +11,11 @@ from zipfile import ZIP_STORED, ZipFile, ZipInfo
 import pytest
 
 from openardp.adapters.docling_bundle import BundleValidationError, verify_installation
-from openardp.adapters.docling_bundle_archive import create_bundle_package, install_bundle_package
+from openardp.adapters.docling_bundle_archive import (
+    _publish_absent_file,
+    create_bundle_package,
+    install_bundle_package,
+)
 from tests.fixtures.pdf_bundle import write_installation
 
 
@@ -29,6 +33,22 @@ def test_ordinary_rich_adapter_import_never_imports_connected_provisioning() -> 
         text=True,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_windows_package_publication_uses_no_replace_rename(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Use Windows' atomic absent-destination rename instead of hard-link publication."""
+    staging = tmp_path / "staging.zip"
+    destination = tmp_path / "published.zip"
+    staging.write_bytes(b"package")
+    monkeypatch.setattr("openardp.adapters.docling_bundle_archive.sys.platform", "win32")
+
+    _publish_absent_file(staging, destination)
+
+    assert destination.read_bytes() == b"package"
+    assert not staging.exists()
 
 
 def test_package_is_byte_deterministic_and_installs_exactly(tmp_path: Path) -> None:

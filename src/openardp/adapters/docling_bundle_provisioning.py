@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import shutil
+import sys
 import tempfile
 import time
 from collections.abc import Callable
@@ -90,11 +91,12 @@ def _sync_regular_files(root: Path) -> None:
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
         with path.open("rb") as handle:
             os.fsync(handle.fileno())
-    descriptor = os.open(root, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+    if sys.platform != "win32":
+        descriptor = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
 
 
 def provision_bundle(

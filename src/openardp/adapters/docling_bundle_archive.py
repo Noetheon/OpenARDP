@@ -6,6 +6,7 @@ import hashlib
 import os
 import shutil
 import stat
+import sys
 import tempfile
 import unicodedata
 from pathlib import Path, PurePosixPath
@@ -86,8 +87,11 @@ def _hash_file(path: Path) -> tuple[str, int]:
 
 def _publish_absent_file(staging: Path, destination: Path) -> None:
     try:
-        os.link(staging, destination)
-        staging.unlink()
+        if sys.platform == "win32":
+            os.rename(staging, destination)
+        else:
+            os.link(staging, destination)
+            staging.unlink()
     except OSError:
         raise BundleValidationError from None
 

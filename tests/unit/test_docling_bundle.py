@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from openardp.adapters.docling_bundle import BundleValidationError, verify_installation
-from openardp.adapters.docling_bundle_provisioning import ProvisioningError, provision_bundle
+from openardp.adapters.docling_bundle_provisioning import (
+    ProvisioningError,
+    _sync_regular_files,
+    provision_bundle,
+)
 from tests.fixtures.pdf_bundle import MODEL_PAYLOADS, write_installation, write_source_material
 
 
@@ -67,3 +71,18 @@ def test_provisioner_does_not_publish_failed_staging(tmp_path: Path) -> None:
     with pytest.raises(ProvisioningError):
         provision_bundle(source_lock, destination, fetch_file=corrupt)
     assert not destination.exists()
+
+
+def test_windows_file_sync_does_not_open_directory_descriptor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Flush regular files on Windows without the unsupported POSIX directory open."""
+    (tmp_path / "control.json").write_bytes(b"{}\n")
+    monkeypatch.setattr("openardp.adapters.docling_bundle_provisioning.sys.platform", "win32")
+    monkeypatch.setattr(
+        "openardp.adapters.docling_bundle_provisioning.os.open",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("directory opened")),
+    )
+
+    _sync_regular_files(tmp_path)

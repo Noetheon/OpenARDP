@@ -5,6 +5,17 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 019 — CI cost and latency optimization
+
+- Replaced duplicated all-event quality execution with fail-closed change classification, draft Preflight and stable
+  ready-PR quality lanes that retain the complete Linux, macOS and Windows test inventory.
+- Assigned branch coverage, lint, formatting, strict typing, repository validation and package build once to Ubuntu;
+  macOS and Windows retain all tests with redundant coverage instrumentation disabled.
+- Moved the unchanged F015 evidence matrix and aggregate `NO-GO` gate to manual, version-tag and release-owned ready-PR
+  boundaries; enabled lock-keyed, safely pruned uv artifact caching without caching environments.
+- Added deterministic CI policy/audit/cost evidence and a Draft-to-Ready operating model. The dated gross model projects
+  55–65 percent savings under its documented assumptions and is not an invoice guarantee.
+
 ### Feature 018 — repository hygiene and maintainability
 
 - Decomposed the release-gate evaluator, CLI command dispatcher and watcher reconciliation

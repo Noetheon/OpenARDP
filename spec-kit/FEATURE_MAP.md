@@ -35,12 +35,14 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 16 | `016-alternate-parser-conformance-spike` | A second minimal parser or consumer proves or falsifies provider-neutral contracts. |
 | 17 | `017-microsoft-graph-design-spike` | Mock-only least-privilege enterprise connector design. |
 | 18 | `018-repository-hygiene` | Measured post-roadmap refactoring, truthful validation and maintainability non-regression. |
+| 19 | `019-ci-cost-optimization` | Lower-cost event-aware CI with unchanged final three-platform quality and bounded release evidence. |
 
 ## Dependency rule
 
 A feature begins only after its predecessor converges and merges. Feature 006 defines the minimum contracts required by
 Feature 007. Later features may add fields only through documented contract evolution and migration rules. Feature 018
-is a behavior-preserving maintenance slice after the reviewed product roadmap; it does not authorize a new capability.
+is a behavior-preserving maintenance slice after the reviewed product roadmap. Feature 019 changes only repository
+automation and its enforcement evidence; neither feature authorizes a new product capability.
 
 ## Scope rule
 

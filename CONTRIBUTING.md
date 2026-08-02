@@ -62,11 +62,18 @@ specify → clarify → plan → checklist → tasks → analyze → implement �
 ## Pull-request expectations
 
 - Keep one bounded feature or maintenance concern per pull request.
+- Open active implementation as a draft and push intermediate revisions while it remains draft. Mark it ready only when
+  it is a merge candidate; `ready_for_review` starts the complete applicable Linux/macOS/Windows final gate.
+- Do not use commit-message CI skip directives on merge candidates. Governance-only skips come only from the reviewed
+  fail-closed classifier; unknown or mixed changes always receive the full final gate.
 - Explain the user/operator outcome, tests, security impact and compatibility impact.
 - Include exact commands and results, not only “tests pass”.
 - Update schemas, docs, ADRs and the changelog when their contracts change.
 - Keep originals immutable, derived data reproducible and document content outside instruction/tool authority.
 - Disclose licenses, model downloads, network behavior and data egress for every future provider integration.
+
+Release evidence is a separate deliberate workflow. It runs for ready release-owned pull requests and version tags, or
+through manual dispatch; ordinary changes rely on the complete core three-platform final test gate.
 
 ## Dependencies and architecture
 

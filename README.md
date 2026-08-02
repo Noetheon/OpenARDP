@@ -51,8 +51,9 @@ the independent conformance spike in
 [`016-alternate-parser-conformance-spike`](specs/016-alternate-parser-conformance-spike/spec.md),
 the mock-only enterprise-connector design in
 [`017-microsoft-graph-design-spike`](specs/017-microsoft-graph-design-spike/spec.md),
-and the behavior-preserving maintenance pass in
-[`018-repository-hygiene`](specs/018-repository-hygiene/spec.md):
+the behavior-preserving maintenance pass in
+[`018-repository-hygiene`](specs/018-repository-hygiene/spec.md), and the CI cost/latency optimization in
+[`019-ci-cost-optimization`](specs/019-ci-cost-optimization/spec.md):
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -134,6 +135,9 @@ and the behavior-preserving maintenance pass in
 - deterministic maintainability auditing with monotonic legacy-hotspot ceilings,
   independently runnable focused tests and characterized release, CLI and watcher
   orchestration refactors.
+- fail-closed changed-path classification, Draft-to-Ready execution, one authoritative
+  Linux coverage lane, complete no-coverage macOS/Windows final suites and a separately
+  bounded all-platform release-evidence workflow.
 
 The core installation still supports strict UTF-8 text without Docling. Rich parsing is
 an explicit optional extra and remains local/offline by default. F012 watching is a
@@ -150,7 +154,9 @@ READY scopes and already-generated output bytes. Feature 015 does not authorize 
 release: the committed candidate decision is `NO-GO` because required evidence remains
 incomplete. Feature 017 likewise does not authorize a production Microsoft Graph
 connector. Feature 018 changes no product contract, dependency, persisted identity,
-workspace revision or release decision. Those boundaries and remaining work packages are recorded in the
+workspace revision or release decision. Feature 019 changes only repository automation and its enforcement evidence;
+it does not reduce the final three-platform test inventory or alter product/release contracts. Those boundaries and
+remaining work packages are recorded in the
 [authoritative feature map](spec-kit/FEATURE_MAP.md).
 
 ## Evidence-backed claim status

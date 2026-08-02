@@ -12,7 +12,8 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 008 notes](specs/008-context-compiler-receipts/implementation-notes.md) and
 [feature 009 notes](specs/009-read-only-mcp/implementation-notes.md) and
 [feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md) and
-[feature 018 notes](specs/018-repository-hygiene/implementation-notes.md).
+[feature 018 notes](specs/018-repository-hygiene/implementation-notes.md) and
+[feature 019 notes](specs/019-ci-cost-optimization/implementation-notes.md).
 
 ## Blueprint relocation and Spec Kit bootstrap
 
@@ -393,6 +394,18 @@ The local before/after measurements, focused test results, residual debt and rol
 boundary are recorded in [the F018 hygiene record](docs/17_CODEBASE_HYGIENE.md). Final
 full-suite, package, pre-commit and external CI evidence is recorded in the
 [F018 implementation notes](specs/018-repository-hygiene/implementation-notes.md).
+
+## Feature 019 local CI cost and quality evidence
+
+Feature `019-ci-cost-optimization` preserves complete final Linux, macOS and Windows test inventories while assigning
+branch coverage and platform-independent gates once to Ubuntu. Draft iteration and governance-only changes run a
+fail-closed Preflight; ready code/unknown changes run all three explicit stable quality jobs. Ordinary merge pushes no
+longer duplicate the matrix, and unchanged F015 evidence runs only at a deliberate release boundary.
+
+The standard-library CI audit and 71 focused CI-policy, repository-contract and validator tests pass locally. Two audit
+executions and two cost estimates are byte-identical. The dated baseline/model and limitations are recorded in
+[`docs/18_CI_COST_AND_QUALITY.md`](docs/18_CI_COST_AND_QUALITY.md). Final full-suite, private PR, branch-protection and
+post-merge evidence remain in the F019 implementation notes until remote convergence is complete.
 
 ## Corrective environment verification
 

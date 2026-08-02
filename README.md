@@ -55,7 +55,9 @@ the behavior-preserving maintenance pass in
 [`018-repository-hygiene`](specs/018-repository-hygiene/spec.md), and the CI cost/latency optimization in
 [`019-ci-cost-optimization`](specs/019-ci-cost-optimization/spec.md), the workload-bounded product-value evaluation in
 [`020-product-value-benchmark`](specs/020-product-value-benchmark/spec.md), and the measured status-path correction in
-[`021-incremental-freshness`](specs/021-incremental-freshness/spec.md):
+[`021-incremental-freshness`](specs/021-incremental-freshness/spec.md), the storage-layout correction in
+[`022-storage-amplification`](specs/022-storage-amplification/spec.md), and the explicit offline PDF model package in
+[`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -68,6 +70,13 @@ exact source SHA-256 inspection plus one atomic READY-header snapshot; its commi
 9.186 ms at 100,000 blocks, with zero aggregate loads, block reads, parser calls or full-verifier calls. Deliberate
 `FULL` status retains exhaustive native/manifest/projection/block verification at 1.981 s and 25.451 s p95. See the
 [`F021 report`](benchmarks/freshness/v0.1.0/results/reference-macos-arm64/report.md).
+
+F022 reduced the F020 text-workspace logical amplification by 64.77–65.21 percent while preserving exact source,
+search, freshness, reuse, edit/revert and context-replay behavior. F023 now provisions the exact five-file Docling PDF
+profile outside Git, transfers it as a deterministic independently verified package and proves actual offline PDF use.
+The committed F023 run is `PDF_OFFLINE_READY`: 384,428,156 model bytes, 2,310 package-overhead bytes, three deterministic
+fresh-worker conversions and 4.169/4.271-second wall p50/p95. This remains synthetic readiness evidence; F024/F025 own
+real-world and semantic quality.
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;

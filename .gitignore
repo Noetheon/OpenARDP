@@ -24,5 +24,7 @@ Thumbs.db
 Desktop.ini
 *.tmp
 *.swp
+.pdf-model-bundles/
+*.pdf-model-bundle.zip
 .vscode/
 .idea/

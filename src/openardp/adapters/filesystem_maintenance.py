@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
 from openardp.adapters.compact_objects import PROFILE, CompactObjectError, decode_compact
+from openardp.adapters.filesystem_convergence import await_transition_metadata
 from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.maintenance import (
     BackupFile,
@@ -317,14 +318,10 @@ class FilesystemMaintenanceStore:
         physical_profile: PhysicalProfile = _ORDINARY_PROFILE,
     ) -> None:
         """Finish or verify the single admissible exact transition end state."""
-        try:
-            destination_metadata = destination.lstat()
-        except FileNotFoundError:
-            raise MaintenanceError("transition destination is missing") from None
-        try:
-            source_metadata = source.lstat()
-        except FileNotFoundError:
-            source_metadata = None
+        destination_metadata, source_metadata = await_transition_metadata(
+            source,
+            destination,
+        )
         if source_metadata is not None:
             if (
                 os.name == "nt"

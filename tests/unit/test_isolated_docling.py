@@ -13,6 +13,7 @@ import pytest
 
 from openardp.adapters.isolated_docling import (
     IsolatedDoclingAdapter,
+    _apply_offline_environment,
     _decode_worker_result,
     _error_from_code,
     _parser_error_code,
@@ -40,6 +41,29 @@ from openardp.ports.parser import (
 )
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "rich"
+
+
+def test_offline_environment_uses_one_fresh_explicit_cache_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Redirect provider caches and force offline mode before provider import."""
+    for name in (
+        "HF_HUB_OFFLINE",
+        "TRANSFORMERS_OFFLINE",
+        "HF_HOME",
+        "HF_HUB_CACHE",
+        "TRANSFORMERS_CACHE",
+        "XDG_CACHE_HOME",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    _apply_offline_environment(tmp_path)
+
+    assert os.environ["HF_HUB_OFFLINE"] == "1"
+    assert os.environ["TRANSFORMERS_OFFLINE"] == "1"
+    for name in ("HF_HOME", "HF_HUB_CACHE", "TRANSFORMERS_CACHE", "XDG_CACHE_HOME"):
+        assert Path(os.environ[name]).is_relative_to(tmp_path)
 
 
 def _network_probe(

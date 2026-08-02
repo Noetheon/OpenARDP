@@ -11,6 +11,7 @@ from threading import Barrier, Lock
 
 import pytest
 
+from openardp.adapters.filesystem_convergence import await_transition_metadata
 from openardp.adapters.local_workspace import LocalWorkspace
 from openardp.domain.maintenance import InventoryLimits, ObjectLocation, StorageHealth
 from openardp.ports.maintenance import InventoryOverflow
@@ -123,6 +124,35 @@ def test_concurrent_posix_links_converge_to_one_exact_destination(
     )
     assert inventory.active == ()
     assert inventory.quarantined[0].object_id == stored.object_id
+
+
+def test_windows_transition_waits_for_delayed_destination_visibility(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bound a Windows rename race until the single destination becomes visible."""
+    source = tmp_path / "source"
+    destination = tmp_path / "destination"
+    destination.write_bytes(b"exact")
+    real_lstat = Path.lstat
+    destination_reads = 0
+
+    def delayed_lstat(path: Path) -> os.stat_result:
+        nonlocal destination_reads
+        if path == destination:
+            destination_reads += 1
+            if destination_reads < 3:
+                raise FileNotFoundError
+        return real_lstat(path)
+
+    monkeypatch.setattr("openardp.adapters.filesystem_convergence.os.name", "nt")
+    monkeypatch.setattr(Path, "lstat", delayed_lstat)
+
+    destination_metadata, source_metadata = await_transition_metadata(source, destination)
+
+    assert destination_metadata.st_size == 5
+    assert source_metadata is None
+    assert destination_reads == 3
 
 
 def test_concurrent_exact_removals_converge_after_verified_unlink_race(

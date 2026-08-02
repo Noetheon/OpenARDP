@@ -15,7 +15,25 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 018 notes](specs/018-repository-hygiene/implementation-notes.md) and
 [feature 019 notes](specs/019-ci-cost-optimization/implementation-notes.md) and
 [feature 020 notes](specs/020-product-value-benchmark/implementation-notes.md) and
-[feature 021 notes](specs/021-incremental-freshness/implementation-notes.md).
+[feature 021 notes](specs/021-incremental-freshness/implementation-notes.md),
+[feature 022 notes](specs/022-storage-amplification/implementation-notes.md) and
+[feature 023 notes](specs/023-offline-pdf-model-bundle/implementation-notes.md).
+
+## Feature 023 offline PDF model-bundle evidence
+
+The independently validated macOS arm64 reference decision is `PDF_OFFLINE_READY`. The exact installation contains five
+model payloads totaling 384,428,156 bytes; the deterministic 384,450,807-byte ZIP has only 2,310 bytes overhead over its
+11-file installation. Two separately produced packages had byte-identical
+`sha256:0d07aa40657419d0dafdb7184e98de494ce83cf9bd33759151fff3e3da137afa` identities.
+
+One excluded warm-up and three retained fresh socket-denied workers converted the redistributable synthetic PDF from
+fresh private provider-cache roots. Retained wall p50/p95 was 4,169.239/4,270.646 ms; CPU p50/p95 was
+4,218.546/4,268.149 ms; measured child peak RSS was 1,473,970,176 bytes. Three exact installation validations measured
+149.738/154.702 ms p50/p95 and 68,108,288 bytes peak RSS. The successful connected provision transferred all bytes in
+191.254 seconds. All runs emitted the same canonical native
+identity, one page and two evidence candidates with anchors and native pointers. Independent validation recomputed every
+input identity, statistic, threshold, decision, result digest and report projection without invoking Docling or the
+producer. This closes synthetic offline availability only, not F024 real-world or F025 semantic-quality scope.
 
 ## Feature 021 incremental-freshness evidence
 

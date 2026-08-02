@@ -208,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f022_governance_and_prior_contracts_are_present_and_frozen(
+def test_f023_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
     """Require active benchmark governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/022-storage-amplification"
+    assert active["feature_directory"] == "specs/023-offline-pdf-model-bundle"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -261,6 +261,7 @@ def test_f022_governance_and_prior_contracts_are_present_and_frozen(
     assert (repository_root / "spec-kit/feature-prompts/020-product-value-benchmark.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/021-incremental-freshness.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/022-storage-amplification.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/023-offline-pdf-model-bundle.md").is_file()
     f021_adr = (repository_root / "docs/adr/0017-freshness-integrity-coverage.md").read_text(
         encoding="utf-8"
     )
@@ -270,6 +271,8 @@ def test_f022_governance_and_prior_contracts_are_present_and_frozen(
         encoding="utf-8"
     )
     assert "Status: Accepted for Feature 022" in f022_adr
+    assert (repository_root / "model-bundles/pdf-docling-2.114.0-v1/source-lock.json").is_file()
+    assert (repository_root / "benchmarks/pdf-bundle/v0.1.0/protocol.json").is_file()
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
     assert (repository_root / "quality/ci-policy.json").is_file()

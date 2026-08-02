@@ -6,8 +6,10 @@ import math
 import multiprocessing
 import os
 import queue
+import shutil
 import socket
 import sys
+import tempfile
 import threading
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
@@ -263,8 +265,10 @@ def _worker_entry(
     behavior: _WorkerBehavior,
 ) -> None:
     """Apply offline/resource restrictions before importing provider behavior."""
+    cache_root: Path | None = None
     try:
-        _apply_offline_environment()
+        cache_root = Path(tempfile.mkdtemp(prefix="openardp-docling-cache-"))
+        _apply_offline_environment(cache_root)
         _apply_resource_limits(config, timeout_seconds)
         _disable_network_access()
         behavior(input_receiver, result_sender, config)
@@ -273,6 +277,8 @@ def _worker_entry(
     finally:
         input_receiver.close()
         result_sender.close()
+        if cache_root is not None:
+            shutil.rmtree(cache_root, ignore_errors=True)
 
 
 def _parse_worker_behavior(
@@ -418,12 +424,16 @@ def _error_from_code(code: str) -> ParserError:
         raise InvalidRichParserOutput("rich parser output invalid") from error
 
 
-def _apply_offline_environment() -> None:
+def _apply_offline_environment(cache_root: Path) -> None:
     """Force common provider/model clients into explicit offline operation."""
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["DO_NOT_TRACK"] = "1"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    os.environ["HF_HOME"] = str(cache_root / "huggingface")
+    os.environ["HF_HUB_CACHE"] = str(cache_root / "huggingface" / "hub")
+    os.environ["TRANSFORMERS_CACHE"] = str(cache_root / "huggingface" / "transformers")
+    os.environ["XDG_CACHE_HOME"] = str(cache_root / "xdg")
 
 
 def _disable_network_access() -> None:

@@ -212,3 +212,16 @@ context envelopes.
 
 The resulting `CONDITIONALLY_WORTHWHILE` decision is a product-value finding only. It neither supplies external model
 answer-quality evidence nor overrides the F015 release `NO-GO`.
+
+## 12. F023 offline PDF readiness protocol
+
+F023 isolates package readiness from document-quality claims. Its frozen source lock names five exact files at two full
+upstream revisions, and all transfer/validation operations reconcile against that independent lock. The benchmark uses
+one excluded warm-up and three retained fresh spawned workers with new provider-cache roots, offline flags and socket
+denial established before Docling import.
+
+Raw evidence records exact bundle/package/source/fixture identities, logical bytes, wall/CPU/peak-RSS samples, canonical
+native identity, pages, evidence counts, anchors and native pointers. The independent validator re-derives robust
+statistics, closed thresholds, result-file hashes and the Markdown report without importing the producer. A ready result
+therefore means that this exact synthetic PDF works offline with this exact package—not that arbitrary real PDFs, OCR,
+semantic answers, citations or redistribution rights have been validated.

@@ -75,6 +75,7 @@ ADAPTER_MODULES = {
     "docling_bundle_provisioning",
     "docling_native",
     "filesystem_cas",
+    "filesystem_convergence",
     "filesystem_maintenance",
     "isolated_docling",
     "isolated_parser",

@@ -17,7 +17,25 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 020 notes](specs/020-product-value-benchmark/implementation-notes.md) and
 [feature 021 notes](specs/021-incremental-freshness/implementation-notes.md),
 [feature 022 notes](specs/022-storage-amplification/implementation-notes.md) and
-[feature 023 notes](specs/023-offline-pdf-model-bundle/implementation-notes.md).
+[feature 023 notes](specs/023-offline-pdf-model-bundle/implementation-notes.md),
+[feature 024 notes](specs/024-redistributable-realworld-corpus/implementation-notes.md) and
+[feature 025 notes](specs/025-semantic-e2e-source-evaluation/implementation-notes.md).
+
+## Feature 025 semantic end-to-end evidence
+
+The independently recomputed macOS arm64 result is `SEMANTIC_E2E_NOT_READY`, with zero hard execution failures. Two
+fresh workspaces produced identical non-timing rows. All five supported formats ingested and every selected citation
+re-resolved exactly; CSV remained an explicit unsupported product format.
+
+Untouched questions reached 6/17 full support, 15/46 atom recall, 1.1029% evidence precision, 28.8622% MRR, 50% source
+recall, 0% German recall and 0% unanswerable abstention. Frozen operator terms reached 14/17 full support, 40/46 atoms
+and 16/18 sources, but the latter two values are below their pre-run 90% conditional gates. The result therefore proves
+the evidence/citation substrate while rejecting semantic readiness of the current lexical selector. See
+[the full interpretation](docs/24_SEMANTIC_E2E_EVALUATION.md).
+
+Run `uv run python scripts/validate_semantic_e2e_benchmark.py --inputs-only` and
+`uv run python scripts/validate_semantic_e2e_benchmark.py --result
+benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64` for offline independent reproduction.
 
 ## Feature 024 redistributable real-world corpus evidence
 

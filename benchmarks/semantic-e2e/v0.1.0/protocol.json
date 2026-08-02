@@ -1,0 +1,51 @@
+{
+  "benchmark_version": "0.1.0",
+  "protocol_id": "sha256:8182f5d410292529b3ae35c0bfe3e07f674fc2e3c02b78406073c8890d924ad8",
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "question_count": 19,
+  "product_treatments": ["openardp_direct", "openardp_operator"],
+  "oracle_treatment": "exhaustive_oracle",
+  "product_formats": ["docx", "md", "pdf", "pptx", "txt"],
+  "unsupported_product_formats": ["csv"],
+  "context": {
+    "mode": "exact",
+    "budget_bytes": 262144,
+    "max_scopes": 5,
+    "max_discovered": 10000,
+    "max_candidates": 64,
+    "max_body_bytes": 8388608,
+    "max_decisions": 12000,
+    "max_bundle_units": 262144
+  },
+  "normalization": ["unicode_nfc", "casefold", "whitespace_collapse"],
+  "thresholds": {
+    "ready": {
+      "direct_full_support": [80, 100],
+      "direct_atom_recall": [90, 100],
+      "direct_evidence_precision": [60, 100],
+      "direct_mrr": [80, 100],
+      "direct_source_recall": [90, 100],
+      "direct_citation_integrity": [100, 100],
+      "supported_format_ingestion": [100, 100],
+      "direct_abstention": [80, 100],
+      "direct_german_atom_recall": [50, 100]
+    },
+    "conditional": {
+      "operator_full_support": [80, 100],
+      "operator_atom_recall": [90, 100],
+      "operator_source_recall": [90, 100],
+      "operator_citation_integrity": [100, 100],
+      "direct_full_support": [40, 100]
+    }
+  },
+  "execution": {
+    "fresh_runs": 2,
+    "network": "denied",
+    "pdf_bundle_version": "docling-2.114.0-v1",
+    "result_max_bytes": 4194304
+  },
+  "privacy": {
+    "body_free_results": true,
+    "forbidden_keys": ["body", "content", "hostname", "path", "query", "question", "reference_answer", "username"]
+  }
+}

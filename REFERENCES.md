@@ -35,6 +35,9 @@ Checked on 2026-07-22. Re-verify versions and licenses before implementation.
 - BagIt RFC 8493: https://www.rfc-editor.org/rfc/rfc8493.html
 - Semantic Versioning: https://semver.org/
 
+F025's scoring contract uses only the committed JSON Schema/RFC 8785 identities and exact publisher sources above. Its
+source-fitness rubric is a question-specific benchmark judgment, not an external credibility standard or legal opinion.
+
 ## Microsoft 365 and Office
 
 - Open XML SDK: https://learn.microsoft.com/en-us/office/open-xml/about-the-open-xml-sdk

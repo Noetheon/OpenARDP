@@ -227,3 +227,15 @@ license verification.
 - The local F015 drill actually opens the supported previous revision, backs up and
   migrates revision 9, restores the pre-upgrade state to a fresh disjoint location and
   verifies the historical schema; fixture-plan prose alone is not accepted as proof.
+
+## Feature 025 semantic benchmark operations
+
+- The real execution is an explicit maintainer operation requiring the exact F024 corpus and external F023 PDF bundle;
+  ordinary CI validates frozen inputs/results and does not repeatedly load model weights.
+- Question text, reference answers and source-fitness rationale are public benchmark fixtures. Result rows retain only
+  question/treatment IDs, evidence/source IDs, counts, ranks, booleans and bounded timings—never selected bodies, local
+  paths, hostnames, usernames, credentials or raw exceptions.
+- Document content is always untrusted data. Atom matching cannot initiate tools, network access, translation, model
+  calls or side effects. The operator query is human-authored input frozen before execution.
+- `unsupported_format`, irrelevant selections and abstention failures are evidence, not operational exceptions. Do not
+  edit or delete them to improve the decision; the independent manifest/validator rejects result drift.

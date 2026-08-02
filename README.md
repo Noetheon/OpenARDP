@@ -58,7 +58,9 @@ the behavior-preserving maintenance pass in
 [`021-incremental-freshness`](specs/021-incremental-freshness/spec.md), the storage-layout correction in
 [`022-storage-amplification`](specs/022-storage-amplification/spec.md), and the explicit offline PDF model package in
 [`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md), and the licensed real-world corpus in
-[`024-redistributable-realworld-corpus`](specs/024-redistributable-realworld-corpus/spec.md):
+[`024-redistributable-realworld-corpus`](specs/024-redistributable-realworld-corpus/spec.md), and the realistic semantic
+and source-quality evaluation in
+[`025-semantic-e2e-source-evaluation`](specs/025-semantic-e2e-source-evaluation/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -79,7 +81,10 @@ The committed F023 run is `PDF_OFFLINE_READY`: 384,428,156 model bytes, 2,310 pa
 fresh-worker conversions and 4.169/4.271-second wall p50/p95. F024 now adds a 6,634,970-byte NASA/CISA corpus with exact
 rights/provenance records and a validated `REALWORLD_BASELINE_READY` result across PDF, DOCX, PPTX, CSV, Markdown and
 plain text. Its 12 structural observations are deterministic and offline; one oversized PPTX native pointer is correctly
-retained as bounded. Semantic questions, ranking, citation quality and source grading remain F025.
+retained as bounded. F025 now reports `SEMANTIC_E2E_NOT_READY`: exact citations and supported-format ingestion pass, but
+untouched questions achieve only 35.3% full support, 32.6% atom recall and 1.1% evidence precision. Frozen operator terms
+improve full support to 82.4% but remain manual assistance and miss the 90% atom/source conditional gates. See the
+[`F025 report`](benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/report.md).
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;

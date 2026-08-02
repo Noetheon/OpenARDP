@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openardp.org/schemas/benchmark/semantic-questions-0.1.0.json",
+  "title": "OpenARDP semantic end-to-end question set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "benchmark_version", "corpus_id", "questions", "question_set_id"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "benchmark_version": {"const": "0.1.0"},
+    "corpus_id": {"const": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd"},
+    "question_set_id": {"$ref": "#/$defs/sha256"},
+    "questions": {
+      "type": "array",
+      "minItems": 19,
+      "maxItems": 19,
+      "items": {"$ref": "#/$defs/question"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "sourceKey": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "fitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_key", "publisher_authority", "directness", "temporal_fit", "integrity", "reuse_basis", "rationale"],
+      "properties": {
+        "source_key": {"$ref": "#/$defs/sourceKey"},
+        "publisher_authority": {"type": "integer", "minimum": 0, "maximum": 2},
+        "directness": {"type": "integer", "minimum": 0, "maximum": 2},
+        "temporal_fit": {"type": "integer", "minimum": 0, "maximum": 2},
+        "integrity": {"type": "integer", "minimum": 0, "maximum": 2},
+        "reuse_basis": {"type": "integer", "minimum": 0, "maximum": 2},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 512}
+      }
+    },
+    "atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["atom_id", "source_key", "variants", "required"],
+      "properties": {
+        "atom_id": {"type": "string", "pattern": "^A[0-9]{2}$"},
+        "source_key": {"$ref": "#/$defs/sourceKey"},
+        "variants": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 1024}},
+        "required": {"const": true}
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question_id", "language", "stratum", "question", "operator_query", "reference_answer", "answerable", "temporal_scope", "required_formats", "required_sources", "acceptable_sources", "support_atoms", "source_fitness"],
+      "properties": {
+        "question_id": {"type": "string", "pattern": "^Q[0-9]{2}$"},
+        "language": {"enum": ["de", "en"]},
+        "stratum": {"enum": ["cross_language", "direct", "multi_source", "paraphrase", "source_discrimination", "unsupported"]},
+        "question": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "operator_query": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "reference_answer": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "answerable": {"type": "boolean"},
+        "temporal_scope": {"enum": ["current_live", "frozen_snapshot", "historical_document"]},
+        "required_formats": {"type": "array", "minItems": 1, "items": {"enum": ["csv", "docx", "md", "pdf", "pptx", "txt"]}},
+        "required_sources": {"type": "array", "items": {"$ref": "#/$defs/sourceKey"}},
+        "acceptable_sources": {"type": "array", "items": {"$ref": "#/$defs/sourceKey"}},
+        "support_atoms": {"type": "array", "items": {"$ref": "#/$defs/atom"}},
+        "source_fitness": {"type": "array", "items": {"$ref": "#/$defs/fitness"}}
+      }
+    }
+  }
+}

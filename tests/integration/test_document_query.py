@@ -257,8 +257,9 @@ def test_full_status_detects_each_persisted_corruption_class(
         with sqlite3.connect(catalog.path) as connection:
             connection.execute("PRAGMA foreign_keys = OFF")
             connection.execute(
-                "DELETE FROM representation_blocks WHERE document_id = ? "
-                "AND version_id = ? AND representation_id = ? AND ordinal = 0",
+                "DELETE FROM representation_blocks WHERE scope_key = ("
+                "SELECT scope_key FROM representation_scopes WHERE document_id = ? "
+                "AND version_id = ? AND representation_id = ?) AND ordinal = 0",
                 (
                     str(result.scope.document_id),
                     result.scope.version_id,

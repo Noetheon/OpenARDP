@@ -190,7 +190,11 @@ def test_incomplete_orphaned_or_drifted_index_fails_closed_without_rebuild(
 
     # Incomplete coverage: indexed rows vanish below the declared coverage.
     with sqlite3.connect(corpus.catalog.path) as connection:
-        connection.execute("DELETE FROM block_search_entries")
+        connection.execute("DELETE FROM block_search_index")
+        connection.execute(
+            "UPDATE representation_blocks SET trust_zone=NULL, page=NULL, slide=NULL, "
+            "text_hash=NULL, indexed_at=NULL"
+        )
     with pytest.raises(ContextIntegrityFailure, match="accelerator"):
         compiler.compile(request)
 
@@ -200,11 +204,14 @@ def test_incomplete_orphaned_or_drifted_index_fails_closed_without_rebuild(
     second.mkdir()
     corpus2 = _mixed_corpus(second)
     with sqlite3.connect(corpus2.catalog.path) as connection:
+        connection.execute("PRAGMA foreign_keys=OFF")
         connection.execute(
-            "UPDATE block_search_entries SET version_id = ?",
-            (FAKE_VERSION_ID,),
+            "UPDATE representation_blocks SET scope_key = ?",
+            (9_999_999,),
         )
-        indexed_rows = connection.execute("SELECT COUNT(*) FROM block_search_entries").fetchone()
+        indexed_rows = connection.execute(
+            "SELECT COUNT(*) FROM representation_blocks WHERE indexed_at IS NOT NULL"
+        ).fetchone()
     with pytest.raises(ContextIntegrityFailure, match="accelerator"):
         corpus2.compiler.compile(
             _request(corpus2.document_ids, task="alpha evidence", mode=ContextMode.EXACT)
@@ -215,7 +222,7 @@ def test_incomplete_orphaned_or_drifted_index_fails_closed_without_rebuild(
     third.mkdir()
     corpus3 = _mixed_corpus(third)
     with sqlite3.connect(corpus3.catalog.path) as connection:
-        connection.execute("UPDATE block_search_entries SET text_hash = ?", (FAKE_VERSION_ID,))
+        connection.execute("UPDATE representation_blocks SET text_hash = ?", (FAKE_VERSION_ID,))
     with pytest.raises(ContextIntegrityFailure, match="indexed_text_drift"):
         corpus3.compiler.compile(
             _request(corpus3.document_ids, task="alpha evidence", mode=ContextMode.EXACT)
@@ -223,7 +230,9 @@ def test_incomplete_orphaned_or_drifted_index_fails_closed_without_rebuild(
 
     # Explicit rebuild only: the compiler must not rewrite or bypass the index.
     with sqlite3.connect(corpus3.catalog.path) as connection:
-        drifted_rows = connection.execute("SELECT COUNT(*) FROM block_search_entries").fetchone()
+        drifted_rows = connection.execute(
+            "SELECT COUNT(*) FROM representation_blocks WHERE indexed_at IS NOT NULL"
+        ).fetchone()
     assert drifted_rows == indexed_rows
     assert corpus.catalog.list_context_compilations() == ()
     assert corpus2.catalog.list_context_compilations() == ()
@@ -309,7 +318,7 @@ def test_index_trust_metadata_cannot_promote_candidate_trust(tmp_path: Path) -> 
     # trust stays authoritative and the candidate remains rejected.
     with sqlite3.connect(corpus.catalog.path) as connection:
         connection.execute(
-            "UPDATE block_search_entries SET trust_zone = ?",
+            "UPDATE representation_blocks SET trust_zone = ?",
             (TrustZone.LOCAL_TRUSTED.value,),
         )
     still_rejected = compiler.compile(restricted_request())

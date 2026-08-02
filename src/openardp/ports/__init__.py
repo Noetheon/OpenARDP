@@ -36,6 +36,7 @@ from openardp.ports.catalog import (
     SearchCapabilityUnavailable,
     SearchIndexDrifted,
     SearchIndexIncomplete,
+    StorageOptimizationCatalog,
     VersionConflict,
 )
 from openardp.ports.context import (
@@ -52,6 +53,8 @@ from openardp.ports.context import (
     TextContextCandidateSource,
 )
 from openardp.ports.object_store import (
+    CompactBlockStore,
+    ExistingObjectOptimizer,
     MalformedObjectIdentity,
     ObjectCorrupt,
     ObjectDurabilityError,
@@ -59,6 +62,7 @@ from openardp.ports.object_store import (
     ObjectPublicationError,
     ObjectStore,
     ObjectStoreError,
+    OrdinaryAuthorityStore,
     PersistenceError,
     UnsafeStoreEntry,
 )
@@ -118,6 +122,7 @@ __all__ = [
     "CatalogError",
     "CatalogIncompatible",
     "CatalogTooNew",
+    "CompactBlockStore",
     "ContextCandidateSource",
     "ContextCatalog",
     "ContextCompilationCancelled",
@@ -135,6 +140,7 @@ __all__ = [
     "DerivationIntegrityError",
     "DocumentConflict",
     "DocumentNotFound",
+    "ExistingObjectOptimizer",
     "InvalidJobTransition",
     "InvalidObjectReference",
     "InvalidParserOutput",
@@ -151,6 +157,7 @@ __all__ = [
     "ObjectPublicationError",
     "ObjectStore",
     "ObjectStoreError",
+    "OrdinaryAuthorityStore",
     "ParserAdapter",
     "ParserError",
     "ParserProcessCrashed",
@@ -184,6 +191,7 @@ __all__ = [
     "SearchCapabilityUnavailable",
     "SearchIndexDrifted",
     "SearchIndexIncomplete",
+    "StorageOptimizationCatalog",
     "TextContextCandidateSource",
     "TextDecodingError",
     "TextResourceLimitExceeded",

@@ -79,7 +79,7 @@ from openardp.ports.catalog import (
     RepresentationIntegrityError,
     RichCatalog,
 )
-from openardp.ports.object_store import ObjectStore, ObjectStoreError
+from openardp.ports.object_store import ObjectStore, ObjectStoreError, OrdinaryAuthorityStore
 from openardp.ports.parser import ParserError, RichParserAdapter
 
 _REPRESENTATION_LEASE = timedelta(minutes=5)
@@ -334,6 +334,7 @@ class RichIngestionService:
             )
         elif version.source != snapshot.object or version.media_type != snapshot.media_type.value:
             raise RepresentationIntegrityError("source version metadata is inconsistent")
+        self._retain_ordinary_authority(version.source)
 
         scope = RepresentationScope(
             document_id=document.document_id,
@@ -358,6 +359,7 @@ class RichIngestionService:
             accepted = self._catalog.load_rich_representation(scope)
             if accepted is None:
                 raise RepresentationIntegrityError("ready rich representation is missing")
+            self._retain_rich_authorities(accepted)
             self.verify_ready_representation(accepted)
             if not force:
                 ingested_at = self._clock()
@@ -445,6 +447,7 @@ class RichIngestionService:
                 )
             raise
 
+        self._retain_rich_authorities(artifacts)
         self.verify_ready_representation(artifacts)
         return self._result(
             artifacts,
@@ -454,6 +457,24 @@ class RichIngestionService:
             head_advanced=event.head_advanced,
             ingested_at=event.occurred_at,
         )
+
+    def _retain_ordinary_authority(self, stored: StoredObject) -> None:
+        """Converge a catalog-authoritative source/native object when supported."""
+        if isinstance(self._object_store, OrdinaryAuthorityStore):
+            retained = self._object_store.retain_ordinary_authority(
+                stored.object_id,
+                expected_length=stored.byte_length,
+            )
+            if retained != stored:
+                raise RepresentationIntegrityError("ordinary rich authority is inconsistent")
+
+    def _retain_rich_authorities(self, artifacts: RichRepresentationArtifacts) -> None:
+        """Retain ordinary physical forms for committed source and provider-native bytes."""
+        native = artifacts.aggregate.representation.native_object
+        if native is None:
+            raise RepresentationIntegrityError("ready rich native source is missing")
+        self._retain_ordinary_authority(native)
+        self._retain_ordinary_authority(artifacts.accepted_attempt.provider_native_object)
 
     def verify_ready_representation(self, artifacts: RichRepresentationArtifacts) -> None:
         """Physically and semantically verify every accepted base and rich artifact."""

@@ -1,12 +1,12 @@
 {
   "application_version": "0.0.1",
-  "catalog_revision": 9,
-  "fixture_id": "historical-revision-9",
-  "generator_test_node": "tests/integration/test_backup_restore.py::test_explicit_revision_nine_migration_publishes_verified_rollback",
+  "catalog_revision": 10,
+  "fixture_id": "historical-revision-10",
+  "generator_test_node": "tests/integration/test_backup_restore.py::test_explicit_revision_ten_migration_publishes_verified_rollback",
   "synthetic": true,
   "workspace_facts": [
     "initialized-marker",
-    "revision-9-catalog-with-watch-root",
+    "revision-10-catalog-with-watch-root",
     "content-addressed-object-root",
     "pre-upgrade-backup-required"
   ]

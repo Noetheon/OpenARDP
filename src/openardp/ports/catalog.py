@@ -64,6 +64,7 @@ from openardp.domain.storage import (
     ReferenceSnapshot,
     SourceKey,
     SourceVersionCommit,
+    StoredObject,
 )
 from openardp.domain.visual import (
     VisualEvidenceCommit,
@@ -657,4 +658,36 @@ class VisualCatalog(Catalog, Protocol):
         scope: RepresentationScope,
     ) -> tuple[VisualEvidenceRecord, ...]:
         """List one scope's visual records in deterministic identity order."""
+        ...
+
+
+@runtime_checkable
+class StorageOptimizationCatalog(Catalog, Protocol):
+    """Body-free catalog capability for explicit derived-block optimization."""
+
+    def eligible_derived_block_objects(self) -> tuple[StoredObject, ...]:
+        """Return sorted block objects not referenced by any non-block authority."""
+        ...
+
+    def claim_storage_optimization(
+        self,
+        *,
+        now: datetime,
+    ) -> tuple[UUID, tuple[StoredObject, ...]]:
+        """Fence ordinary writes and return one resumable eligible inventory."""
+        ...
+
+    def complete_storage_optimization(
+        self,
+        operation_id: UUID,
+        *,
+        entry_count: int,
+        byte_count: int,
+        now: datetime,
+    ) -> None:
+        """Publish terminal body-free outcome and release the write fence."""
+        ...
+
+    def compact_catalog_storage(self) -> tuple[int, int]:
+        """Reclaim free catalog pages explicitly and return file bytes before/after."""
         ...

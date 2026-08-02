@@ -25,7 +25,7 @@ def test_migration_ten_upgrades_revision_nine_additively(tmp_path: Path) -> None
         .execute("SELECT version, name, checksum FROM schema_migrations ORDER BY version")
         .fetchall()
     )
-    assert SQLiteCatalog(path).initialize(now=NOW) == 10
+    assert SQLiteCatalog(path, migrations=MIGRATIONS[:10]).initialize(now=NOW) == 10
     with sqlite3.connect(path) as connection:
         after = connection.execute(
             "SELECT version, name, checksum FROM schema_migrations ORDER BY version"
@@ -68,7 +68,7 @@ def test_every_migration_ten_statement_boundary_rolls_back(tmp_path: Path) -> No
         with sqlite3.connect(path) as connection:
             assert tuple(connection.iterdump()) == before
         assert SQLiteCatalog(path, migrations=MIGRATIONS[:9]).schema_version() == 9
-        assert SQLiteCatalog(path).initialize(now=NOW) == 10
+        assert SQLiteCatalog(path, migrations=MIGRATIONS[:10]).initialize(now=NOW) == 10
 
 
 def test_twenty_initializers_converge_on_one_revision_ten(tmp_path: Path) -> None:
@@ -78,7 +78,10 @@ def test_twenty_initializers_converge_on_one_revision_ten(tmp_path: Path) -> Non
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         revisions = tuple(
-            executor.map(lambda _: SQLiteCatalog(path).initialize(now=NOW), range(20))
+            executor.map(
+                lambda _: SQLiteCatalog(path, migrations=MIGRATIONS[:10]).initialize(now=NOW),
+                range(20),
+            )
         )
     assert revisions == (10,) * 20
     with sqlite3.connect(path) as connection:
@@ -91,4 +94,4 @@ def test_migration_ten_is_append_only() -> None:
     """Freeze prior checksums while introducing one exact revision."""
     assert MIGRATION_10.version == 10
     assert MIGRATION_10.name == "retention-recovery-maintenance"
-    assert len({migration.checksum for migration in MIGRATIONS}) == 10
+    assert len({migration.checksum for migration in MIGRATIONS[:10]}) == 10

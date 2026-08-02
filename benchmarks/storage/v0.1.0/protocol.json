@@ -1,0 +1,29 @@
+{
+  "allocated_reference_max_multiplier": 55,
+  "baseline_inputs": {
+    "corpus-spec.json": "sha256:e10a3fd5bc109d4442d807d86c3fd5d4f93821c5fa62e3364bd8014a5a591311",
+    "judgments.json": "sha256:3d898151ce68ae27148f97fdbcf4f695f0d92529a790ee9663106e65ac8ac232",
+    "protocol.json": "sha256:fb7e957d1e5e2c3bd714de2ca4209e2116a8e6fd1da04fabed699a438bc3bffb",
+    "value-policy.json": "sha256:18f5d8bb933d6b3aa37da5ac3d888b2c4a8f2dc227ec8e47c741a31d63137a0a"
+  },
+  "legacy_revision": "44d5a5e885c7b37109d1413f5b834e0170cd7ee8",
+  "logical_max_multiplier": 15,
+  "maximum_result_bytes": 16777216,
+  "minimum_logical_reduction_ratio": 0.6,
+  "privacy": {
+    "forbidden": [
+      "absolute_paths",
+      "credentials",
+      "hostnames",
+      "raw_exceptions",
+      "source_bodies",
+      "usernames"
+    ]
+  },
+  "protocol_version": "0.1.0",
+  "scenarios": [
+    "fresh-reference",
+    "migrated-reference",
+    "fresh-scale"
+  ]
+}

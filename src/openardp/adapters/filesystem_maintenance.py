@@ -11,9 +11,10 @@ from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
+from openardp.adapters.compact_objects import PROFILE, CompactObjectError, decode_compact
 from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.maintenance import (
     BackupFile,
@@ -49,6 +50,9 @@ _BACKUP_LIMITS = InventoryLimits(
     max_entries=1_000_000,
     max_bytes=9_007_199_254_740_991,
 )
+PhysicalProfile = Literal["ordinary", "openardp-deflate-dict-v1"]
+_ORDINARY_PROFILE: PhysicalProfile = "ordinary"
+_COMPACT_PROFILE: PhysicalProfile = "openardp-deflate-dict-v1"
 
 
 class FilesystemMaintenanceStore:
@@ -68,16 +72,26 @@ class FilesystemMaintenanceStore:
             raise MaintenanceError("workspace storage is unsafe")
         self._root = raw.resolve(strict=True)
         self._active = self._root / "objects" / "sha256"
+        self._active_compact = self._root / "objects" / PROFILE / "sha256"
         self._staging = self._root / "staging"
         self._quarantine = self._root / "quarantine" / "sha256"
+        self._quarantine_compact = self._root / "quarantine" / PROFILE / "sha256"
         if create:
             self._ensure_directory(self._root / "quarantine")
             self._ensure_directory(self._quarantine)
+            self._ensure_directory(self._root / "quarantine" / PROFILE)
+            self._ensure_directory(self._quarantine_compact)
         for path in (self._active, self._staging):
             self._assert_directory(path)
+        if self._lexists(self._active_compact):
+            self._assert_directory(self._root / "objects" / PROFILE)
+            self._assert_directory(self._active_compact)
         self._quarantine_available = self._lexists(self._quarantine)
         if self._quarantine_available:
             self._assert_directory(self._quarantine)
+            if self._lexists(self._quarantine_compact):
+                self._assert_directory(self._root / "quarantine" / PROFILE)
+                self._assert_directory(self._quarantine_compact)
         elif not allow_missing_quarantine:
             raise MaintenanceError("managed maintenance directory is missing")
 
@@ -89,7 +103,24 @@ class FilesystemMaintenanceStore:
             limits=limits,
             entries=0,
             byte_count=0,
+            physical_profile=_ORDINARY_PROFILE,
         )
+        if self._lexists(self._active_compact):
+            compact, compact_anomalies, entries, byte_count = self._scan_tree(
+                self._active_compact,
+                location=ObjectLocation.ACTIVE,
+                limits=limits,
+                entries=entries,
+                byte_count=byte_count,
+                physical_profile=_COMPACT_PROFILE,
+            )
+            active, duplicate_anomalies, entries = self._merge_physical_forms(
+                active,
+                compact,
+                limits=limits,
+                entries=entries,
+            )
+            active_anomalies.extend((*compact_anomalies, *duplicate_anomalies))
         if self._quarantine_available:
             quarantined, quarantine_anomalies, entries, byte_count = self._scan_tree(
                 self._quarantine,
@@ -97,7 +128,24 @@ class FilesystemMaintenanceStore:
                 limits=limits,
                 entries=entries,
                 byte_count=byte_count,
+                physical_profile=_ORDINARY_PROFILE,
             )
+            if self._lexists(self._quarantine_compact):
+                compact, compact_anomalies, entries, byte_count = self._scan_tree(
+                    self._quarantine_compact,
+                    location=ObjectLocation.QUARANTINE,
+                    limits=limits,
+                    entries=entries,
+                    byte_count=byte_count,
+                    physical_profile=_COMPACT_PROFILE,
+                )
+                quarantined, duplicate_anomalies, entries = self._merge_physical_forms(
+                    quarantined,
+                    compact,
+                    limits=limits,
+                    entries=entries,
+                )
+                quarantine_anomalies.extend((*compact_anomalies, *duplicate_anomalies))
         else:
             quarantined, quarantine_anomalies = [], []
         anomalies = [*active_anomalies, *quarantine_anomalies]
@@ -134,16 +182,76 @@ class FilesystemMaintenanceStore:
             scanned_bytes=byte_count,
         )
 
+    def _merge_physical_forms(
+        self,
+        ordinary: list[MaintenanceObject],
+        compact: list[MaintenanceObject],
+        *,
+        limits: InventoryLimits,
+        entries: int,
+    ) -> tuple[list[MaintenanceObject], list[MaintenanceAnomaly], int]:
+        """Deduplicate logical identities while exposing recoverable physical residue."""
+        merged = {item.object_id: item for item in ordinary}
+        anomalies: list[MaintenanceAnomaly] = []
+        for item in compact:
+            peer = merged.get(item.object_id)
+            if peer is not None:
+                if peer.byte_length != item.byte_length:
+                    raise StoreInconsistent("physical object forms disagree")
+                entries = self._admit_entry(entries, limits)
+                anomalies.append(
+                    self._anomaly(
+                        MaintenanceAnomalyCode.DUPLICATE_PHYSICAL_FORM,
+                        f"physical-duplicate/{item.object_id}",
+                        object_id=item.object_id,
+                    )
+                )
+            merged[item.object_id] = item
+        return list(merged.values()), anomalies, entries
+
     def transition(self, object_id: str, *, to_quarantine: bool, byte_length: int) -> None:
         """Move exact bytes between managed trees without overwrite, idempotently."""
         if type(byte_length) is not int or byte_length < 0:
             raise ValueError("byte_length must be a non-negative integer")
-        active = self._path_for(object_id, self._active)
-        quarantine = self._path_for(object_id, self._quarantine)
-        source, destination = (active, quarantine) if to_quarantine else (quarantine, active)
+        source_roots = (
+            (self._active, self._active_compact)
+            if to_quarantine
+            else (self._quarantine, self._quarantine_compact)
+        )
+        destination_roots = (
+            (self._quarantine, self._quarantine_compact)
+            if to_quarantine
+            else (self._active, self._active_compact)
+        )
+        source_forms = self._present_forms(object_id, source_roots)
+        destination_forms = self._present_forms(object_id, destination_roots)
+        if len(source_forms) > 1 or len(destination_forms) > 1:
+            raise MaintenanceError("transition physical forms conflict")
+        expected_location = ObjectLocation.QUARANTINE if to_quarantine else ObjectLocation.ACTIVE
+        if not source_forms:
+            if not destination_forms:
+                raise MaintenanceError("transition object is missing")
+            destination, physical_profile = destination_forms[0]
+            verified = self._verify_path(
+                destination,
+                object_id,
+                expected_location,
+                physical_profile=physical_profile,
+            )
+            if verified.byte_length != byte_length:
+                raise MaintenanceError("transition destination length conflicts")
+            return
+        source, physical_profile = source_forms[0]
+        destination_root = destination_roots[1 if physical_profile == PROFILE else 0]
+        destination = self._path_for(object_id, destination_root)
+        other_destination = self._path_for(
+            object_id,
+            destination_roots[0 if physical_profile == PROFILE else 1],
+        )
+        if self._lexists(other_destination):
+            raise MaintenanceError("transition destination physical form conflicts")
         self._ensure_directory(destination.parent.parent)
         self._ensure_directory(destination.parent)
-        expected_location = ObjectLocation.QUARANTINE if to_quarantine else ObjectLocation.ACTIVE
         source_location = ObjectLocation.ACTIVE if to_quarantine else ObjectLocation.QUARANTINE
         if self._lexists(destination):
             self._converge_transition(
@@ -152,12 +260,18 @@ class FilesystemMaintenanceStore:
                 object_id=object_id,
                 byte_length=byte_length,
                 expected_location=expected_location,
+                physical_profile=physical_profile,
             )
             return
         if not self._lexists(source):
             raise MaintenanceError("transition object is missing")
         try:
-            verified = self._verify_path(source, object_id, source_location)
+            verified = self._verify_path(
+                source,
+                object_id,
+                source_location,
+                physical_profile=physical_profile,
+            )
             if verified.byte_length != byte_length:
                 raise MaintenanceError("transition source length conflicts")
             if source.stat(follow_symlinks=False).st_dev != destination.parent.stat().st_dev:
@@ -178,6 +292,7 @@ class FilesystemMaintenanceStore:
                     object_id=object_id,
                     byte_length=byte_length,
                     expected_location=expected_location,
+                    physical_profile=physical_profile,
                 )
             except MaintenanceError:
                 if isinstance(error, MaintenanceError):
@@ -190,6 +305,7 @@ class FilesystemMaintenanceStore:
             object_id=object_id,
             byte_length=byte_length,
             expected_location=expected_location,
+            physical_profile=physical_profile,
         )
 
     def _converge_transition(
@@ -200,6 +316,7 @@ class FilesystemMaintenanceStore:
         object_id: str,
         byte_length: int,
         expected_location: ObjectLocation,
+        physical_profile: PhysicalProfile = _ORDINARY_PROFILE,
     ) -> None:
         """Finish or verify the single admissible exact transition end state."""
         try:
@@ -221,7 +338,12 @@ class FilesystemMaintenanceStore:
             with suppress(FileNotFoundError):
                 source.unlink()
             self._sync_directory(source.parent)
-        verified = self._verify_path(destination, object_id, expected_location)
+        verified = self._verify_path(
+            destination,
+            object_id,
+            expected_location,
+            physical_profile=physical_profile,
+        )
         if verified.byte_length != byte_length:
             raise MaintenanceError("transition destination length conflicts")
 
@@ -229,13 +351,20 @@ class FilesystemMaintenanceStore:
         """Remove only exact verified quarantine bytes, idempotently after intent."""
         if type(byte_length) is not int or byte_length < 0:
             raise ValueError("byte_length must be a non-negative integer")
-        active = self._path_for(object_id, self._active)
-        quarantine = self._path_for(object_id, self._quarantine)
-        if self._lexists(active):
+        if self._present_forms(object_id, (self._active, self._active_compact)):
             raise MaintenanceError("removal conflicts with active object state")
-        if not self._lexists(quarantine):
+        present = self._present_forms(object_id, (self._quarantine, self._quarantine_compact))
+        if not present:
             return
-        verified = self._verify_path(quarantine, object_id, ObjectLocation.QUARANTINE)
+        if len(present) != 1:
+            raise MaintenanceError("removal physical forms conflict")
+        quarantine, physical_profile = present[0]
+        verified = self._verify_path(
+            quarantine,
+            object_id,
+            ObjectLocation.QUARANTINE,
+            physical_profile=physical_profile,
+        )
         if verified.byte_length != byte_length:
             raise MaintenanceError("removal source length conflicts")
         try:
@@ -245,6 +374,31 @@ class FilesystemMaintenanceStore:
             raise MaintenanceError("managed removal failed") from None
         if self._lexists(quarantine):
             raise MaintenanceError("managed removal did not complete")
+
+    def _present_forms(
+        self,
+        object_id: str,
+        roots: tuple[Path, Path],
+    ) -> tuple[tuple[Path, PhysicalProfile], ...]:
+        """Return ordinary/compact leaves present in one logical location."""
+        candidates = (
+            (self._path_for(object_id, roots[0]), _ORDINARY_PROFILE),
+            (self._path_for(object_id, roots[1]), _COMPACT_PROFILE),
+        )
+        return tuple(item for item in candidates if self._lexists(item[0]))
+
+    def _required_unique_form(
+        self,
+        object_id: str,
+        roots: tuple[Path, Path],
+    ) -> tuple[Path, PhysicalProfile]:
+        """Require one and only one physical form before maintenance mutation."""
+        present = self._present_forms(object_id, roots)
+        if not present:
+            raise MaintenanceError("transition object is missing")
+        if len(present) != 1:
+            raise MaintenanceError("transition physical forms conflict")
+        return present[0]
 
     def capacity(self, required_bytes: int, reserve_bytes: int) -> CapacityReport:
         """Return exact point-in-time admission facts for the local filesystem."""
@@ -376,6 +530,7 @@ class FilesystemMaintenanceStore:
         limits: InventoryLimits,
         entries: int,
         byte_count: int,
+        physical_profile: PhysicalProfile,
     ) -> tuple[list[MaintenanceObject], list[MaintenanceAnomaly], int, int]:
         objects: list[MaintenanceObject] = []
         anomalies: list[MaintenanceAnomaly] = []
@@ -399,7 +554,12 @@ class FilesystemMaintenanceStore:
                         continue
                     object_id = f"sha256:{first.name}{second.name}{leaf.name}"
                     try:
-                        item = self._verify_path(leaf_path, object_id, location)
+                        item = self._verify_path(
+                            leaf_path,
+                            object_id,
+                            location,
+                            physical_profile=physical_profile,
+                        )
                     except MaintenanceError:
                         anomalies.append(
                             self._anomaly(
@@ -420,6 +580,8 @@ class FilesystemMaintenanceStore:
         path: Path,
         object_id: str,
         location: ObjectLocation,
+        *,
+        physical_profile: PhysicalProfile = "ordinary",
     ) -> MaintenanceObject:
         before = path.lstat()
         if (
@@ -431,16 +593,28 @@ class FilesystemMaintenanceStore:
         descriptor = os.open(path, _file_open_flags(os.O_RDONLY))
         digest = hashlib.sha256()
         observed = 0
+        encoded = bytearray()
         try:
             opened = os.fstat(descriptor)
             if self._identity(opened) != self._identity(before) or opened.st_nlink != 1:
                 raise MaintenanceError("managed object changed while opening")
             while chunk := os.read(descriptor, _CHUNK_SIZE):
                 observed += len(chunk)
-                digest.update(chunk)
+                if physical_profile == PROFILE:
+                    encoded.extend(chunk)
+                else:
+                    digest.update(chunk)
             after = os.fstat(descriptor)
         finally:
             os.close(descriptor)
+        logical_length = observed
+        if physical_profile == PROFILE:
+            try:
+                logical = decode_compact(bytes(encoded))
+            except CompactObjectError:
+                raise MaintenanceError("managed compact object is corrupt") from None
+            digest.update(logical)
+            logical_length = len(logical)
         actual_id = "sha256:" + digest.hexdigest()
         if (
             not _unchanged_after_read(opened, after)
@@ -451,9 +625,10 @@ class FilesystemMaintenanceStore:
             raise MaintenanceError("managed object is corrupt")
         return MaintenanceObject(
             object_id=object_id,
-            byte_length=observed,
+            byte_length=logical_length,
             modified_at=datetime.fromtimestamp(after.st_mtime_ns / 1_000_000_000, tz=UTC),
             location=location,
+            physical_profile=physical_profile,
         )
 
     def _layout_anomaly(self, path: Path, root: Path) -> MaintenanceAnomaly:
@@ -625,22 +800,22 @@ def backup_workspace(
                 )
             )
             for item in inventory.active:
-                relative = _object_relative(item.object_id)
+                relative = _physical_object_relative(item, location="objects")
                 files.append(
                     _copy_backup_file(
-                        source_root / "objects" / "sha256" / relative,
-                        workspace / "objects" / "sha256" / relative,
-                        relative_path=f"workspace/objects/sha256/{relative.as_posix()}",
+                        source_root / relative,
+                        workspace / relative,
+                        relative_path=f"workspace/{relative.as_posix()}",
                     )
                 )
                 inject("after_object_copy")
             for item in inventory.quarantined:
-                relative = _object_relative(item.object_id)
+                relative = _physical_object_relative(item, location="quarantine")
                 files.append(
                     _copy_backup_file(
-                        source_root / "quarantine" / "sha256" / relative,
-                        workspace / "quarantine" / "sha256" / relative,
-                        relative_path=f"workspace/quarantine/sha256/{relative.as_posix()}",
+                        source_root / relative,
+                        workspace / relative,
+                        relative_path=f"workspace/{relative.as_posix()}",
                     )
                 )
             catalog_revision, migration_checksums = catalog.normalize_backup_copy(staged_catalog)
@@ -901,10 +1076,24 @@ def _validate_restored_object_sets(root: Path, manifest: BackupManifest) -> None
         *((item, "quarantine") for item in manifest.quarantined_object_ids),
     ):
         relative = _object_relative(object_id)
-        _byte_length, digest = _hash_regular(
-            root / location / "sha256" / relative,
-            maximum=9_007_199_254_740_991,
-        )
+        ordinary = root / location / "sha256" / relative
+        compact = root / location / PROFILE / "sha256" / relative
+        present = tuple(path for path in (ordinary, compact) if path.exists())
+        if len(present) != 1:
+            raise MaintenanceError("restored object physical form is inconsistent")
+        path = present[0]
+        if path == compact:
+            envelope = _read_regular(path, maximum=16 * 1024 * 1024)
+            try:
+                logical = decode_compact(envelope)
+            except CompactObjectError:
+                raise MaintenanceError("restored compact object is invalid") from None
+            digest = "sha256:" + hashlib.sha256(logical).hexdigest()
+        else:
+            _byte_length, digest = _hash_regular(
+                path,
+                maximum=9_007_199_254_740_991,
+            )
         if digest != object_id:
             raise MaintenanceError("restored object identity is invalid")
 
@@ -1034,6 +1223,16 @@ def _object_relative(object_id: str) -> Path:
         raise MaintenanceError("backup object identity is invalid")
     digest = match.group(1)
     return Path(digest[:2]) / digest[2:4] / digest[4:]
+
+
+def _physical_object_relative(item: MaintenanceObject, *, location: str) -> Path:
+    """Return the closed workspace-relative leaf for one observed physical form."""
+    prefix = (
+        Path(location) / "sha256"
+        if item.physical_profile == "ordinary"
+        else Path(location) / PROFILE / "sha256"
+    )
+    return prefix / _object_relative(item.object_id)
 
 
 def _sync_tree(root: Path) -> None:

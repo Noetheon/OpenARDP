@@ -112,7 +112,7 @@ def test_newer_catalog_fails_all_workspace_entrypoints_without_mutation(
     with sqlite3.connect(root / "catalog.sqlite3") as connection:
         connection.execute(
             "INSERT INTO schema_migrations(version, name, checksum, applied_at) "
-            "VALUES (11, 'future-revision', ?, '2026-07-22T12:00:00.000000Z')",
+            "VALUES (12, 'future-revision', ?, '2026-07-22T12:00:00.000000Z')",
             ("sha256:" + "f" * 64,),
         )
     before = {

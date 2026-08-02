@@ -208,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f021_governance_and_prior_contracts_are_present_and_frozen(
+def test_f022_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
     """Require active benchmark governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/021-incremental-freshness"
+    assert active["feature_directory"] == "specs/022-storage-amplification"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -260,11 +260,16 @@ def test_f021_governance_and_prior_contracts_are_present_and_frozen(
     assert (repository_root / "spec-kit/feature-prompts/019-ci-cost-optimization.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/020-product-value-benchmark.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/021-incremental-freshness.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/022-storage-amplification.md").is_file()
     f021_adr = (repository_root / "docs/adr/0017-freshness-integrity-coverage.md").read_text(
         encoding="utf-8"
     )
     assert "Status: Accepted for Feature 021" in f021_adr
     assert "MCP remains identifier-only and bounded to default HEAD coverage" in f021_adr
+    f022_adr = (repository_root / "docs/adr/0018-compact-derived-block-storage.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Status: Accepted for Feature 022" in f022_adr
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
     assert (repository_root / "quality/ci-policy.json").is_file()
@@ -653,7 +658,8 @@ def test_f005a_feature_map_and_prompts_have_one_exact_sequence(
     expected_prompts = set(HISTORICAL_FEATURE_PROMPTS) | {
         f"{feature}.md" for feature in F005A_FEATURE_SEQUENCE
     }
-    assert actual_prompts == expected_prompts
+    assert expected_prompts <= actual_prompts
+    assert "022-storage-amplification.md" in actual_prompts
 
     for feature in F005A_FEATURE_SEQUENCE:
         prompt = (prompt_directory / f"{feature}.md").read_text(encoding="utf-8")

@@ -52,7 +52,7 @@ def _index_dump(path: Path) -> tuple[tuple[object, ...], ...]:
         return tuple(
             connection.execute(
                 "SELECT e.document_id, e.version_id, e.representation_id, e.ordinal, "
-                "e.text_hash, i.block_text FROM block_search_entries AS e "
+                "e.text_hash, i.block_text FROM representation_block_projection AS e "
                 "JOIN block_search_index AS i ON i.rowid=e.entry_id "
                 "ORDER BY e.document_id, e.version_id, e.representation_id, e.ordinal"
             ).fetchall()
@@ -66,11 +66,15 @@ def test_global_rebuild_removes_drift_and_matches_authoritative_search(tmp_path:
     with catalog._write_connection() as connection:
         entry_id = int(
             connection.execute(
-                "SELECT entry_id FROM block_search_entries ORDER BY entry_id LIMIT 1"
+                "SELECT entry_id FROM representation_blocks ORDER BY entry_id LIMIT 1"
             ).fetchone()[0]
         )
         connection.execute("DELETE FROM block_search_index WHERE rowid=?", (entry_id,))
-        connection.execute("DELETE FROM block_search_entries WHERE entry_id=?", (entry_id,))
+        connection.execute(
+            "UPDATE representation_blocks SET trust_zone=NULL, page=NULL, slide=NULL, "
+            "text_hash=NULL, indexed_at=NULL WHERE entry_id=?",
+            (entry_id,),
+        )
 
     search = SearchService(store, catalog, clock=lambda: NOW)
     report = search.rebuild_global()

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 from typing import Protocol, runtime_checkable
 
+from openardp.domain.maintenance import StorageOptimizationItem
 from openardp.domain.storage import ObjectInventory, StoredObject
 
 
@@ -69,3 +70,56 @@ class ObjectStore(Protocol):
     def inventory(self) -> ObjectInventory:
         """Return deterministic verified objects and managed-tree anomalies."""
         ...
+
+
+@runtime_checkable
+class CompactBlockStore(Protocol):
+    """Optional physical optimization for one canonical derived block record."""
+
+    def put_canonical_block(self, payload: bytes) -> StoredObject:
+        """Publish exact logical bytes compactly when that is strictly smaller."""
+        ...
+
+
+@runtime_checkable
+class OrdinaryAuthorityStore(Protocol):
+    """Optional collision convergence for a newly catalog-authoritative raw object."""
+
+    def retain_ordinary_authority(
+        self,
+        object_id: str,
+        *,
+        expected_length: int,
+    ) -> StoredObject:
+        """Retain verified ordinary bytes and remove only their exact compact peer."""
+        ...
+
+
+@runtime_checkable
+class ExistingObjectOptimizer(Protocol):
+    """Optional explicit physical optimization for catalog-approved block objects."""
+
+    def optimize_derived_block(
+        self,
+        object_id: str,
+        *,
+        expected_length: int,
+    ) -> StorageOptimizationItem:
+        """Converge one eligible logical object without parsing source content."""
+        ...
+
+
+__all__ = [
+    "CompactBlockStore",
+    "ExistingObjectOptimizer",
+    "MalformedObjectIdentity",
+    "ObjectCorrupt",
+    "ObjectDurabilityError",
+    "ObjectNotFound",
+    "ObjectPublicationError",
+    "ObjectStore",
+    "ObjectStoreError",
+    "OrdinaryAuthorityStore",
+    "PersistenceError",
+    "UnsafeStoreEntry",
+]

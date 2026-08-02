@@ -1,13 +1,13 @@
 {
   "application_version": "0.0.1",
-  "catalog_revision": 10,
-  "fixture_id": "previous-v0.0.1-revision-10",
+  "catalog_revision": 11,
+  "fixture_id": "previous-v0.0.1-revision-11",
   "generator_test_node": "tests/integration/test_backup_restore.py::test_backup_is_verified_non_mutating_and_excludes_lexical_rows",
   "source_merge_commit": "2450e71f8fb7a58aa6d6de081ba08eb75258306c",
   "synthetic": true,
   "workspace_facts": [
     "initialized-marker",
-    "empty-revision-10-catalog",
+    "empty-revision-11-catalog",
     "content-addressed-object-root"
   ]
 }

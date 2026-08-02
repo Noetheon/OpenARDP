@@ -15,6 +15,9 @@ from openardp.domain.maintenance import (
     ReclamationCandidate,
     ReclamationPlan,
     RetentionPolicy,
+    StorageOptimizationItem,
+    StorageOptimizationOutcome,
+    StorageOptimizationReport,
 )
 
 NOW = datetime(2026, 8, 1, 12, 0, tzinfo=UTC)
@@ -105,4 +108,46 @@ def test_maintenance_records_reject_naive_time_and_unsorted_objects() -> None:
             anomalies=(),
             scanned_entries=2,
             scanned_bytes=2,
+        )
+
+
+def test_storage_optimization_report_is_sorted_body_free_and_aggregated() -> None:
+    """Expose deterministic closed counts without paths or document bodies."""
+    item = StorageOptimizationItem(
+        object_id=OBJECT_ID,
+        outcome=StorageOptimizationOutcome.COMPACTED,
+        logical_bytes=100,
+        stored_bytes_before=90,
+        stored_bytes_after=40,
+    )
+    report = StorageOptimizationReport(
+        workspace_revision=11,
+        items=(item,),
+        catalog_bytes_before=1000,
+        catalog_bytes_after=700,
+    )
+
+    assert report.model_dump(mode="json") == {
+        "catalog_bytes_after": 700,
+        "catalog_bytes_before": 1000,
+        "items": [
+            {
+                "logical_bytes": 100,
+                "object_id": OBJECT_ID,
+                "outcome": "compacted",
+                "reason_code": None,
+                "stored_bytes_after": 40,
+                "stored_bytes_before": 90,
+            }
+        ],
+        "workspace_revision": 11,
+    }
+    assert (report.eligible_count, report.completed_count, report.failed_count) == (1, 1, 0)
+    assert report.stored_bytes_saved == 350
+    with pytest.raises(ValidationError, match="sorted"):
+        StorageOptimizationReport(
+            workspace_revision=11,
+            items=(item, item),
+            catalog_bytes_before=0,
+            catalog_bytes_after=0,
         )

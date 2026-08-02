@@ -183,6 +183,7 @@ from openardp.ports.catalog import (
     RepresentationLeaseConflict,
     RepresentationNotFound,
     SearchCapabilityUnavailable,
+    SearchIndexDrifted,
     SearchIndexIncomplete,
     VersionConflict,
     VisualCatalogConflict,
@@ -395,7 +396,14 @@ _SCHEMA_TABLES[10] = _SCHEMA_TABLES[9] | frozenset(
         "migration_backups",
     }
 )
+_SCHEMA_TABLES[11] = _SCHEMA_TABLES[10] - frozenset({"block_search_entries"}) | frozenset(
+    {"representation_scopes", "lineage_block_keys"}
+)
+_SCHEMA_VIEWS: dict[int, frozenset[str]] = {
+    11: frozenset({"representation_block_projection"}),
+}
 _MAINTENANCE_NAMESPACE = UUID("a52173f8-2084-5c4e-9e2d-430e873fa415")
+_STORAGE_OPTIMIZATION_SUBJECT = canonical_sha256({"profile": "openardp-storage-optimization-v1"})
 _RETENTION_REFERENCES = (
     ("document_versions", "source_object_id", RootReason.SOURCE_VERSION),
     ("version_object_references", "object_id", RootReason.VERSION_REFERENCE),
@@ -588,11 +596,16 @@ class SQLiteCatalog:
                         "VALUES (?, ?, ?, ?)",
                         (migration.version, migration.name, migration.checksum, applied_at),
                     )
-                if current < 10 <= self._migrations[-1].version:
+                if current < self._migrations[-1].version:
                     coordination.execute(
                         "INSERT INTO migration_backups(target_revision, source_revision, "
-                        "manifest_id, created_at, verified) VALUES (10, ?, ?, ?, 1)",
-                        (current, manifest_id_supplier(), applied_at),
+                        "manifest_id, created_at, verified) VALUES (?, ?, ?, ?, 1)",
+                        (
+                            self._migrations[-1].version,
+                            current,
+                            manifest_id_supplier(),
+                            applied_at,
+                        ),
                     )
                 if coordination.execute("PRAGMA foreign_key_check").fetchall():
                     raise MigrationFailed("catalog foreign-key validation failed")
@@ -626,7 +639,13 @@ class SQLiteCatalog:
             connection.execute("BEGIN IMMEDIATE")
             if current >= 4:
                 connection.execute("DELETE FROM block_search_index")
-                connection.execute("DELETE FROM block_search_entries")
+                if current >= 11:
+                    connection.execute(
+                        "UPDATE representation_blocks SET trust_zone = NULL, page = NULL, "
+                        "slide = NULL, text_hash = NULL, indexed_at = NULL"
+                    )
+                else:
+                    connection.execute("DELETE FROM block_search_entries")
             connection.execute("COMMIT")
             connection.execute("VACUUM")
             if str(connection.execute("PRAGMA quick_check").fetchone()[0]) != "ok":
@@ -668,6 +687,170 @@ class SQLiteCatalog:
             return tuple(sorted(identifiers))
         finally:
             connection.close()
+
+    def eligible_derived_block_objects(self) -> tuple[StoredObject, ...]:
+        """Return block objects that have no authoritative non-block reference."""
+        with self._read_connection() as connection:
+            active = connection.execute(
+                "SELECT 1 FROM maintenance_operations "
+                "WHERE state IN ('PREPARED', 'APPLYING') LIMIT 1"
+            ).fetchone()
+            if active is not None:
+                raise MaintenanceRecoveryRequired("maintenance recovery is required")
+            return self._eligible_derived_block_objects(connection)
+
+    def claim_storage_optimization(
+        self,
+        *,
+        now: datetime,
+    ) -> tuple[UUID, tuple[StoredObject, ...]]:
+        """Persist or resume the exclusive optimizer fence and freeze eligibility."""
+        encoded = encode_storage_datetime(now)
+        with self._write_connection(allow_maintenance=True) as connection:
+            active = self._load_active_operation(connection)
+            if active is not None:
+                if (
+                    active.kind is not MaintenanceOperationKind.STORAGE_OPTIMIZE
+                    or active.subject_id != _STORAGE_OPTIMIZATION_SUBJECT
+                ):
+                    raise MaintenanceRecoveryRequired("another maintenance operation is active")
+                operation_id = active.operation_id
+            else:
+                generation = int(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM maintenance_operations WHERE kind='STORAGE_OPTIMIZE'"
+                    ).fetchone()[0]
+                )
+                operation_id = uuid5(
+                    _MAINTENANCE_NAMESPACE,
+                    f"storage-optimize:{encoded}:{generation}",
+                )
+                connection.execute(
+                    "INSERT INTO maintenance_operations(operation_id, kind, subject_id, state, "
+                    "acknowledgement_digest, created_at, updated_at, terminal_at, failure_code) "
+                    "VALUES (?, 'STORAGE_OPTIMIZE', ?, 'APPLYING', NULL, ?, ?, NULL, NULL)",
+                    (
+                        str(operation_id),
+                        _STORAGE_OPTIMIZATION_SUBJECT,
+                        encoded,
+                        encoded,
+                    ),
+                )
+                connection.execute(
+                    "INSERT INTO maintenance_events(operation_id, sequence, event_type, "
+                    "object_id, entry_count, byte_count, occurred_at) "
+                    "VALUES (?, 1, 'APPLYING', NULL, 0, 0, ?)",
+                    (str(operation_id), encoded),
+                )
+            return operation_id, self._eligible_derived_block_objects(connection)
+
+    def complete_storage_optimization(
+        self,
+        operation_id: UUID,
+        *,
+        entry_count: int,
+        byte_count: int,
+        now: datetime,
+    ) -> None:
+        """Publish terminal optimizer evidence and release its exclusive fence."""
+        if min(entry_count, byte_count) < 0:
+            raise ValueError("optimization counts must be non-negative")
+        encoded = encode_storage_datetime(now)
+        with self._write_connection(allow_maintenance=True) as connection:
+            row = connection.execute(
+                "SELECT * FROM maintenance_operations WHERE operation_id=?",
+                (str(operation_id),),
+            ).fetchone()
+            if row is None:
+                raise CatalogError("storage optimization operation does not exist")
+            operation = self._maintenance_operation(connection, row)
+            if operation.kind is not MaintenanceOperationKind.STORAGE_OPTIMIZE:
+                raise CatalogError("maintenance operation kind conflicts")
+            if operation.state is MaintenanceOperationState.SUCCEEDED:
+                return
+            if operation.state not in {
+                MaintenanceOperationState.PREPARED,
+                MaintenanceOperationState.APPLYING,
+            }:
+                raise CatalogError("storage optimization operation is not completable")
+            connection.execute(
+                "UPDATE maintenance_operations SET state='SUCCEEDED', updated_at=?, "
+                "terminal_at=? WHERE operation_id=?",
+                (encoded, encoded, str(operation_id)),
+            )
+            sequence = int(
+                connection.execute(
+                    "SELECT coalesce(max(sequence), 0) + 1 FROM maintenance_events "
+                    "WHERE operation_id=?",
+                    (str(operation_id),),
+                ).fetchone()[0]
+            )
+            connection.execute(
+                "INSERT INTO maintenance_events(operation_id, sequence, event_type, "
+                "object_id, entry_count, byte_count, occurred_at) "
+                "VALUES (?, ?, 'SUCCEEDED', NULL, ?, ?, ?)",
+                (
+                    str(operation_id),
+                    sequence,
+                    entry_count,
+                    byte_count,
+                    encoded,
+                ),
+            )
+
+    @staticmethod
+    def _eligible_derived_block_objects(
+        connection: sqlite3.Connection,
+    ) -> tuple[StoredObject, ...]:
+        """Project one transactionally frozen, authoritative-reference-safe inventory."""
+        non_block_references = tuple(
+            (table, column)
+            for table, column, reason in _RETENTION_REFERENCES
+            if reason is not RootReason.TEXT_BLOCK
+        )
+        non_block_ids: set[str] = set()
+        for table, column in non_block_references:
+            non_block_ids.update(
+                str(row[0])
+                for row in connection.execute(
+                    f"SELECT {column} FROM {table} WHERE {column} IS NOT NULL"  # noqa: S608
+                ).fetchall()
+            )
+        rows = connection.execute(
+            "SELECT DISTINCT b.object_id, o.byte_length FROM representation_blocks AS b "
+            "JOIN objects AS o ON o.object_id = b.object_id ORDER BY b.object_id"
+        ).fetchall()
+        return tuple(
+            StoredObject(object_id=str(row["object_id"]), byte_length=int(row["byte_length"]))
+            for row in rows
+            if str(row["object_id"]) not in non_block_ids
+        )
+
+    def compact_catalog_storage(self) -> tuple[int, int]:
+        """Explicitly reclaim free pages after validating the current idle catalog."""
+        before = self._path.stat().st_size
+        connection = self._connect()
+        try:
+            current = self._validate_history(connection)
+            if current != self._migrations[-1].version:
+                raise CatalogIncompatible("catalog requires explicit migration")
+            active = connection.execute(
+                "SELECT 1 FROM maintenance_operations "
+                "WHERE state IN ('PREPARED', 'APPLYING') LIMIT 1"
+            ).fetchone()
+            if active is not None:
+                raise MaintenanceRecoveryRequired("maintenance recovery is required")
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            connection.execute("VACUUM")
+            if str(connection.execute("PRAGMA quick_check").fetchone()[0]) != "ok":
+                raise CatalogIncompatible("compacted catalog integrity check failed")
+            if connection.execute("PRAGMA foreign_key_check").fetchall():
+                raise CatalogIncompatible("compacted catalog foreign-key check failed")
+        except sqlite3.Error as error:
+            raise CatalogError("catalog compaction failed") from error
+        finally:
+            connection.close()
+        return before, self._path.stat().st_size
 
     def diagnostics(self) -> dict[str, str | int]:
         """Return bounded catalog/runtime facts without record content."""
@@ -848,6 +1031,11 @@ class SQLiteCatalog:
                         now_text,
                         now_text,
                     ),
+                )
+                connection.execute(
+                    "INSERT INTO representation_scopes("
+                    "document_id, version_id, representation_id) VALUES (?, ?, ?)",
+                    (str(scope.document_id), scope.version_id, scope.representation_id),
                 )
                 representation = self._required_representation(connection, scope).representation
                 lease = RepresentationLease(
@@ -1099,13 +1287,11 @@ class SQLiteCatalog:
             for item in commit.blocks:
                 connection.execute(
                     "INSERT INTO representation_blocks("
-                    "document_id, version_id, representation_id, ordinal, block_id, object_id, "
+                    "scope_key, ordinal, block_id, object_id, "
                     "parent_id, kind, sibling_order, line_start, line_end) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "SELECT scope_key, ?, ?, ?, ?, ?, ?, ?, ? FROM representation_scopes "
+                    "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
                     (
-                        str(commit.scope.document_id),
-                        commit.scope.version_id,
-                        commit.scope.representation_id,
                         item.ordinal,
                         str(item.block.block_id),
                         item.object.object_id,
@@ -1114,6 +1300,9 @@ class SQLiteCatalog:
                         item.block.order,
                         item.line_start,
                         item.line_end,
+                        str(commit.scope.document_id),
+                        commit.scope.version_id,
+                        commit.scope.representation_id,
                     ),
                 )
                 self._fault_point("after_representation_block")
@@ -1896,7 +2085,7 @@ class SQLiteCatalog:
         """Return current-head block projections matching one logical handle."""
         with self._read_connection() as connection:
             rows = connection.execute(
-                "SELECT b.*, o.byte_length FROM representation_blocks AS b "
+                "SELECT b.*, o.byte_length FROM representation_block_projection AS b "
                 "JOIN document_heads AS h ON h.document_id = b.document_id "
                 "AND h.version_id = b.version_id AND h.representation_id = b.representation_id "
                 "JOIN objects AS o ON o.object_id = b.object_id WHERE b.block_id = ? "
@@ -4091,7 +4280,7 @@ class SQLiteCatalog:
                 connection.execute(
                     """
                     SELECT COUNT(*) FROM block_search_index AS i
-                    INNER JOIN block_search_entries AS e ON e.entry_id = i.rowid
+                    INNER JOIN representation_block_projection AS e ON e.entry_id = i.rowid
                     WHERE block_search_index MATCH ?
                       AND (? IS NULL OR e.document_id = ?)
                       AND (? IS NULL OR e.version_id = ?)
@@ -4115,13 +4304,10 @@ class SQLiteCatalog:
                     SELECT e.entry_id, e.document_id, e.version_id, e.representation_id,
                            e.ordinal, e.block_id, e.kind, e.trust_zone, e.line_start, e.line_end,
                            e.page, e.slide, e.text_hash, bm25(block_search_index) AS rank,
-                           b.object_id, o.byte_length
+                           e.object_id, o.byte_length
                     FROM block_search_index AS i
-                    INNER JOIN block_search_entries AS e ON e.entry_id = i.rowid
-                    INNER JOIN representation_blocks AS b
-                      ON b.document_id = e.document_id AND b.version_id = e.version_id
-                     AND b.representation_id = e.representation_id AND b.ordinal = e.ordinal
-                    INNER JOIN objects AS o ON o.object_id = b.object_id
+                    INNER JOIN representation_block_projection AS e ON e.entry_id = i.rowid
+                    INNER JOIN objects AS o ON o.object_id = e.object_id
                     WHERE block_search_index MATCH ?
                       AND (? IS NULL OR e.document_id = ?)
                       AND (? IS NULL OR e.version_id = ?)
@@ -4160,14 +4346,15 @@ class SQLiteCatalog:
             reports: list[IndexCoverage] = []
             for scope in selected:
                 ready_rows = connection.execute(
-                    "SELECT ordinal FROM representation_blocks "
+                    "SELECT ordinal FROM representation_block_projection "
                     "WHERE document_id = ? AND version_id = ? AND representation_id = ? "
                     "ORDER BY ordinal",
                     (str(scope.document_id), scope.version_id, scope.representation_id),
                 ).fetchall()
                 indexed_rows = connection.execute(
-                    "SELECT ordinal FROM block_search_entries "
+                    "SELECT ordinal FROM representation_block_projection "
                     "WHERE document_id = ? AND version_id = ? AND representation_id = ? "
+                    "AND indexed_at IS NOT NULL "
                     "ORDER BY ordinal",
                     (str(scope.document_id), scope.version_id, scope.representation_id),
                 ).fetchall()
@@ -4208,7 +4395,7 @@ class SQLiteCatalog:
                 if entry.scope != scope:
                     raise RepresentationIntegrityError("index entry scope does not match")
             existing_ids = connection.execute(
-                "SELECT entry_id FROM block_search_entries "
+                "SELECT entry_id FROM representation_block_projection "
                 "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
                 (str(scope.document_id), scope.version_id, scope.representation_id),
             ).fetchall()
@@ -4219,8 +4406,10 @@ class SQLiteCatalog:
                     (entry_id,),
                 )
             connection.execute(
-                "DELETE FROM block_search_entries "
-                "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
+                "UPDATE representation_blocks SET trust_zone = NULL, page = NULL, "
+                "slide = NULL, text_hash = NULL, indexed_at = NULL WHERE scope_key = ("
+                "SELECT scope_key FROM representation_scopes WHERE document_id = ? "
+                "AND version_id = ? AND representation_id = ?)",
                 (str(scope.document_id), scope.version_id, scope.representation_id),
             )
             self._fault_point("after_search_index_delete")
@@ -4271,7 +4460,7 @@ class SQLiteCatalog:
                 for row in connection.execute(
                     "SELECT b.document_id, b.version_id, b.representation_id, b.ordinal, "
                     "b.block_id, b.kind, b.line_start, b.line_end "
-                    "FROM representation_blocks AS b "
+                    "FROM representation_block_projection AS b "
                     "JOIN document_representations AS r ON r.document_id=b.document_id "
                     "AND r.version_id=b.version_id "
                     "AND r.representation_id=b.representation_id "
@@ -4284,7 +4473,10 @@ class SQLiteCatalog:
                     "global index input does not match authoritative corpus"
                 )
             connection.execute("DELETE FROM block_search_index")
-            connection.execute("DELETE FROM block_search_entries")
+            connection.execute(
+                "UPDATE representation_blocks SET trust_zone = NULL, page = NULL, "
+                "slide = NULL, text_hash = NULL, indexed_at = NULL"
+            )
             self._fault_point("after_global_search_index_delete")
             for entry, body in zip(entries, texts, strict=True):
                 self._insert_search_entry(connection, entry, body)
@@ -4318,8 +4510,9 @@ class SQLiteCatalog:
         """Return stored index mapping rows for one scope in ordinal order."""
         with self._read_connection() as connection:
             rows = connection.execute(
-                "SELECT * FROM block_search_entries "
+                "SELECT * FROM representation_block_projection "
                 "WHERE document_id = ? AND version_id = ? AND representation_id = ? "
+                "AND indexed_at IS NOT NULL "
                 "ORDER BY ordinal",
                 (str(scope.document_id), scope.version_id, scope.representation_id),
             ).fetchall()
@@ -4360,29 +4553,38 @@ class SQLiteCatalog:
     ) -> None:
         scopes = self._resolve_search_scopes(connection, filters)
         for scope in scopes:
+            expected_row = connection.execute(
+                "SELECT block_count FROM document_representations "
+                "WHERE document_id = ? AND version_id = ? AND representation_id = ? "
+                "AND state = 'READY'",
+                (str(scope.document_id), scope.version_id, scope.representation_id),
+            ).fetchone()
+            if expected_row is None:
+                raise SearchIndexDrifted("search scope is not a ready representation")
             ready_count = int(
                 connection.execute(
-                    "SELECT COUNT(*) FROM representation_blocks "
+                    "SELECT COUNT(*) FROM representation_block_projection "
                     "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
                     (str(scope.document_id), scope.version_id, scope.representation_id),
                 ).fetchone()[0]
             )
+            if ready_count != int(expected_row["block_count"]):
+                raise SearchIndexDrifted("search block projection has drifted")
             indexed_count = int(
                 connection.execute(
-                    "SELECT COUNT(*) FROM block_search_entries "
-                    "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
+                    "SELECT COUNT(*) FROM representation_block_projection "
+                    "WHERE document_id = ? AND version_id = ? AND representation_id = ? "
+                    "AND indexed_at IS NOT NULL",
                     (str(scope.document_id), scope.version_id, scope.representation_id),
                 ).fetchone()[0]
             )
             if ready_count != indexed_count:
                 raise SearchIndexIncomplete("search index coverage is incomplete")
             missing = connection.execute(
-                "SELECT b.ordinal FROM representation_blocks AS b "
-                "LEFT JOIN block_search_entries AS e "
-                "ON e.document_id = b.document_id AND e.version_id = b.version_id "
-                "AND e.representation_id = b.representation_id AND e.ordinal = b.ordinal "
+                "SELECT b.ordinal FROM representation_block_projection AS b "
+                "LEFT JOIN block_search_index AS i ON i.rowid = b.entry_id "
                 "WHERE b.document_id = ? AND b.version_id = ? AND b.representation_id = ? "
-                "AND e.entry_id IS NULL LIMIT 1",
+                "AND (b.indexed_at IS NULL OR i.rowid IS NULL) LIMIT 1",
                 (str(scope.document_id), scope.version_id, scope.representation_id),
             ).fetchone()
             if missing is not None:
@@ -4452,29 +4654,42 @@ class SQLiteCatalog:
         text: str,
     ) -> int:
         cursor = connection.execute(
-            "INSERT INTO block_search_entries("
-            "document_id, version_id, representation_id, ordinal, block_id, kind, "
-            "trust_zone, page, slide, line_start, line_end, text_hash, indexed_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "UPDATE representation_blocks SET trust_zone = ?, page = ?, slide = ?, "
+            "text_hash = ?, indexed_at = ? WHERE scope_key = (SELECT scope_key FROM "
+            "representation_scopes WHERE document_id = ? AND version_id = ? "
+            "AND representation_id = ?) AND ordinal = ? AND block_id = ? AND kind = ? "
+            "AND line_start = ? AND line_end = ?",
             (
+                entry.trust_zone.value,
+                entry.page,
+                entry.slide,
+                entry.text_hash,
+                encode_storage_datetime(entry.indexed_at),
                 str(entry.scope.document_id),
                 entry.scope.version_id,
                 entry.scope.representation_id,
                 entry.ordinal,
                 str(entry.block_id),
                 entry.kind.value,
-                entry.trust_zone.value,
-                entry.page,
-                entry.slide,
                 entry.line_start,
                 entry.line_end,
-                entry.text_hash,
-                encode_storage_datetime(entry.indexed_at),
             ),
         )
-        if cursor.lastrowid is None:
-            raise CatalogError("search index entry insert did not produce a rowid")
-        entry_id = int(cursor.lastrowid)
+        if cursor.rowcount != 1:
+            raise RepresentationIntegrityError("search index entry does not match a block")
+        row = connection.execute(
+            "SELECT entry_id FROM representation_block_projection WHERE document_id = ? "
+            "AND version_id = ? AND representation_id = ? AND ordinal = ?",
+            (
+                str(entry.scope.document_id),
+                entry.scope.version_id,
+                entry.scope.representation_id,
+                entry.ordinal,
+            ),
+        ).fetchone()
+        if row is None:
+            raise RepresentationIntegrityError("search index block disappeared")
+        entry_id = int(row["entry_id"])
         connection.execute(
             "INSERT INTO block_search_index(rowid, block_text) VALUES (?, ?)",
             (entry_id, text),
@@ -4830,6 +5045,15 @@ class SQLiteCatalog:
         expected_tables = _SCHEMA_TABLES.get(highest)
         if expected_tables is not None and tables != expected_tables:
             raise CatalogIncompatible("catalog tables do not match migration history")
+        expected_views = _SCHEMA_VIEWS.get(highest, frozenset())
+        views = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_schema WHERE type = 'view'"
+            ).fetchall()
+        }
+        if not expected_views.issubset(views):
+            raise CatalogIncompatible("catalog views do not match migration history")
         return highest
 
     @contextmanager
@@ -4994,7 +5218,7 @@ class SQLiteCatalog:
                 raise ReconciliationConflict("block lineage membership has conflicting facts")
             return
         block = connection.execute(
-            "SELECT object_id FROM representation_blocks WHERE document_id = ? "
+            "SELECT object_id FROM representation_block_projection WHERE document_id = ? "
             "AND version_id = ? AND representation_id = ? AND block_id = ?",
             (
                 str(membership.block.document_id),
@@ -5005,6 +5229,21 @@ class SQLiteCatalog:
         ).fetchone()
         if block is None:
             raise ReconciliationIntegrityError("lineage block is absent")
+        connection.execute(
+            "INSERT OR IGNORE INTO lineage_block_keys("
+            "document_id, version_id, representation_id, ordinal, block_id, object_id, "
+            "parent_id, kind, sibling_order, line_start, line_end) "
+            "SELECT document_id, version_id, representation_id, ordinal, block_id, object_id, "
+            "parent_id, kind, sibling_order, line_start, line_end "
+            "FROM representation_block_projection WHERE document_id = ? AND version_id = ? "
+            "AND representation_id = ? AND block_id = ?",
+            (
+                str(membership.block.document_id),
+                membership.block.version_id,
+                membership.block.representation_id,
+                str(membership.block.block_id),
+            ),
+        )
         lineage = connection.execute(
             "SELECT document_id FROM block_lineages WHERE lineage_id = ?",
             (membership.lineage_id,),
@@ -5109,7 +5348,7 @@ class SQLiteCatalog:
         )
         membership_rows = connection.execute(
             "SELECT m.* FROM block_lineage_members AS m "
-            "JOIN representation_blocks AS b ON b.document_id = m.document_id "
+            "JOIN representation_block_projection AS b ON b.document_id = m.document_id "
             "AND b.version_id = m.version_id AND b.representation_id = m.representation_id "
             "AND b.block_id = m.block_id WHERE m.document_id = ? AND m.version_id = ? "
             "AND m.representation_id = ? ORDER BY b.ordinal",
@@ -5117,7 +5356,7 @@ class SQLiteCatalog:
         ).fetchall()
         seed_rows = connection.execute(
             "SELECT m.* FROM block_lineage_members AS m "
-            "JOIN representation_blocks AS b ON b.document_id = m.document_id "
+            "JOIN representation_block_projection AS b ON b.document_id = m.document_id "
             "AND b.version_id = m.version_id AND b.representation_id = m.representation_id "
             "AND b.block_id = m.block_id WHERE m.document_id = ? AND m.version_id = ? "
             "AND m.representation_id = ? ORDER BY b.ordinal",
@@ -5144,7 +5383,7 @@ class SQLiteCatalog:
             "AND cm.version_id = r.current_version_id "
             "AND cm.representation_id = r.current_representation_id "
             "AND cm.block_id = r.current_block_id "
-            "JOIN representation_blocks AS cb ON cb.document_id = r.document_id "
+            "JOIN representation_block_projection AS cb ON cb.document_id = r.document_id "
             "AND cb.version_id = r.current_version_id "
             "AND cb.representation_id = r.current_representation_id "
             "AND cb.block_id = r.current_block_id "
@@ -5845,7 +6084,7 @@ class SQLiteCatalog:
     ) -> RepresentationAggregate:
         representation = self._representation_from_row(row)
         block_rows = connection.execute(
-            "SELECT b.*, o.byte_length FROM representation_blocks AS b "
+            "SELECT b.*, o.byte_length FROM representation_block_projection AS b "
             "JOIN objects AS o ON o.object_id = b.object_id WHERE b.document_id = ? "
             "AND b.version_id = ? AND b.representation_id = ? ORDER BY b.ordinal",
             (

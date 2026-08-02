@@ -90,6 +90,7 @@
       "uv sync --extra visual --locked",
       "uv sync --locked",
       "needs: release-evidence",
+      "Install uv and Python without downstream cache contention",
       "assert value['status'] == 'NO-GO'",
       "retention-days: 14",
       "enable-cache: true",

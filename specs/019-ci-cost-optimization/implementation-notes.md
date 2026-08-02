@@ -84,6 +84,21 @@ inspection showed the expected package metadata, license and source tree. All fo
 all files, including a second complete coverage test run. Convergence, private PR cross-platform execution, strict
 branch protection, merge and the post-merge Preflight remain to be recorded.
 
+### First remote Ready run and measured correction
+
+- Draft CI run `30730853156` passed Preflight in 43 seconds and skipped all three explicit quality jobs. Draft Release
+  Evidence run `30730853145` skipped both release jobs, proving the cheap iteration boundary.
+- Ready CI run `30730891617` passed Preflight (44 seconds), macOS complete no-coverage tests (4 minutes 37 seconds),
+  Windows complete no-coverage tests (9 minutes 15 seconds) and authoritative Ubuntu gates/coverage/build (8 minutes
+  38 seconds).
+- Ready Release Evidence run `30730891627` passed macOS (47 seconds), Linux (57 seconds), Windows (1 minute 42 seconds)
+  and the unchanged aggregate `NO-GO` decision.
+- That aggregate job exposed a cache anti-pattern: its setup-uv restore waited 5 minutes 27 seconds directly after the
+  Linux producer, but locked synchronization took one second and all aggregate work only ten more seconds. The final
+  workflow therefore disables cache restoration only for this tiny downstream consumer and adds a repository contract
+  preventing its return. The three heavier evidence producers keep the bounded cache. Final remote verification is
+  rerun on this correction before merge.
+
 ### Convergence
 
 Final implementation-to-spec convergence rechecked 17 functional requirements, eight success criteria, four user

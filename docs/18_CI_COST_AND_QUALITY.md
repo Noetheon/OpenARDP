@@ -93,6 +93,11 @@ end. `.venv`, distributions,
 coverage, evidence output and repository state are never cached. A miss or corrupt cache cannot authorize dependency
 drift; locked synchronization remains authoritative.
 
+The downstream release aggregator is intentionally the one uncached exception. The first remote F019 run measured
+5 minutes 27 seconds inside cache-enabled setup immediately after the Linux evidence producer, while the aggregator's
+subsequent locked synchronization took one second and all remaining work took ten seconds. Omitting restore/save for
+this tiny consumer avoids same-key publication contention and remains fully reproducible through `uv sync --locked`.
+
 ## Release evidence boundary
 
 The separate Release Evidence workflow retains the F015 Linux/macOS/Windows evidence matrix, frozen security registry,

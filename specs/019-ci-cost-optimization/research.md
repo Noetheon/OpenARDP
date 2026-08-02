@@ -68,7 +68,9 @@ runs every test on all platforms. The separate trigger makes an expensive releas
 
 **Decision**: Enable the existing SHA-pinned `setup-uv` cache with `uv.lock` as dependency key and finish jobs with
 `uv cache prune --ci`. Every install still runs `uv sync --locked`; `.venv`, test outputs and built distributions are
-not cached.
+not cached. The downstream release aggregator deliberately does not restore a cache: it needs only the core locked
+environment, and the first remote run measured a 5 minute 27 second same-key restore wait immediately after the Linux
+evidence producer versus one second for its actual locked sync.
 
 **Evidence**: uv documents built-in setup-action caching and recommends `uv cache prune --ci` to retain useful built
 wheels while removing prebuilt wheels and unpacked source distributions. A missing cache remains a normal locked sync.

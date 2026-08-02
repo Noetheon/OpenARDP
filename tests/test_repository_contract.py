@@ -561,6 +561,11 @@ def test_release_evidence_has_bounded_triggers_and_unchanged_gate(
     assert "needs: release-evidence" in content
     assert "assert value['status'] == 'NO-GO'" in content
     assert "retention-days: 14" in content
+    aggregate = content.split("  release-gate:", maxsplit=1)[1]
+    assert "Install uv and Python without downstream cache contention" in aggregate
+    assert "enable-cache: true" not in aggregate
+    assert "cache-dependency-glob: uv.lock" not in aggregate
+    assert "uv cache prune --ci" not in aggregate
 
 
 def test_f005a_constitution_is_ratified_and_canonical(repository_root: Path) -> None:

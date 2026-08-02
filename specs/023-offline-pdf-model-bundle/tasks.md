@@ -187,10 +187,27 @@ the generated notices and reports distinguish mechanical verification from human
 - [X] T072 [P] Add F023 benchmark semantics in `docs/07_TEST_AND_BENCHMARK_STRATEGY.md`
 - [X] T073 [P] Add model bundle/package behavior and compatibility notes in `CHANGELOG.md`
 - [X] T074 Verify source/package module sizes and update exact reviewed ceilings in `quality/maintainability-policy.json` only when justified
-- [ ] T075 Run every command in `specs/023-offline-pdf-model-bundle/quickstart.md` and record exact outcomes in `specs/023-offline-pdf-model-bundle/tasks.md`
-- [ ] T076 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `uv run python scripts/validate_repository.py`, `uv build` and `uv run pre-commit run --all-files`
-- [ ] T077 Run Spec-Kit analysis and convergence, resolve every critical/high finding and record remaining risks in `specs/023-offline-pdf-model-bundle/tasks.md`
+- [X] T075 Run every command in `specs/023-offline-pdf-model-bundle/quickstart.md` and record exact outcomes in `specs/023-offline-pdf-model-bundle/tasks.md`
+- [X] T076 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `uv run python scripts/validate_repository.py`, `uv build` and `uv run pre-commit run --all-files`
+- [X] T077 Run Spec-Kit analysis and convergence, resolve every critical/high finding and record remaining risks in `specs/023-offline-pdf-model-bundle/tasks.md`
 - [ ] T078 Open the private GitHub pull request, pass trusted Linux/macOS/Windows quality gates, merge it, verify post-merge CI and record exact evidence in `specs/023-offline-pdf-model-bundle/tasks.md`
+
+### Local execution evidence (2026-08-02)
+
+- The exact connected lifecycle completed with two independent successful fresh provisions, one retained transient
+  anonymous-Hub failure that published no destination/staging residue, two byte-identical packages and one independently
+  verified fresh offline installation. The successful measured provision downloaded five files/384,428,156 bytes in
+  191,254,236,500 ns.
+- The actual socket-denied PDF benchmark produced `PDF_OFFLINE_READY`; independent validation regenerated all identities,
+  observations, robust statistics, thresholds, decision and report. Validation p95 was 154,701,958 ns at 68,108,288
+  bytes peak RSS; conversion wall p50/p95 was 4,169,238,625/4,270,645,500 ns.
+- In a clean detached worktree, locked all-extras sync, Ruff, format, strict mypy, repository validation, wheel/sdist build
+  and all pre-commit hooks passed. The complete offline suite passed 1,507 tests with one explicit opt-in real-bundle
+  skip and 85.20 percent combined branch coverage.
+- Spec-Kit convergence checked 30 functional requirements, 9 success criteria, 15 acceptance scenarios, plan decisions
+  and all 12 constitution articles. It found zero missing, partial, contradictory or unrequested gaps, so no convergence
+  tasks were appended. Remaining risks are the 366.6 MiB external payload, about 1.47 GB conversion peak RSS, variable
+  connected retrieval and the deliberately unmeasured F024/F025 real-world/semantic quality boundary.
 
 ---
 

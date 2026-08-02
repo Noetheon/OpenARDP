@@ -7,7 +7,7 @@ from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from threading import Barrier
+from threading import Barrier, Lock
 
 import pytest
 
@@ -129,7 +129,7 @@ def test_concurrent_exact_removals_converge_after_verified_unlink_race(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Treat an exact winner's unlink as success for already-verified retries."""
+    """Converge transient Windows unlink conflicts to one exact winner."""
     workspace = LocalWorkspace.initialize(tmp_path / "store", now=NOW)
     stored = workspace.object_store.put_chunks((b"contended-removal",))
     workspace.maintenance_store.transition(
@@ -141,10 +141,17 @@ def test_concurrent_exact_removals_converge_after_verified_unlink_race(
     quarantine = workspace.root / "quarantine" / "sha256" / digest[:2] / digest[2:4] / digest[4:]
     real_unlink = Path.unlink
     barrier = Barrier(10)
+    lock = Lock()
+    calls = 0
 
     def contested_unlink(path: Path, missing_ok: bool = False) -> None:
+        nonlocal calls
         if path == quarantine:
             barrier.wait()
+            with lock:
+                calls += 1
+                if calls < barrier.parties:
+                    raise PermissionError("synthetic sharing violation")
         real_unlink(path, missing_ok=missing_ok)
 
     monkeypatch.setattr(Path, "unlink", contested_unlink)

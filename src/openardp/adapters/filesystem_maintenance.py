@@ -11,6 +11,7 @@ from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from time import sleep
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
@@ -368,10 +369,9 @@ class FilesystemMaintenanceStore:
             quarantine.unlink()
             self._sync_directory(quarantine.parent)
         except FileNotFoundError:
-            self._verify_removal_converged(object_id)
-            return
+            pass
         except OSError:
-            raise MaintenanceError("managed removal failed") from None
+            sleep(0.05)
         self._verify_removal_converged(object_id)
 
     def _verify_removal_converged(self, object_id: str) -> None:

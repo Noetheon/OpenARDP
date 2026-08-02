@@ -128,7 +128,9 @@ def create_bundle_package(
                 with source.open("rb") as reader, archive.open(info, "w") as writer:
                     while chunk := reader.read(_CHUNK_BYTES):
                         writer.write(chunk)
-        with temporary.open("rb") as handle:
+        # Windows requires a write-capable descriptor for fsync; the file is
+        # already closed by ZipFile and is not modified through this handle.
+        with temporary.open("r+b") as handle:
             os.fsync(handle.fileno())
         package_id, package_bytes = _hash_file(temporary)
         if package_bytes > verification.installation_bytes + MAX_PACKAGE_OVERHEAD_BYTES:

@@ -89,7 +89,10 @@ def _verify_download(path: Path, item: PdfModelSourceFile) -> None:
 
 def _sync_regular_files(root: Path) -> None:
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
-        with path.open("rb") as handle:
+        # Windows' CRT rejects fsync on read-only descriptors with EBADF.
+        # Opening without truncation keeps the bytes stable while making the
+        # durability flush portable across all supported platforms.
+        with path.open("r+b") as handle:
             os.fsync(handle.fileno())
     if sys.platform != "win32":
         descriptor = os.open(root, os.O_RDONLY)

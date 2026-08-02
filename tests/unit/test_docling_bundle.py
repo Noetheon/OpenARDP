@@ -73,11 +73,11 @@ def test_provisioner_does_not_publish_failed_staging(tmp_path: Path) -> None:
     assert not destination.exists()
 
 
-def test_windows_file_sync_does_not_open_directory_descriptor(
+def test_windows_file_sync_uses_supported_file_descriptors_only(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Flush regular files on Windows without the unsupported POSIX directory open."""
+    """Flush write-capable files on Windows without a POSIX directory descriptor."""
     (tmp_path / "control.json").write_bytes(b"{}\n")
     monkeypatch.setattr("openardp.adapters.docling_bundle_provisioning.sys.platform", "win32")
     monkeypatch.setattr(

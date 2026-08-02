@@ -45,7 +45,8 @@ refine those decisions but may not silently contradict them.
 | `017-microsoft-graph-design-spike` | Mock-only tenant-scoped delta, permission, tombstone, retry and notification architecture | Implemented; mock architecture `GO`, production connector `NO-GO` |
 | `018-repository-hygiene` | Behavior-preserving hotspot decomposition, truthful focused validation and deterministic maintainability guard | Implemented locally; release and production-connector decisions unchanged |
 | `019-ci-cost-optimization` | Event-aware lower-cost CI with unchanged final three-platform tests and bounded release evidence | Converged, merged and remotely verified |
-| `020-product-value-benchmark` | Reproducible end-to-end value, scale and rich-reuse benchmark with a three-state worth-it decision | Active |
+| `020-product-value-benchmark` | Reproducible end-to-end value, scale and rich-reuse benchmark with a three-state worth-it decision | Converged, merged and remotely verified; `CONDITIONALLY_WORTHWHILE` |
+| `021-incremental-freshness` | Exact bounded HEAD freshness plus explicit exhaustive FULL integrity and frozen 10k/100k evidence | Active; local benchmark `PASS` |
 
 ## Release evidence registry
 

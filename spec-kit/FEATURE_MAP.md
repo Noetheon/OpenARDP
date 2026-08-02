@@ -37,6 +37,11 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 18 | `018-repository-hygiene` | Measured post-roadmap refactoring, truthful validation and maintainability non-regression. |
 | 19 | `019-ci-cost-optimization` | Lower-cost event-aware CI with unchanged final three-platform quality and bounded release evidence. |
 | 20 | `020-product-value-benchmark` | Reproducible end-to-end value evidence at 10k/100k blocks and an honest workload-bounded worth-it decision. |
+| 21 | `021-incremental-freshness` | Exact source freshness becomes sublinear in prepared block count while complete integrity remains explicit and measurable. |
+| 22 | `022-storage-amplification` | Systematically reduce measured text-workspace amplification without weakening originals, provenance or replay. |
+| 23 | `023-offline-pdf-model-bundle` | Reproducibly provision and measure the complete offline PDF model boundary. |
+| 24 | `024-redistributable-realworld-corpus` | Add a licensed, realistic and independently reproducible multi-format corpus. |
+| 25 | `025-semantic-e2e-source-evaluation` | Test semantic questions, evidence selection and source-quality evaluation end to end. |
 
 ## Dependency rule
 
@@ -45,7 +50,8 @@ Feature 007. Later features may add fields only through documented contract evol
 is a behavior-preserving maintenance slice after the reviewed product roadmap. Feature 019 changes only repository
 automation and its enforcement evidence. Feature 020 measures the delivered product against raw-reparse and
 persisted-native baselines without changing runtime behavior or superseding the independent F015 release gate; none of
-these features authorizes a new product capability.
+these features authorizes a new product capability. Feature 021 resolves only the measured status-path bottleneck and
+does not pre-implement the storage, PDF, corpus or semantic work assigned to Features 022–025.
 
 ## Scope rule
 

@@ -72,6 +72,7 @@ F005A_FEATURE_SEQUENCE = (
     "018-repository-hygiene",
     "019-ci-cost-optimization",
     "020-product-value-benchmark",
+    "021-incremental-freshness",
 )
 HISTORICAL_FEATURE_PROMPTS = (
     "001-repository-baseline.md",
@@ -207,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f020_governance_and_prior_contracts_are_present_and_frozen(
+def test_f021_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
     """Require active benchmark governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/020-product-value-benchmark"
+    assert active["feature_directory"] == "specs/021-incremental-freshness"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -258,6 +259,12 @@ def test_f020_governance_and_prior_contracts_are_present_and_frozen(
     assert (repository_root / "spec-kit/feature-prompts/018-repository-hygiene.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/019-ci-cost-optimization.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/020-product-value-benchmark.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/021-incremental-freshness.md").is_file()
+    f021_adr = (repository_root / "docs/adr/0017-freshness-integrity-coverage.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Status: Accepted for Feature 021" in f021_adr
+    assert "MCP remains identifier-only and bounded to default HEAD coverage" in f021_adr
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
     assert (repository_root / "quality/ci-policy.json").is_file()
@@ -323,6 +330,7 @@ def test_focused_quickstarts_separate_partial_tests_from_full_coverage(
         "016-alternate-parser-conformance-spike",
         "017-microsoft-graph-design-spike",
         "018-repository-hygiene",
+        "021-incremental-freshness",
     )
     for feature in quickstarts:
         text = (repository_root / "specs" / feature / "quickstart.md").read_text(encoding="utf-8")

@@ -1,0 +1,58 @@
+{
+  "baseline": {
+    "environment_id": "sha256:df846c6fdb5549617858306b92c1f9db1a672b3a9bb85e242f0ecac1eb16e741",
+    "f020_summary_path": "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/summary.json",
+    "f020_summary_sha256": "sha256:0cf7d3c3eef2dd95b0951022054865ce4adabf43d2466478fb56f7fad48b351c",
+    "p95_ns": {
+      "reference": 2087372167,
+      "scale": 28625664458
+    }
+  },
+  "corpus": {
+    "f020_corpus_spec_path": "benchmarks/product-value/v0.1.0/corpus-spec.json",
+    "f020_corpus_spec_sha256": "sha256:e10a3fd5bc109d4442d807d86c3fd5d4f93821c5fa62e3364bd8014a5a591311",
+    "profiles": {
+      "reference": 10000,
+      "scale": 100000
+    }
+  },
+  "modes": [
+    "HEAD",
+    "FULL"
+  ],
+  "privacy": {
+    "forbidden": [
+      "absolute_paths",
+      "credentials",
+      "hostnames",
+      "raw_exceptions",
+      "source_bodies",
+      "usernames"
+    ]
+  },
+  "protocol_version": "0.1.0",
+  "repetitions": 7,
+  "required_counters": [
+    "aggregate_loads",
+    "block_object_verifications",
+    "parser_invocations",
+    "source_inspections",
+    "verifier_invocations"
+  ],
+  "statistics": [
+    "p50",
+    "p95",
+    "raw_samples"
+  ],
+  "target": {
+    "default_maximum_p95_ns": 250000000,
+    "default_maximum_aggregate_loads_per_request": 0,
+    "default_maximum_block_object_verifications_per_request": 0,
+    "default_maximum_parser_invocations_per_request": 0,
+    "default_required_source_inspections_per_request": 1,
+    "default_maximum_verifier_invocations_per_request": 0
+  },
+  "timing_clock": "monotonic_ns",
+  "timing_unit": "ns",
+  "warmup_repetitions": 1
+}

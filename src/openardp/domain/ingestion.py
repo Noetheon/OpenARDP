@@ -22,7 +22,7 @@ from openardp.domain.common import (
 )
 from openardp.domain.identity import canonical_json_bytes, representation_id
 from openardp.domain.manifest import DocumentManifest, ManifestState
-from openardp.domain.storage import MachineToken, OwnerId, SourceKey, StoredObject
+from openardp.domain.storage import LogicalDocument, MachineToken, OwnerId, SourceKey, StoredObject
 
 MAX_SOURCE_BYTES = 100 * 1024 * 1024
 MAX_LINE_CHARACTERS = 1024 * 1024
@@ -509,6 +509,25 @@ class DocumentHead(DomainModel):
         return self
 
 
+class DocumentStatusSnapshot(DomainModel):
+    """One transactionally consistent document, head and header-only projection."""
+
+    document: LogicalDocument
+    head: DocumentHead | None = None
+    representation: DocumentRepresentation | None = None
+
+    @model_validator(mode="after")
+    def _status_scope_is_consistent(self) -> DocumentStatusSnapshot:
+        if self.head is not None and self.head.scope.document_id != self.document.document_id:
+            raise ValueError("status head must match document")
+        if self.representation is not None:
+            if self.head is None:
+                raise ValueError("status representation requires a head")
+            if self.representation.scope != self.head.scope:
+                raise ValueError("status representation must match head scope")
+        return self
+
+
 class IngestionEvent(DomainModel):
     """Append-only successful ingest evidence without document bodies."""
 
@@ -565,6 +584,21 @@ class SourceFreshness(StrEnum):
     INTEGRITY_ERROR = "INTEGRITY_ERROR"
 
 
+class IntegrityCoverage(StrEnum):
+    """Persisted-evidence assurance actually completed by one status request."""
+
+    NONE = "NONE"
+    HEAD = "HEAD"
+    FULL = "FULL"
+
+
+class StatusMode(StrEnum):
+    """Requested persisted-evidence assurance for a source status operation."""
+
+    HEAD = "HEAD"
+    FULL = "FULL"
+
+
 class DocumentSummary(DomainModel):
     """Body-free deterministic document list projection."""
 
@@ -581,6 +615,7 @@ class SourceStatus(DomainModel):
     """Body-free source freshness result obtained without parser invocation."""
 
     freshness: SourceFreshness
+    integrity_coverage: IntegrityCoverage
     document_id: DocumentId | None = None
     head: RepresentationScope | None = None
     observed_version_id: Sha256Id | None = None
@@ -591,10 +626,19 @@ class SourceStatus(DomainModel):
         if self.freshness is SourceFreshness.NOT_REGISTERED:
             if self.document_id is not None or self.head is not None:
                 raise ValueError("unregistered status cannot identify a document head")
+            if self.integrity_coverage is not IntegrityCoverage.NONE:
+                raise ValueError("unregistered status requires NONE integrity coverage")
         elif self.document_id is None:
             raise ValueError("registered status requires document_id")
         if self.head is not None and self.head.document_id != self.document_id:
             raise ValueError("status head must match document_id")
+        if self.integrity_coverage is not IntegrityCoverage.NONE and self.head is None:
+            raise ValueError("integrity coverage requires a document head")
+        if (
+            self.freshness is SourceFreshness.INTEGRITY_ERROR
+            and self.integrity_coverage is IntegrityCoverage.FULL
+        ):
+            raise ValueError("failed integrity cannot claim FULL coverage")
         return self
 
 
@@ -640,10 +684,12 @@ __all__ = [
     "DocumentHead",
     "DocumentHeadUpdate",
     "DocumentRepresentation",
+    "DocumentStatusSnapshot",
     "DocumentSummary",
     "IngestionDisposition",
     "IngestionEvent",
     "IngestionResult",
+    "IntegrityCoverage",
     "OutlineItem",
     "ParsedBlock",
     "ParsedTextDocument",
@@ -662,6 +708,7 @@ __all__ = [
     "SourceInspection",
     "SourceSnapshot",
     "SourceStatus",
+    "StatusMode",
     "TextMediaType",
     "deterministic_block_id",
 ]

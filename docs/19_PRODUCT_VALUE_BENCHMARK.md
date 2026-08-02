@@ -53,3 +53,17 @@ The validated outcome is `CONDITIONALLY_WORTHWHILE`: exact correctness, zero sta
 Unmet conditions are the 2,087.372 ms reference status p95, unavailable PDF assets and incomplete 256/512-byte context
 budgets. The detailed report also exposes the 28.626-second scale status p95, approximately 37.9x text storage
 amplification and direct-native rich loading as a faster lower-bound baseline.
+
+## F021 status follow-up
+
+Feature 021 preserves this F020 result as historical evidence and addresses only its status-path bottleneck. Default
+status now reports `HEAD` coverage after exact source hashing and one atomic READY-header snapshot; complete physical and
+semantic verification is an explicit `FULL` service/CLI request. MCP remains bounded to the default identifier-only mode.
+
+The independently validated F021 run on the same environment and generated corpora measured default p95 of 2.257 ms at
+10,000 blocks and 9.186 ms at 100,000 blocks, with zero representation aggregate loads and zero block-object
+verifications. Full verification remains 1,980.830 ms and 25,451.076 ms p95. These measurements remove the F020 status
+performance blocker but do not change the F020 `CONDITIONALLY_WORTHWHILE` decision, the F015 release `NO-GO`, the 37.9x
+storage observation, PDF availability or semantic-quality limitations. See
+[`docs/20_INCREMENTAL_FRESHNESS.md`](20_INCREMENTAL_FRESHNESS.md) for the exact assurance boundary and reproduction
+commands.

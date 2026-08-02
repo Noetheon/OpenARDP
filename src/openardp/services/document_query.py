@@ -14,20 +14,26 @@ from openardp.domain.block import BlockKind, ContentBlock
 from openardp.domain.common import validate_json
 from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import (
+    DocumentRepresentation,
+    DocumentStatusSnapshot,
     DocumentSummary,
+    IntegrityCoverage,
     OutlineItem,
     RepresentationAggregate,
     RepresentationBlock,
+    RepresentationScope,
     RepresentationState,
     SourceFreshness,
     SourceInspection,
     SourceStatus,
+    StatusMode,
 )
-from openardp.domain.storage import SourceKey, StoredObject
+from openardp.domain.storage import LogicalDocument, SourceKey, StoredObject
 from openardp.ports.catalog import (
     AmbiguousBlock,
     BlockNotFound,
     Catalog,
+    CatalogError,
     DocumentNotFound,
     RepresentationIntegrityError,
     RepresentationNotFound,
@@ -82,29 +88,44 @@ class DocumentQueryService:
         """Return deterministic current document metadata without bodies."""
         return self._catalog.list_document_summaries()
 
-    def status(self, target: str) -> SourceStatus:
-        """Compare one registered local source to its current READY head without parsing."""
+    def status(
+        self,
+        target: str,
+        *,
+        mode: StatusMode = StatusMode.HEAD,
+    ) -> SourceStatus:
+        """Compare exact source bytes to one current head at the requested assurance."""
+        mode = StatusMode(mode)
         checked_at = self._clock()
-        document = None
-        source_boundary: _InspectSource | None = None
-        try:
-            document_id = UUID(target)
-        except ValueError:
-            source_boundary = self._source_factory(Path(target))
-            document = self._catalog.get_document_by_source(source_boundary.source_key)
-        else:
-            document = self._catalog.get_document(document_id)
-            if document is not None and document.source_key.connector == "local":
-                source_boundary = self._source_factory(Path(document.source_key.locator))
+        document, source_boundary = self._resolve_status_target(target)
         if document is None:
             return SourceStatus(
                 freshness=SourceFreshness.NOT_REGISTERED,
+                integrity_coverage=IntegrityCoverage.NONE,
                 checked_at=checked_at,
             )
-        head = self._catalog.get_document_head(document.document_id)
+        try:
+            snapshot = self._catalog.get_document_status_snapshot(document.document_id)
+        except (CatalogError, ValidationError, ValueError):
+            return SourceStatus(
+                freshness=SourceFreshness.INTEGRITY_ERROR,
+                integrity_coverage=IntegrityCoverage.NONE,
+                document_id=document.document_id,
+                checked_at=checked_at,
+            )
+        if snapshot is None:
+            return SourceStatus(
+                freshness=SourceFreshness.NOT_REGISTERED,
+                integrity_coverage=IntegrityCoverage.NONE,
+                checked_at=checked_at,
+            )
+        document = snapshot.document
+        head = snapshot.head
+        header_coverage = self._header_coverage(snapshot)
         if source_boundary is None:
             return SourceStatus(
                 freshness=SourceFreshness.INTEGRITY_ERROR,
+                integrity_coverage=header_coverage,
                 document_id=document.document_id,
                 head=head.scope if head is not None else None,
                 checked_at=checked_at,
@@ -114,6 +135,7 @@ class DocumentQueryService:
         except FileNotFoundError:
             return SourceStatus(
                 freshness=SourceFreshness.SOURCE_MISSING,
+                integrity_coverage=header_coverage,
                 document_id=document.document_id,
                 head=head.scope if head is not None else None,
                 checked_at=checked_at,
@@ -121,36 +143,97 @@ class DocumentQueryService:
         if head is None:
             return SourceStatus(
                 freshness=SourceFreshness.NO_READY_REPRESENTATION,
+                integrity_coverage=IntegrityCoverage.NONE,
                 document_id=document.document_id,
                 observed_version_id=inspection.version_id,
                 checked_at=checked_at,
             )
-        aggregate = self._catalog.load_representation(head.scope)
-        if aggregate is None or aggregate.representation.state is not RepresentationState.READY:
+        representation = snapshot.representation
+        if representation is None or representation.state is not RepresentationState.READY:
             return SourceStatus(
                 freshness=SourceFreshness.NO_READY_REPRESENTATION,
+                integrity_coverage=IntegrityCoverage.NONE,
                 document_id=document.document_id,
                 head=head.scope,
                 observed_version_id=inspection.version_id,
                 checked_at=checked_at,
             )
-        try:
-            self._representation_verifier(aggregate)
-        except (RepresentationIntegrityError, ObjectStoreError, ValidationError, ValueError):
-            freshness = SourceFreshness.INTEGRITY_ERROR
-        else:
-            freshness = (
-                SourceFreshness.CURRENT
-                if inspection.version_id == head.scope.version_id
-                else SourceFreshness.SOURCE_CHANGED
-            )
+        coverage = IntegrityCoverage.HEAD
+        if mode is StatusMode.FULL:
+            if not self._verify_complete_representation(representation):
+                return self._integrity_error(
+                    document.document_id,
+                    head.scope,
+                    inspection.version_id,
+                    checked_at,
+                )
+            coverage = IntegrityCoverage.FULL
+        freshness = (
+            SourceFreshness.CURRENT
+            if inspection.version_id == head.scope.version_id
+            else SourceFreshness.SOURCE_CHANGED
+        )
         return SourceStatus(
             freshness=freshness,
+            integrity_coverage=coverage,
             document_id=document.document_id,
             head=head.scope,
             observed_version_id=inspection.version_id,
             checked_at=checked_at,
         )
+
+    def _resolve_status_target(
+        self,
+        target: str,
+    ) -> tuple[LogicalDocument | None, _InspectSource | None]:
+        try:
+            document_id = UUID(target)
+        except ValueError:
+            source = self._source_factory(Path(target))
+            return self._catalog.get_document_by_source(source.source_key), source
+        document = self._catalog.get_document(document_id)
+        resolved_source = (
+            self._source_factory(Path(document.source_key.locator))
+            if document is not None and document.source_key.connector == "local"
+            else None
+        )
+        return document, resolved_source
+
+    def _verify_complete_representation(self, representation: DocumentRepresentation) -> bool:
+        try:
+            aggregate = self._catalog.load_representation(representation.scope)
+        except (CatalogError, ValidationError, ValueError):
+            return False
+        if aggregate is None or aggregate.representation != representation:
+            return False
+        try:
+            self._representation_verifier(aggregate)
+        except (RepresentationIntegrityError, ObjectStoreError, ValidationError, ValueError):
+            return False
+        return True
+
+    @staticmethod
+    def _integrity_error(
+        document_id: UUID,
+        head: RepresentationScope,
+        observed_version_id: str,
+        checked_at: datetime,
+    ) -> SourceStatus:
+        return SourceStatus(
+            freshness=SourceFreshness.INTEGRITY_ERROR,
+            integrity_coverage=IntegrityCoverage.HEAD,
+            document_id=document_id,
+            head=head,
+            observed_version_id=observed_version_id,
+            checked_at=checked_at,
+        )
+
+    @staticmethod
+    def _header_coverage(snapshot: DocumentStatusSnapshot) -> IntegrityCoverage:
+        representation = snapshot.representation
+        if representation is None or representation.state is not RepresentationState.READY:
+            return IntegrityCoverage.NONE
+        return IntegrityCoverage.HEAD
 
     def outline(
         self,

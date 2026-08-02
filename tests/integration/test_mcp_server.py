@@ -410,6 +410,7 @@ def test_get_source_status_accepts_identifiers_only(tmp_path: Path) -> None:
         _call_tool(server, "get_source_status", {"document_id": str(corpus.text_document_id)})
     )
     assert result["freshness"] == "CURRENT"
+    assert result["integrity_coverage"] == "HEAD"
     assert result["document_id"] == str(corpus.text_document_id)
     assert "checked_at" in result
     for hostile in ("/etc/passwd", "../store", str(corpus.text_path), "file:///x", "a" * 64):
@@ -426,6 +427,7 @@ def test_get_source_status_unknown_identifier_is_body_free(tmp_path: Path) -> No
         _call_tool(_server(corpus), "get_source_status", {"document_id": UNKNOWN_UUID})
     )
     assert result["freshness"] == "NOT_REGISTERED"
+    assert result["integrity_coverage"] == "NONE"
 
 
 # T022 — outline and enveloped get_block

@@ -14,7 +14,22 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md) and
 [feature 018 notes](specs/018-repository-hygiene/implementation-notes.md) and
 [feature 019 notes](specs/019-ci-cost-optimization/implementation-notes.md) and
-[feature 020 notes](specs/020-product-value-benchmark/implementation-notes.md).
+[feature 020 notes](specs/020-product-value-benchmark/implementation-notes.md) and
+[feature 021 notes](specs/021-incremental-freshness/implementation-notes.md).
+
+## Feature 021 incremental-freshness evidence
+
+The decision-bearing macOS arm64 run retained 28 observations: seven `HEAD` and seven `FULL` measurements at each of
+10,000 and 100,000 blocks. Independent validation recomputed every observation/summary/decision identity, result-file
+hash, report byte, privacy rule and operation-counter policy. Decision
+`sha256:c406634afd39c14f2ac89f4446a6739bf166e0a245f430ad29afeabf968442b8` is `PASS`.
+
+Default `HEAD` p95 measured 2.257 ms and 9.186 ms, improving on the frozen F020 values by approximately 924.690x and
+3,116.072x. Every default request performed exactly one source inspection and zero aggregate loads, block-object
+verifications, parser invocations or complete-verifier invocations. Explicit `FULL` p95 remained 1,980.830 ms and
+25,451.076 ms, demonstrating that complete integrity still runs rather than being silently discarded. Source digests and
+CAS inventories were identical before and after both workloads. Local full-suite and remote evidence are recorded below
+when their gates complete.
 
 ## Feature 020 product-value evidence
 

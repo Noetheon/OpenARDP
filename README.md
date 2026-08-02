@@ -53,14 +53,21 @@ the mock-only enterprise-connector design in
 [`017-microsoft-graph-design-spike`](specs/017-microsoft-graph-design-spike/spec.md),
 the behavior-preserving maintenance pass in
 [`018-repository-hygiene`](specs/018-repository-hygiene/spec.md), and the CI cost/latency optimization in
-[`019-ci-cost-optimization`](specs/019-ci-cost-optimization/spec.md), followed by the workload-bounded product-value
-evaluation in [`020-product-value-benchmark`](specs/020-product-value-benchmark/spec.md):
+[`019-ci-cost-optimization`](specs/019-ci-cost-optimization/spec.md), the workload-bounded product-value evaluation in
+[`020-product-value-benchmark`](specs/020-product-value-benchmark/spec.md), and the measured status-path correction in
+[`021-incremental-freshness`](specs/021-incremental-freshness/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
 against raw reparsing is 32 tasks. It is not unconditional because reference status p95 is 2.087 seconds, PDF lacks the
 explicit offline model bundle and two context budgets cannot hold the safe envelope. See the
 [`reference report`](benchmarks/product-value/v0.1.0/results/reference-macos-arm64/report.md). F015 remains `NO-GO`.
+
+F021 resolves the measured status bottleneck without weakening its claim boundary. Default `HEAD` status performs an
+exact source SHA-256 inspection plus one atomic READY-header snapshot; its committed p95 is 2.257 ms at 10,000 blocks and
+9.186 ms at 100,000 blocks, with zero aggregate loads, block reads, parser calls or full-verifier calls. Deliberate
+`FULL` status retains exhaustive native/manifest/projection/block verification at 1.981 s and 25.451 s p95. See the
+[`F021 report`](benchmarks/freshness/v0.1.0/results/reference-macos-arm64/report.md).
 
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
@@ -73,7 +80,8 @@ explicit offline model bundle and two context budgets cannot hold the safe envel
 - read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md` and `.markdown` files;
 - a bounded spawned parser worker with denied socket creation and documented residual platform risk;
 - deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
-- body-minimizing `list`, `status`, `outline` and exact persisted `get` navigation;
+- body-minimizing `list`, exact bounded `status`, explicit `status --full-integrity`, `outline` and exact persisted `get`
+  navigation with truthful `NONE`/`HEAD`/`FULL` assurance coverage;
 - exact term/phrase lexical search with deterministic filters, verified bounded snippets and fail-closed index coverage;
 - idempotent `reindex` from verified READY evidence;
 - an exact optional `docling==2.114.0` extra for offline, spawned DOCX/PPTX conversion
@@ -206,6 +214,7 @@ openardp init --store .openardp
 openardp ingest ./notes.md --store .openardp
 openardp list --store .openardp
 openardp status ./notes.md --store .openardp
+openardp status ./notes.md --full-integrity --store .openardp
 openardp outline <document-uuid> --store .openardp
 openardp get <block-uuid> --store .openardp
 openardp search '"exact phrase" evidence' --store .openardp

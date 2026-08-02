@@ -118,7 +118,18 @@ def test_all_six_json_commands_are_stable_and_body_minimizing(
     status_data = status["data"]
     assert isinstance(status_data, dict)
     assert status_data["freshness"] == "CURRENT"
+    assert status_data["integrity_coverage"] == "HEAD"
     assert "DO-NOT-LEAK" not in json.dumps(status)
+
+    code, full_status, _ = _invoke_json(
+        capsys,
+        ["status", str(source), "--full-integrity", "--store", str(workspace)],
+    )
+    assert code == 0
+    full_status_data = full_status["data"]
+    assert isinstance(full_status_data, dict)
+    assert full_status_data["freshness"] == "CURRENT"
+    assert full_status_data["integrity_coverage"] == "FULL"
 
     code, outlined, _ = _invoke_json(
         capsys,
@@ -332,7 +343,7 @@ def test_installed_entry_point_runs_all_commands_in_json_and_human_modes(
     assert "Initialized OpenARDP workspace" in human_results[0].stdout
     assert "Ingested" in human_results[1].stdout
     assert document_id in human_results[2].stdout
-    assert human_results[3].stdout.strip() == "CURRENT"
+    assert human_results[3].stdout.strip() == "CURRENT\tHEAD"
     assert "Installed title" in human_results[4].stdout
     assert '"text": "Installed title"' in human_results[5].stdout
     assert all("PRIVATE-PARAGRAPH" not in result.stdout for result in human_results[:-1])

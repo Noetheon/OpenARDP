@@ -5,6 +5,17 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 021 — incremental freshness status
+
+- Split exact source freshness from exhaustive representation verification: default `HEAD` status still hashes the
+  complete authoritative source but reads one atomic document/head/header snapshot and never materializes blocks.
+- Added explicit service/CLI `FULL` integrity verification, deterministic `NONE`/`HEAD`/`FULL` coverage in every status
+  result and a bounded identifier-only MCP projection that cannot request the exhaustive mode.
+- Added a versioned offline 10,000/100,000-block benchmark with raw samples, exact operation counters, immutable-input
+  checks and independent drift/privacy validation while preserving the historical F020 evidence.
+- The committed reference run passes: default p95 is 2.257 ms at 10,000 blocks and 9.186 ms at 100,000 blocks, versus
+  F020's 2.087 s and 28.626 s. Complete verification remains separately visible at 1.981 s and 25.451 s p95.
+
 ### Feature 020 — product-value benchmark
 
 - Added a versioned, deterministic and fully offline benchmark comparing raw reparsing, persisted parser output and the

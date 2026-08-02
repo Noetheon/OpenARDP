@@ -103,8 +103,8 @@
 - [X] T067 Run Ruff, format, native/Windows mypy, full pytest/coverage, repository validation, build and pre-commit
 - [X] T068 Run Spec-Kit analysis; resolve every critical/high contradiction and append only proven gaps
 - [X] T069 Run Spec-Kit convergence over all requirements, criteria, tasks and retained evidence
-- [ ] T070 Commit F025 independently, push to the private repository and open its pull request
-- [ ] T071 Record available GitHub checks exactly; do not weaken branch protection or falsify billing-blocked CI
+- [X] T070 Commit F025 independently, push to the private repository and open its pull request
+- [X] T071 Record available GitHub checks exactly; do not weaken branch protection or falsify billing-blocked CI
 - [ ] T072 Merge only when repository policy permits and record final release evidence
 
 ## Dependencies and Execution Order

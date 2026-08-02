@@ -82,3 +82,12 @@ passes. Focused F025 tests pass, with the actual-corpus rerun intentionally opt-
 
 The primary worktree contains user-owned untracked files ending in ` 2.py`/` 2.md`. They were neither changed nor staged;
 the clean staged-tree run prevents those unrelated duplicates from corrupting binding gate evidence.
+
+## Private publication status
+
+Implementation commit `89063bba223fdc138256b27ac914af97f5a002ee` was pushed to the private repository and opened
+as PR #33. GitHub Actions run `30764275869` rejected Preflight before runner allocation: runner ID is zero, there are no
+steps and the exact annotation states that recent account payments failed or the spending limit needs increasing. The
+Ubuntu, macOS and Windows quality jobs were consequently skipped. This is external billing evidence, not a failed code
+step, and the run was not retried or bypassed. Branch protection remains unchanged; merge task T072 is pending until the
+required remote check can actually run.

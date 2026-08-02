@@ -46,10 +46,7 @@ _FANOUT = re.compile(r"^[0-9a-f]{2}$")
 _LEAF = re.compile(r"^[0-9a-f]{60}$")
 _OBJECT_ID = re.compile(r"^sha256:([0-9a-f]{64})$")
 _CHUNK_SIZE = 1024 * 1024
-_BACKUP_LIMITS = InventoryLimits(
-    max_entries=1_000_000,
-    max_bytes=9_007_199_254_740_991,
-)
+_BACKUP_LIMITS = InventoryLimits(max_entries=1_000_000, max_bytes=9_007_199_254_740_991)
 PhysicalProfile = Literal["ordinary", "openardp-deflate-dict-v1"]
 _ORDINARY_PROFILE: PhysicalProfile = "ordinary"
 _COMPACT_PROFILE: PhysicalProfile = "openardp-deflate-dict-v1"
@@ -359,20 +356,28 @@ class FilesystemMaintenanceStore:
         if len(present) != 1:
             raise MaintenanceError("removal physical forms conflict")
         quarantine, physical_profile = present[0]
-        verified = self._verify_path(
-            quarantine,
-            object_id,
-            ObjectLocation.QUARANTINE,
-            physical_profile=physical_profile,
-        )
-        if verified.byte_length != byte_length:
-            raise MaintenanceError("removal source length conflicts")
         try:
+            verified = self._verify_path(
+                quarantine,
+                object_id,
+                ObjectLocation.QUARANTINE,
+                physical_profile=physical_profile,
+            )
+            if verified.byte_length != byte_length:
+                raise MaintenanceError("removal source length conflicts")
             quarantine.unlink()
             self._sync_directory(quarantine.parent)
+        except FileNotFoundError:
+            self._verify_removal_converged(object_id)
+            return
         except OSError:
             raise MaintenanceError("managed removal failed") from None
-        if self._lexists(quarantine):
+        self._verify_removal_converged(object_id)
+
+    def _verify_removal_converged(self, object_id: str) -> None:
+        active = self._present_forms(object_id, (self._active, self._active_compact))
+        quarantined = self._present_forms(object_id, (self._quarantine, self._quarantine_compact))
+        if active or quarantined:
             raise MaintenanceError("managed removal did not complete")
 
     def _present_forms(

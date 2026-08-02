@@ -11,7 +11,7 @@ from threading import Barrier, Lock
 
 import pytest
 
-from openardp.adapters.filesystem_maintenance import FilesystemMaintenanceStore
+from openardp.adapters.filesystem_convergence import await_transition_metadata
 from openardp.adapters.local_workspace import LocalWorkspace
 from openardp.domain.maintenance import InventoryLimits, ObjectLocation, StorageHealth
 from openardp.ports.maintenance import InventoryOverflow
@@ -145,12 +145,10 @@ def test_windows_transition_waits_for_delayed_destination_visibility(
                 raise FileNotFoundError
         return real_lstat(path)
 
-    monkeypatch.setattr("openardp.adapters.filesystem_maintenance.os.name", "nt")
+    monkeypatch.setattr("openardp.adapters.filesystem_convergence.os.name", "nt")
     monkeypatch.setattr(Path, "lstat", delayed_lstat)
 
-    destination_metadata, source_metadata = FilesystemMaintenanceStore._await_transition_metadata(
-        source, destination
-    )
+    destination_metadata, source_metadata = await_transition_metadata(source, destination)
 
     assert destination_metadata.st_size == 5
     assert source_metadata is None

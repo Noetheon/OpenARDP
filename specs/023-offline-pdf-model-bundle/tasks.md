@@ -190,7 +190,7 @@ the generated notices and reports distinguish mechanical verification from human
 - [X] T075 Run every command in `specs/023-offline-pdf-model-bundle/quickstart.md` and record exact outcomes in `specs/023-offline-pdf-model-bundle/tasks.md`
 - [X] T076 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `uv run python scripts/validate_repository.py`, `uv build` and `uv run pre-commit run --all-files`
 - [X] T077 Run Spec-Kit analysis and convergence, resolve every critical/high finding and record remaining risks in `specs/023-offline-pdf-model-bundle/tasks.md`
-- [ ] T078 Open the private GitHub pull request, pass trusted Linux/macOS/Windows quality gates, merge it, verify post-merge CI and record exact evidence in `specs/023-offline-pdf-model-bundle/tasks.md`
+- [X] T078 Open the private GitHub pull request, pass trusted Linux/macOS/Windows quality gates, merge it, verify post-merge CI and record exact evidence in `specs/023-offline-pdf-model-bundle/tasks.md`
 
 ### Local execution evidence (2026-08-02)
 
@@ -208,6 +208,14 @@ the generated notices and reports distinguish mechanical verification from human
   and all 12 constitution articles. It found zero missing, partial, contradictory or unrequested gaps, so no convergence
   tasks were appended. Remaining risks are the 366.6 MiB external payload, about 1.47 GB conversion peak RSS, variable
   connected retrieval and the deliberately unmeasured F024/F025 real-world/semantic quality boundary.
+- Private PR #29 passed the trusted ready-PR matrix on exact head
+  `26ac30ed7e94ddd7c6817723b68bd15b7cb1e2ae`: CI run `30757276607` completed Preflight in 43 seconds, macOS in 4 minutes
+  45 seconds, Ubuntu in 8 minutes 45 seconds and Windows in 11 minutes 36 seconds. Earlier failed Windows runs exposed
+  and retained two real portability defects plus one pre-existing transition race; the final code uses write-capable
+  durability descriptors and a bounded 450 ms rename-convergence window with dedicated regression coverage.
+- PR #29 merged as `da9db860a9e225aa4273489c0471e1f7597a7181` on 2026-08-02. Post-merge main CI run `30757953744`
+  passed fail-closed Preflight in 42 seconds; the event-aware policy intentionally skipped the already-proven platform
+  matrix on the main push.
 
 ---
 

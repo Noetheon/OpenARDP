@@ -116,7 +116,7 @@ def test_previous_open_revision_ten_migration_and_disjoint_rollback(tmp_path: Pa
     )
     assert tuple(item.step_id for item in results) == (
         "previous-workspace-open",
-        "previous-revision-migration",
+        "revision-nine-migration",
         "backup-upgrade-restore",
     )
     assert all(item.status == "passed" for item in results)

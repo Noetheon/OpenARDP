@@ -235,10 +235,11 @@ def reproduce_workspace_recovery(
             (canonical_sha256(cast(JsonValue, previous_plan)),),
         ),
         ReproductionResult(
-            "previous-revision-migration",
+            # Stable release-evidence check ID retained for schema compatibility.
+            "revision-nine-migration",
             "passed" if migration_passed else "failed",
             0,
-            None if migration_passed else "previous-revision-migration-failed",
+            None if migration_passed else "revision-nine-migration-failed",
             (canonical_sha256(cast(JsonValue, revision_nine_plan)),),
         ),
         ReproductionResult(

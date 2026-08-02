@@ -1,0 +1,39 @@
+{
+  "corpus_version": "0.1.0",
+  "generator_version": "1",
+  "license": "CC0-1.0",
+  "paragraph_template_version": "control-record-v1",
+  "profiles": {
+    "reference": {
+      "block_count": 10000,
+      "query_ordinals": [17, 151, 997, 4093, 8191, 9999]
+    },
+    "scale": {
+      "block_count": 100000,
+      "query_ordinals": [31, 1021, 10007, 50021, 99991]
+    },
+    "smoke": {
+      "block_count": 100,
+      "query_ordinals": [1, 50, 99]
+    }
+  },
+  "rich_fixtures": [
+    {
+      "format": "docx",
+      "path": "tests/fixtures/rich/synthetic.docx",
+      "sha256": "sha256:dbd04208ecefe67cf7e8b668c509554cab1eae421f334cc563fb535419e54cd3"
+    },
+    {
+      "format": "pdf",
+      "path": "tests/fixtures/rich/synthetic.pdf",
+      "sha256": "sha256:1c95c7b0f6c4a427559488b8f4825a424b6055bb201096ec28473ad4442a50e2"
+    },
+    {
+      "format": "pptx",
+      "path": "tests/fixtures/rich/synthetic.pptx",
+      "sha256": "sha256:0d76359ae389a2e417139405a583fb8d46cb2ea51a0515cb71c05cfc773dcd83"
+    }
+  ],
+  "seed": "openardp-product-value-v0.1.0",
+  "synthetic_only": true
+}

@@ -44,7 +44,8 @@ refine those decisions but may not silently contradict them.
 | `016-alternate-parser-conformance-spike` | Isolated independent evidence consumer, non-Docling TXT/CSV producer and bounded neutrality decision | Converged, merged and remotely verified; scoped claim supported, contract remains experimental |
 | `017-microsoft-graph-design-spike` | Mock-only tenant-scoped delta, permission, tombstone, retry and notification architecture | Implemented; mock architecture `GO`, production connector `NO-GO` |
 | `018-repository-hygiene` | Behavior-preserving hotspot decomposition, truthful focused validation and deterministic maintainability guard | Implemented locally; release and production-connector decisions unchanged |
-| `019-ci-cost-optimization` | Event-aware lower-cost CI with unchanged final three-platform tests and bounded release evidence | Implemented locally; remote protection evidence pending |
+| `019-ci-cost-optimization` | Event-aware lower-cost CI with unchanged final three-platform tests and bounded release evidence | Converged, merged and remotely verified |
+| `020-product-value-benchmark` | Reproducible end-to-end value, scale and rich-reuse benchmark with a three-state worth-it decision | Active |
 
 ## Release evidence registry
 

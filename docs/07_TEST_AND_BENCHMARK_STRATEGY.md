@@ -195,3 +195,20 @@ MVP release requires:
 - evidence citation accuracy target ≥ 95% on the synthetic suite;
 - benchmark scripts and raw results committed;
 - performance claims limited to measured hardware/workloads.
+
+## 11. F020 executable product-value protocol
+
+F020 turns the fair-baseline plan into an offline maintainer harness. It generates exact 10,000- and 100,000-block CC0
+text corpora, then compares complete raw reparsing, canonical persisted parsed/native loading and the delivered OpenARDP
+workspace/search/context/replay path with one warm-up and seven retained repeated-operation samples. It also exercises the
+actual isolated Docling DOCX/PPTX path and records PDF as unavailable when the explicit offline asset bundle is absent.
+
+The committed macOS arm64 run passes exact precision, recall, reciprocal rank, source anchors, successful-budget context
+coverage, replay equality, A→B→A freshness, 100,000-block search p95 and zero warm parser invocation. It reports a 32-task
+reference break-even versus raw reparsing and two-task rich break-even versus provider reparsing. It also preserves the
+unfavorable results: reference status p95 2.087 seconds, scale status p95 28.626 seconds, roughly 37.9x text workspace
+amplification, no latency crossover against direct rich-native loading, unavailable PDF and insufficient 256/512-byte
+context envelopes.
+
+The resulting `CONDITIONALLY_WORTHWHILE` decision is a product-value finding only. It neither supplies external model
+answer-quality evidence nor overrides the F015 release `NO-GO`.

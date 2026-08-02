@@ -1,0 +1,16 @@
+{
+  "budgets": [256, 512, 1024],
+  "judgment_version": "0.1.0",
+  "query_rule": {
+    "expected_document": "generated-profile-source",
+    "expected_rank": 1,
+    "fact_id_format": "fact-{ordinal:06d}",
+    "query_id_format": "query-{profile}-{ordinal:06d}",
+    "token_derivation": "sha256(seed-colon-ordinal)-first-16"
+  },
+  "rich_expected_terms": {
+    "docx": ["Synthetic DOCX", "deterministic paragraph", "R1C1"],
+    "pdf": ["Synthetic PDF evidence fixture"],
+    "pptx": ["Synthetic PPTX", "deterministic paragraph", "R1C1"]
+  }
+}

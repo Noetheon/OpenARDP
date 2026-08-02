@@ -200,6 +200,35 @@ _F019_REQUIRED_FILES = (
     "specs/019-ci-cost-optimization/tasks.md",
     "tests/unit/test_ci_audit.py",
 )
+_F020_REQUIRED_FILES = (
+    "benchmarks/product-value/v0.1.0/corpus-spec.json",
+    "benchmarks/product-value/v0.1.0/judgments.json",
+    "benchmarks/product-value/v0.1.0/protocol.json",
+    "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/observations.json",
+    "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/run-manifest.json",
+    "benchmarks/product-value/v0.1.0/results/reference-macos-arm64/summary.json",
+    "benchmarks/product-value/v0.1.0/value-policy.json",
+    "docs/19_PRODUCT_VALUE_BENCHMARK.md",
+    "scripts/generate_product_benchmark.py",
+    "scripts/product_benchmark_evaluation.py",
+    "scripts/product_benchmark_runner.py",
+    "scripts/run_product_benchmark.py",
+    "scripts/validate_product_benchmark.py",
+    "spec-kit/feature-prompts/020-product-value-benchmark.md",
+    "specs/020-product-value-benchmark/analysis.md",
+    "specs/020-product-value-benchmark/contracts/maintainer-benchmark.md",
+    "specs/020-product-value-benchmark/data-model.md",
+    "specs/020-product-value-benchmark/implementation-notes.md",
+    "specs/020-product-value-benchmark/plan.md",
+    "specs/020-product-value-benchmark/quickstart.md",
+    "specs/020-product-value-benchmark/research.md",
+    "specs/020-product-value-benchmark/spec.md",
+    "specs/020-product-value-benchmark/tasks.md",
+    "tests/integration/test_product_benchmark.py",
+    "tests/unit/test_product_benchmark.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -755,6 +784,20 @@ def _validate_f019_ci_governance(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f020_product_benchmark(root: Path) -> list[Diagnostic]:
+    """Require the complete F020 product-value benchmark boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV019",
+            relative,
+            "required F020 product benchmark artifact is missing",
+        )
+        for relative in _F020_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -841,6 +884,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f016_conformance(root))
     diagnostics.extend(_validate_f017_design(root))
     diagnostics.extend(_validate_f019_ci_governance(root))
+    diagnostics.extend(_validate_f020_product_benchmark(root))
     return _sort_diagnostics(root, diagnostics)
 
 

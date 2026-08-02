@@ -70,6 +70,9 @@ ADAPTER_MODULES = {
     "compact_objects",
     "context_candidates",
     "context_estimators",
+    "docling_bundle",
+    "docling_bundle_archive",
+    "docling_bundle_provisioning",
     "docling_native",
     "filesystem_cas",
     "filesystem_maintenance",
@@ -155,11 +158,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_022(
+def test_module_surface_is_bounded_to_feature_023(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F022 product modules."""
+    """Expose exactly the reviewed F002-F023 product modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

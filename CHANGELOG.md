@@ -5,6 +5,20 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 023 — offline PDF model bundle
+
+- Added an immutable source lock for the exact five Docling 2.114.0 Heron/TableFormer runtime files, independent
+  license/notices review material and an existing-contract model manifest; heavyweight weights and packages stay outside
+  Git and are never fetched by ordinary imports, tests or parsing.
+- Added explicit connected provisioning, exact closed-tree verification, deterministic uncompressed ZIP transfer and
+  bounded offline atomic installation. Missing, extra, linked, colliding, tampered and hostile archive inputs fail closed
+  with body-free errors.
+- Redirected all worker provider caches to a fresh private root and retained offline flags plus socket denial before
+  provider import. The actual PDF path consumes only the independently verified manifest tree.
+- Added an independently validated reference benchmark. The result is `PDF_OFFLINE_READY`: 384,428,156 model bytes,
+  384,450,807 package bytes, 2,310 bytes overhead and deterministic three-sample conversion with 4.169/4.271-second wall
+  p50/p95. Real-world and semantic quality remain explicitly unmeasured until F024/F025.
+
 ### Feature 022 — storage amplification reduction
 
 - Added checksummed workspace revision 11 with normalized representation scopes, compact block projections and nullable

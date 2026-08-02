@@ -115,6 +115,12 @@ def test_model_bundle_validation_is_streamed_exact_and_symlink_safe(
 
     assert validate_model_bundle(tmp_path, manifest) == tmp_path
 
+    extra = tmp_path / "extra.bin"
+    extra.write_bytes(b"unreviewed")
+    with pytest.raises(RichParserModelAssetsInvalid):
+        validate_model_bundle(tmp_path, manifest)
+    extra.unlink()
+
     model.write_bytes(payload + b"x")
     with pytest.raises(RichParserModelAssetsInvalid):
         validate_model_bundle(tmp_path, manifest)

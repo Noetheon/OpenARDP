@@ -6,8 +6,6 @@ import copy
 import hashlib
 import importlib.metadata
 import math
-import os
-import stat
 from collections.abc import Mapping
 from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
 from io import BytesIO
@@ -137,55 +135,12 @@ def build_docling_recipe(
 
 def validate_model_bundle(root: Path, manifest: ModelBundleManifest) -> Path:
     """Validate every reviewed model file without following links or escaping root."""
-    root = Path(os.path.abspath(root.expanduser()))
     try:
-        root_metadata = root.lstat()
-    except OSError:
+        from openardp.adapters.docling_bundle import verify_model_asset_tree
+
+        return verify_model_asset_tree(root.absolute(), manifest)
+    except (OSError, ValueError):
         raise RichParserModelAssetsInvalid("rich parser model assets invalid") from None
-    if root.is_symlink() or not stat.S_ISDIR(root_metadata.st_mode):
-        raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-    for item in manifest.files:
-        candidate = root.joinpath(*item.path.split("/"))
-        current = root
-        for part in item.path.split("/"):
-            current /= part
-            try:
-                metadata = current.lstat()
-            except OSError:
-                raise RichParserModelAssetsInvalid("rich parser model assets invalid") from None
-            if current.is_symlink():
-                raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-        if not stat.S_ISREG(metadata.st_mode):
-            raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-        try:
-            resolved = candidate.resolve(strict=True)
-            resolved.relative_to(root)
-        except (OSError, ValueError):
-            raise RichParserModelAssetsInvalid("rich parser model assets invalid") from None
-        observed_length = 0
-        digest = hashlib.sha256()
-        try:
-            with candidate.open("rb") as handle:
-                opened_metadata = os.fstat(handle.fileno())
-                if (
-                    not stat.S_ISREG(opened_metadata.st_mode)
-                    or opened_metadata.st_dev != metadata.st_dev
-                    or opened_metadata.st_ino != metadata.st_ino
-                ):
-                    raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-                while chunk := handle.read(1_048_576):
-                    observed_length += len(chunk)
-                    if observed_length > item.byte_length:
-                        raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-                    digest.update(chunk)
-        except OSError:
-            raise RichParserModelAssetsInvalid("rich parser model assets invalid") from None
-        if observed_length != item.byte_length:
-            raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-        observed = "sha256:" + digest.hexdigest()
-        if observed != item.sha256:
-            raise RichParserModelAssetsInvalid("rich parser model assets invalid")
-    return root
 
 
 def convert_docling_bytes(

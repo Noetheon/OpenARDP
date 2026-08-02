@@ -67,3 +67,15 @@ performance blocker but do not change the F020 `CONDITIONALLY_WORTHWHILE` decisi
 storage observation, PDF availability or semantic-quality limitations. See
 [`docs/20_INCREMENTAL_FRESHNESS.md`](20_INCREMENTAL_FRESHNESS.md) for the exact assurance boundary and reproduction
 commands.
+
+## F022 and F023 follow-ups
+
+F022 separately reduced the F020 logical workspace amplification by 64.77–65.21 percent across fresh reference,
+migrated reference and fresh scale scenarios while every retained product-correctness check passed. It does not rewrite
+the historical F020 result.
+
+F023 separately closes the missing-PDF-asset prerequisite for the frozen synthetic fixture. Its exact five-file,
+384,428,156-byte model installation and deterministic portable package produced `PDF_OFFLINE_READY`; three retained
+fresh workers emitted identical canonical native output with complete anchors/pointers at 4.169/4.271-second wall
+p50/p95. This evidence does not retroactively change F020, does not override F015 `NO-GO` and does not claim the
+real-world/semantic quality reserved for F024/F025.

@@ -32,6 +32,18 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - generated fixtures and schemas have deterministic regeneration checks;
 - vulnerability scans inform review but do not replace threat analysis.
 
+## Feature 023 offline PDF bundle operations
+
+- Provisioning is the only connected operation and must be invoked explicitly against the committed source lock.
+- Keep generated model roots and packages outside Git. Verification, packaging, installation and parsing require no
+  network and never trust ambient provider caches.
+- Transfer the source lock separately from the package and verify against it at the destination. Treat an unverified ZIP,
+  model root or manifest as untrusted input.
+- Upstream license identifiers and bundled license texts are mechanical review inputs, not legal clearance. Re-review
+  exact revisions and redistribution obligations before external distribution.
+- Rotate to new upstream bytes only through a new lock/profile version and benchmark; never edit an accepted digest in
+  place.
+
 ## Feature 007 operating profile
 
 - Core installs remain provider-free; rich parsing requires the exact optional

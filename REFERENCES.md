@@ -6,6 +6,9 @@ Checked on 2026-07-22. Re-verify versions and licenses before implementation.
 
 - Docling supported formats and unified representation: https://docling-project.github.io/docling/usage/supported_formats/
 - Docling repository: https://github.com/docling-project/docling
+- Docling offline/prefetch options: https://docling-project.github.io/docling/usage/advanced_options/
+- Docling Heron layout model: https://huggingface.co/docling-project/docling-layout-heron
+- Docling model artifacts (`v2.3.0`): https://huggingface.co/docling-project/docling-models/tree/v2.3.0
 - Docling MCP: https://github.com/docling-project/docling-mcp
 - Docling Serve: https://github.com/docling-project/docling-serve
 - Microsoft MarkItDown: https://github.com/microsoft/markitdown
@@ -39,6 +42,8 @@ Checked on 2026-07-22. Re-verify versions and licenses before implementation.
 - OWASP AI Agent Security Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html
 - OpenTelemetry: https://opentelemetry.io/docs/
 - SPDX: https://spdx.dev/
+- Community Data License Agreement: https://cdla.dev/
+- Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0
 - CycloneDX: https://cyclonedx.org/specification/overview/
 - REUSE specification: https://reuse.software/spec/
 - OpenSSF Scorecard: https://github.com/ossf/scorecard-action

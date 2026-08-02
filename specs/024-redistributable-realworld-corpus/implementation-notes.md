@@ -103,4 +103,23 @@ F025.
 - `uv run pre-commit run --all-files` passed every configured hook in the same clean staged tree, including the complete
   no-network Pytest hook.
 - Final analysis covers 26/26 functional requirements and 10/10 success criteria with zero unresolved critical/high
-  findings. The feature is converged subject only to T065 remote release evidence.
+  findings. The feature is converged; T065 release evidence is recorded below.
+
+### Remote release evidence
+
+- Private PR [#31](https://github.com/Noetheon/OpenARDP/pull/31) reviewed feature commit
+  `e1db1f352be207ff4e0a654593ad4f2508a0caba` and passed trusted CI run
+  [30761078961](https://github.com/Noetheon/OpenARDP/actions/runs/30761078961): preflight 43 seconds, macOS 4
+  minutes 55 seconds, Ubuntu 9 minutes 14 seconds including authoritative coverage/build, and Windows 11 minutes 32
+  seconds.
+- PR #31 merged as `0c7eaa1fba9934f7a5fa4332946a75f4d36481e9` on 2026-08-02.
+- Post-merge run [30761568800](https://github.com/Noetheon/OpenARDP/actions/runs/30761568800) initially failed before
+  execution because GitHub refused to allocate a runner. Its annotation states that recent account payments failed or
+  the spending limit needed increasing; runner ID was zero and no workflow step executed. This remains retained as an
+  external billing boundary rather than being misreported as a product or workflow failure.
+- After the repository owner restored runner allocation, attempt 2 executed the same historical merge SHA
+  `0c7eaa1fba9934f7a5fa4332946a75f4d36481e9` on 2026-08-08. Its post-merge preflight passed in 45 seconds; the Linux,
+  macOS and Windows quality jobs were correctly skipped by the governed `main`-push policy instead of duplicating the
+  already successful exact-SHA pull-request matrix.
+- The successful pull-request matrix and successful exact-merge-SHA post-merge preflight close T065 without hiding the
+  original external billing failure or spending additional all-platform runner minutes.

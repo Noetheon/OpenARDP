@@ -1,0 +1,56 @@
+{
+  "bootstrap_resamples": 10000,
+  "confidence_level": 0.95,
+  "metrics": {
+    "anchor_correctness": "ratio",
+    "context_coverage": "ratio",
+    "cpu_time": "ns",
+    "latency": "ns",
+    "native_bytes": "bytes",
+    "parser_invocations": "count",
+    "peak_rss": "bytes",
+    "precision": "ratio",
+    "recall": "ratio",
+    "reciprocal_rank": "ratio",
+    "replay_match": "ratio",
+    "selected_bytes": "bytes",
+    "source_bytes": "bytes",
+    "stale_incidents": "count",
+    "workspace_bytes": "bytes"
+  },
+  "privacy": {
+    "forbidden": [
+      "absolute_paths",
+      "credentials",
+      "hostnames",
+      "raw_exceptions",
+      "source_bodies",
+      "task_text",
+      "usernames"
+    ]
+  },
+  "profiles": {
+    "full": ["reference", "scale", "rich"],
+    "reference": ["reference", "rich"],
+    "scale": ["scale"],
+    "smoke": ["smoke"]
+  },
+  "protocol_version": "0.1.0",
+  "repetitions": 7,
+  "resource_limits": {
+    "maximum_blocks": 100000,
+    "maximum_result_bytes": 16777216,
+    "maximum_run_seconds": 3600,
+    "maximum_source_bytes": 104857600,
+    "maximum_workspace_bytes": 2147483648
+  },
+  "statistics": [
+    "p50",
+    "p95",
+    "median_absolute_deviation",
+    "deterministic_percentile_bootstrap"
+  ],
+  "timing_clock": "monotonic_ns",
+  "timing_unit": "ns",
+  "warmup_repetitions": 1
+}

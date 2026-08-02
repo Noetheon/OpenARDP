@@ -71,6 +71,7 @@ F005A_FEATURE_SEQUENCE = (
     "017-microsoft-graph-design-spike",
     "018-repository-hygiene",
     "019-ci-cost-optimization",
+    "020-product-value-benchmark",
 )
 HISTORICAL_FEATURE_PROMPTS = (
     "001-repository-baseline.md",
@@ -206,12 +207,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f019_governance_and_prior_contracts_are_present_and_frozen(
+def test_f020_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active CI governance, accepted ADRs and frozen prior contracts."""
+    """Require active benchmark governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/019-ci-cost-optimization"
+    assert active["feature_directory"] == "specs/020-product-value-benchmark"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -256,6 +257,7 @@ def test_f019_governance_and_prior_contracts_are_present_and_frozen(
     assert "does not authorize production Graph access" in f017_adr
     assert (repository_root / "spec-kit/feature-prompts/018-repository-hygiene.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/019-ci-cost-optimization.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/020-product-value-benchmark.md").is_file()
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
     assert (repository_root / "quality/ci-policy.json").is_file()
@@ -286,6 +288,28 @@ def test_f019_governance_and_prior_contracts_are_present_and_frozen(
     for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected
+
+
+def test_f020_committed_reference_result_remains_valid(repository_root: Path) -> None:
+    """Recompute the committed real result and retain its explicit limitations."""
+    from openardp.domain.product_benchmark import ValueOutcome
+    from scripts.product_benchmark_runner import validate_product_benchmark
+
+    result = validate_product_benchmark(
+        repository_root,
+        repository_root / "benchmarks/product-value/v0.1.0/results/reference-macos-arm64",
+    )
+    summary = json.loads((result.output / "summary.json").read_bytes())
+
+    assert result.decision.outcome is ValueOutcome.CONDITIONALLY_WORTHWHILE
+    assert summary["decision_metrics"]["reference_blocks"] == 10_000
+    assert summary["decision_metrics"]["scale_blocks"] == 100_000
+    assert summary["rich"]["docx"]["available"] is True
+    assert summary["rich"]["pptx"]["available"] is True
+    assert summary["rich"]["pdf"] == {
+        "available": False,
+        "reason_code": "pdf-model-bundle-unavailable",
+    }
 
 
 def test_focused_quickstarts_separate_partial_tests_from_full_coverage(

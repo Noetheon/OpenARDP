@@ -13,7 +13,27 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 009 notes](specs/009-read-only-mcp/implementation-notes.md) and
 [feature 010 notes](specs/010-reconciliation-derivation-dag/implementation-notes.md) and
 [feature 018 notes](specs/018-repository-hygiene/implementation-notes.md) and
-[feature 019 notes](specs/019-ci-cost-optimization/implementation-notes.md).
+[feature 019 notes](specs/019-ci-cost-optimization/implementation-notes.md) and
+[feature 020 notes](specs/020-product-value-benchmark/implementation-notes.md).
+
+## Feature 020 product-value evidence
+
+The decision-bearing macOS arm64 Full run completed in 2,901.601 seconds and published 878 body-free observations plus 98
+seven-sample timing summaries. Independent validation recomputed all observation identities, file digests, summaries,
+decision metrics, checks and the Markdown report. The decision ID is
+`sha256:c8006415be754c3d71f87f0e0c1655a8e313c89176b894c51e2efde9a0b91f6a` and the outcome is
+`CONDITIONALLY_WORTHWHILE`.
+
+Observed passing facts include 100-percent mechanical search/anchor/context/replay correctness, zero stale incidents,
+zero unchanged-source parser calls, A→B→A identity preservation, 100,000 blocks completed, 100,000-block search p95 of
+70.200 ms against 300 ms and a 32-task reference crossover versus raw reparsing. Observed limitations include reference
+status p95 of 2,087.372 ms against 250 ms, scale status p95 of 28,625.664 ms, unavailable PDF assets, two insufficient
+context budgets, about 37.9x text workspace amplification and no rich reuse latency crossover versus directly loaded
+native JSON.
+
+These are local synthetic-workload facts, not general production, model-quality or release claims. The F015 release
+decision remains `NO-GO`. The canonical evidence is under
+`benchmarks/product-value/v0.1.0/results/reference-macos-arm64/`.
 
 ## Blueprint relocation and Spec Kit bootstrap
 

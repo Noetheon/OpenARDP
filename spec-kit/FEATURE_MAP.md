@@ -36,13 +36,16 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 17 | `017-microsoft-graph-design-spike` | Mock-only least-privilege enterprise connector design. |
 | 18 | `018-repository-hygiene` | Measured post-roadmap refactoring, truthful validation and maintainability non-regression. |
 | 19 | `019-ci-cost-optimization` | Lower-cost event-aware CI with unchanged final three-platform quality and bounded release evidence. |
+| 20 | `020-product-value-benchmark` | Reproducible end-to-end value evidence at 10k/100k blocks and an honest workload-bounded worth-it decision. |
 
 ## Dependency rule
 
 A feature begins only after its predecessor converges and merges. Feature 006 defines the minimum contracts required by
 Feature 007. Later features may add fields only through documented contract evolution and migration rules. Feature 018
 is a behavior-preserving maintenance slice after the reviewed product roadmap. Feature 019 changes only repository
-automation and its enforcement evidence; neither feature authorizes a new product capability.
+automation and its enforcement evidence. Feature 020 measures the delivered product against raw-reparse and
+persisted-native baselines without changing runtime behavior or superseding the independent F015 release gate; none of
+these features authorizes a new product capability.
 
 ## Scope rule
 

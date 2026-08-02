@@ -5,6 +5,18 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 020 — product-value benchmark
+
+- Added a versioned, deterministic and fully offline benchmark comparing raw reparsing, persisted parser output and the
+  delivered OpenARDP ingestion/search/context/replay paths at 10,000 and 100,000 synthetic blocks.
+- Added exact correctness, freshness, unchanged-parser, rich DOCX/PPTX/PDF, storage, latency, context-budget and
+  amortization evidence with retained samples, robust summaries and a no-waiver three-state value decision.
+- Kept unavailable PDF assets, insufficient context budgets and missed performance targets explicit; the F020 product
+  decision remains workload-bounded and cannot replace the authoritative F015 release `NO-GO` decision.
+- The committed full run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents, zero unchanged
+  parser calls, 70.200 ms 100k search p95 and 32-task reference break-even pass; 2.087 s reference status p95, missing
+  PDF assets and incomplete 256/512-byte context coverage prevent an unconditional result.
+
 ### Feature 019 — CI cost and latency optimization
 
 - Replaced duplicated all-event quality execution with fail-closed change classification, draft Preflight and stable

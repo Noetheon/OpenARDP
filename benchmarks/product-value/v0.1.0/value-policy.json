@@ -1,0 +1,31 @@
+{
+  "decision_version": "0.1.0",
+  "hard_failures": {
+    "maximum_stale_incidents": 0,
+    "maximum_unchanged_parser_invocations": 0,
+    "minimum_anchor_correctness": 1.0,
+    "minimum_context_coverage": 1.0,
+    "minimum_precision": 1.0,
+    "minimum_recall": 1.0,
+    "minimum_replay_match": 1.0
+  },
+  "policy_version": "0.1.0",
+  "required_for_unconditional": {
+    "break_even_horizon": 100,
+    "maximum_context_selected_native_ratio": 0.5,
+    "maximum_search_p95_ns_at_100k": 300000000,
+    "maximum_status_p95_ns": 250000000,
+    "minimum_reference_blocks": 10000,
+    "minimum_scale_blocks": 100000,
+    "required_rich_formats": ["docx", "pdf", "pptx"]
+  },
+  "required_reference_treatments": [
+    "raw_reparse",
+    "persisted_native",
+    "openardp"
+  ],
+  "sample_policy": {
+    "minimum_timing_samples": 7,
+    "warmups": 1
+  }
+}

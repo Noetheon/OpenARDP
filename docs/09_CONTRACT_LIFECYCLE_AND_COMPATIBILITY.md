@@ -19,10 +19,10 @@ Readers must reject unsupported major versions and preserve unknown extension da
 
 Every catalog migration is transactional, checksummed, restart-safe and backed by upgrade/downgrade or backup/restore evidence. Opening a newer unsupported workspace must fail without mutation. Rebuildable indexes are migrated separately from authoritative facts.
 
-As of F014 these axes are deliberately independent: application `0.0.1`, workspace
-revision 10, `VisualEvidenceDescriptor 0.1.0`, unchanged F006/F008/F009 contracts and
+As of F022 these axes are deliberately independent: application `0.1.0rc1`, workspace
+revision 11, `VisualEvidenceDescriptor 0.1.0`, unchanged F006/F008/F009 contracts and
 experimental export profile/public interchange record `0.1.0`. F012 watcher/job and
-F013 maintenance records remain internal. F014 adds no workspace migration and never
+F013 maintenance and F022 compact-storage records remain internal. F014 adds no workspace migration and never
 infers its reader version from application, workspace, provider or MCP versions.
 Exact renderer, parser and watcher profile versions are identity inputs,
 not application or workspace versions. A breaking visual identity or schema change
@@ -63,3 +63,19 @@ the explicit `workspace-migrate` entrypoint and a successfully published, verifi
 pre-upgrade backup whose manifest identity is recorded in the same migration transaction.
 Rollback means restoring that revision-9 backup to a fresh location; in-place downgrade
 is unsupported. Public JSON schemas remain unchanged by Feature 013.
+
+## Workspace revision 11
+
+Feature 022 advances compatible revision-10 workspaces only through the existing explicit backup-first
+`workspace-migrate` boundary. Revision 11 normalizes repeated representation scopes, merges disposable search metadata
+onto body-free block projections and adds an optional versioned compact physical form for reproducible derived F002
+blocks. SHA-256 continues to identify exact logical bytes; public JSON schemas and application identity are unchanged.
+
+Ordinary `open` never migrates or optimizes. After migration, the operator explicitly runs `storage-optimize`; this
+idempotent operation never invokes a parser or reads a source, excludes every source/native/non-block authoritative root,
+and publishes a smaller verified compact form before removing the ordinary derived copy. Rollback restores the verified
+revision-10 backup to a fresh path. Older readers reject revision 11 rather than guessing at the new physical layout.
+
+See [ADR 0018](adr/0018-compact-derived-block-storage.md), the
+[F022 implementation record](../specs/022-storage-amplification/implementation-notes.md) and the retained
+[storage benchmark](../benchmarks/storage/v0.1.0/README.md).

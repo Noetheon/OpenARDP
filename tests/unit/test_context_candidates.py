@@ -193,7 +193,11 @@ def test_text_discovery_fails_closed_on_incomplete_index(tmp_path: Path) -> None
     result = ingestion.ingest(source_path)
     snapshot = _snapshot_for(catalog, result.scope.document_id)
     connection = sqlite3.connect(tmp_path / "store" / "catalog.sqlite3")
-    connection.execute("DELETE FROM block_search_entries")
+    connection.execute("DELETE FROM block_search_index")
+    connection.execute(
+        "UPDATE representation_blocks SET trust_zone=NULL, page=NULL, slide=NULL, "
+        "text_hash=NULL, indexed_at=NULL"
+    )
     connection.commit()
     connection.close()
     source = TextLexicalCandidateSource(store, catalog)

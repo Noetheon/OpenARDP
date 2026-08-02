@@ -97,7 +97,11 @@ metadata and the canonical F002 generation-record JSON required to reconstruct a
 fingerprint its internal lifecycle row.
 Revision 8 adds visual page/crop evidence. Revision 9 atomically rebuilds the released
 job tables to add eligibility and cancellation, then adds watcher roots, observations,
-exact targets and body/path-free events. The public JSON schemas remain unchanged.
+exact targets and body/path-free events. Revision 10 adds retention/recovery intent and
+verified backup/migration records. Revision 11 normalizes repeated representation scopes,
+stores block navigation plus nullable rebuildable search metadata in one projection and
+retains a narrow lineage bridge only for blocks referenced by lineage facts. The public
+JSON schemas remain unchanged.
 
 Every connection enables foreign keys, disables trusted schemas and dirty reads, uses parameterized record SQL and enters
 an explicit transaction. The current local profile uses rollback-journal `DELETE` plus `synchronous=EXTRA`; WAL is not an
@@ -111,6 +115,11 @@ Object path:
 ```text
 objects/sha256/ab/cd/<remaining-hash>
 ```
+
+Canonical reproducible F002 block objects may instead use the internal physical profile
+`objects/openardp-deflate-dict-v1/sha256/ab/cd/<remaining-hash>` when its complete bounded envelope is smaller.
+The object ID remains SHA-256 over the decoded exact logical bytes. Sources, provider-native artifacts, manifests,
+contexts and relations use the ordinary path; storage optimization cannot transcode or delete them.
 
 Objects are immutable. Metadata records media type, length and integrity. Duplicate assets across documents are stored once.
 

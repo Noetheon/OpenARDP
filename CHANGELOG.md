@@ -5,6 +5,19 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 022 — storage amplification reduction
+
+- Added checksummed workspace revision 11 with normalized representation scopes, compact block projections and nullable
+  rebuildable search metadata while retaining SHA-256 identities over exact logical bytes.
+- Added deterministic bounded `openardp-deflate-dict-v1` physical storage only for canonical derived text blocks;
+  originals and provider-native artifacts remain ordinary immutable objects and every logical read verifies exact bytes.
+- Extended maintenance, inventory, backup, restore and interruption recovery across raw/compact forms, plus explicit
+  backup-first revision-10 migration and idempotent `storage-optimize` with a restart-persistent exclusive write fence
+  and body-free CLI evidence.
+- Added an independently validated offline reference/migration/scale benchmark. The binding macOS arm64 run passes at
+  13.200–13.347x logical and 51.485–51.641x allocated amplification, a 64.77–65.21 percent logical reduction from F020,
+  with every retained search, freshness, reuse, edit/revert and context replay check passing.
+
 ### Feature 021 — incremental freshness status
 
 - Split exact source freshness from exhaustive representation verification: default `HEAD` status still hashes the

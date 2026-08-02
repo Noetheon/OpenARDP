@@ -59,7 +59,12 @@ from openardp.ports.catalog import (
     RepresentationBusy,
     RepresentationIntegrityError,
 )
-from openardp.ports.object_store import ObjectStore, ObjectStoreError
+from openardp.ports.object_store import (
+    CompactBlockStore,
+    ObjectStore,
+    ObjectStoreError,
+    OrdinaryAuthorityStore,
+)
 from openardp.ports.parser import ParserAdapter, ParserError
 
 _REPRESENTATION_LEASE = timedelta(minutes=5)
@@ -151,6 +156,7 @@ class IngestionService:
             )
         elif version.source != snapshot.object or version.media_type != snapshot.media_type.value:
             raise RepresentationIntegrityError("source version metadata is inconsistent")
+        self._retain_ordinary_authority(version.source)
 
         scope = RepresentationScope(
             document_id=document.document_id,
@@ -398,7 +404,10 @@ class IngestionService:
             object_id="sha256:" + hashlib.sha256(payload).hexdigest(),
             byte_length=len(payload),
         )
-        stored = self._object_store.put_chunks((payload,))
+        if isinstance(model, ContentBlock) and isinstance(self._object_store, CompactBlockStore):
+            stored = self._object_store.put_canonical_block(payload)
+        else:
+            stored = self._object_store.put_chunks((payload,))
         if stored != expected:
             raise RepresentationIntegrityError("canonical object publication is inconsistent")
         return self._object_store.verify(
@@ -415,6 +424,16 @@ class IngestionService:
         if len(payload) != verified.byte_length:
             raise RepresentationIntegrityError("object length changed during read")
         return payload
+
+    def _retain_ordinary_authority(self, stored: StoredObject) -> None:
+        """Converge a catalog-authoritative source only when the store supports it."""
+        if isinstance(self._object_store, OrdinaryAuthorityStore):
+            retained = self._object_store.retain_ordinary_authority(
+                stored.object_id,
+                expected_length=stored.byte_length,
+            )
+            if retained != stored:
+                raise RepresentationIntegrityError("ordinary source authority is inconsistent")
 
     @staticmethod
     def _assert_canonical_payload(

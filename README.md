@@ -131,6 +131,12 @@ exact source SHA-256 inspection plus one atomic READY-header snapshot; its commi
   revision-10 migration with a recorded pre-upgrade manifest;
 - body-free storage diagnostics, exact reserve admission and an all-or-prior global
   lexical-index rebuild derived from verified READY evidence.
+- checksummed workspace revision 11 with normalized representation scope/search
+  projections and transparent bounded compact storage for canonical derived text blocks;
+- explicit backup-first revision-10 migration and idempotent `storage-optimize`, while
+  ordinary open remains non-mutating and source/provider-native objects remain ordinary;
+- a retained offline reference/migration/scale benchmark reducing logical amplification
+  from about 37.9x to 13.20–13.35x without changing exact search, context, replay or history.
 - experimental BagIt profile `0.1.0` with deterministic stored-ZIP export, hostile
   package verification, fresh read-only snapshot import and no custom `.ardp` suffix;
 - a strict public interchange schema and offline deterministic valid/invalid vector
@@ -235,6 +241,7 @@ openardp jobs --store .openardp --limit 50 --json
 openardp job-cancel <job-uuid> --store .openardp --json
 openardp storage-inventory --store .openardp --json
 openardp storage-diagnostics --store .openardp --json
+openardp storage-optimize --store .openardp --json
 openardp workspace-backup --store .openardp --destination ../openardp-backup
 openardp index-rebuild --store .openardp --json
 openardp mcp --store .openardp

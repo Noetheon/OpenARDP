@@ -149,13 +149,18 @@ def test_reindex_is_idempotent_and_repairs_missing_entries(tmp_path: Path) -> No
     result = ingestion.ingest(_write(tmp_path / "doc.txt", "repairable token here\n"))
     catalog = SQLiteCatalog(root / "catalog.sqlite3")
     with catalog._write_connection() as connection:
-        rows = connection.execute("SELECT entry_id FROM block_search_entries").fetchall()
+        rows = connection.execute(
+            "SELECT entry_id FROM representation_blocks WHERE indexed_at IS NOT NULL"
+        ).fetchall()
         for row in rows:
             connection.execute(
                 "DELETE FROM block_search_index WHERE rowid = ?",
                 (int(row["entry_id"]),),
             )
-        connection.execute("DELETE FROM block_search_entries")
+        connection.execute(
+            "UPDATE representation_blocks SET trust_zone=NULL, page=NULL, slide=NULL, "
+            "text_hash=NULL, indexed_at=NULL"
+        )
 
     with pytest.raises(SearchIndexIncomplete):
         search.search("repairable")

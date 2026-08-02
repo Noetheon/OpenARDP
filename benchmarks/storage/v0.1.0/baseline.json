@@ -1,0 +1,19 @@
+{
+  "decision": "CONDITIONALLY_WORTHWHILE",
+  "f020_summary_sha256": "sha256:0cf7d3c3eef2dd95b0951022054865ce4adabf43d2466478fb56f7fad48b351c",
+  "profiles": {
+    "reference": {
+      "blocks": 10000,
+      "source_bytes": 1949999,
+      "source_sha256": "sha256:057847a9eecb7b17d38e0631892af20bc6add93195ff6bf713b8bd5032193bd5",
+      "workspace_logical_bytes": 73874827
+    },
+    "scale": {
+      "blocks": 100000,
+      "source_bytes": 19499999,
+      "source_sha256": "sha256:0b496bc038888c55afc73fe1f51a1ba018df81f66581e5b33cf4cc0514c5560a",
+      "workspace_logical_bytes": 739947189
+    }
+  },
+  "version": "0.1.0"
+}

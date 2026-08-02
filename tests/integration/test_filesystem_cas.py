@@ -338,3 +338,65 @@ def test_inventory_reports_corruption_without_deleting_bytes(tmp_path: Path) -> 
     assert inventory.anomalies[0].code is StoreAnomalyCode.CORRUPT_OBJECT
     assert inventory.anomalies[0].object_id == result.object_id
     assert leaf.read_bytes() == b"changed!"
+
+
+def test_canonical_block_uses_encoding_transparent_compact_storage(tmp_path: Path) -> None:
+    """Read compact physical bytes through the unchanged logical object contract."""
+    store = FilesystemObjectStore(tmp_path / "store")
+    payload = (
+        b'{"block_id":"00000000-0000-4000-8000-000000000001",'
+        b'"document_id":"00000000-0000-4000-8000-000000000002",'
+        b'"kind":"paragraph","record_type":"block","schema_version":"0.1.0",'
+        b'"text":"Synthetic compact block fixture.","version_id":"sha256:' + b"a" * 64 + b'"}'
+    )
+
+    stored = store.put_canonical_block(payload)
+
+    assert b"".join(store.iter_chunks(stored.object_id, chunk_size=17)) == payload
+    assert store.verify(stored.object_id) == stored
+    digest = stored.object_id.removeprefix("sha256:")
+    assert not (tmp_path / "store" / "objects" / "sha256" / digest[:2]).exists()
+    assert (
+        tmp_path
+        / "store"
+        / "objects"
+        / "openardp-deflate-dict-v1"
+        / "sha256"
+        / digest[:2]
+        / digest[2:4]
+        / digest[4:]
+    ).is_file()
+
+
+def test_existing_ordinary_authority_is_not_duplicated_as_compact(tmp_path: Path) -> None:
+    """A matching raw source/native object remains the sole physical form."""
+    store = FilesystemObjectStore(tmp_path / "store")
+    payload = b'{"kind":"paragraph","text":"' + (b"repeatable " * 200) + b'"}'
+    ordinary = store.put_chunks((payload,))
+
+    derived = store.put_canonical_block(payload)
+
+    assert derived == ordinary
+    assert b"".join(store.iter_chunks(ordinary.object_id)) == payload
+    assert not store._compact_path_for_id(ordinary.object_id).exists()
+
+
+def test_committed_ordinary_authority_removes_exact_compact_peer(tmp_path: Path) -> None:
+    """Converge a late source/native collision only after catalog authorization."""
+    store = FilesystemObjectStore(tmp_path / "store")
+    payload = b'{"kind":"paragraph","text":"' + (b"repeatable " * 200) + b'"}'
+    compact = store.put_canonical_block(payload)
+    ordinary = store.put_chunks((payload,))
+    assert ordinary == compact
+    assert store._path_for_id(compact.object_id).is_file()
+    assert store._compact_path_for_id(compact.object_id).is_file()
+
+    retained = store.retain_ordinary_authority(
+        compact.object_id,
+        expected_length=compact.byte_length,
+    )
+
+    assert retained == ordinary
+    assert store._path_for_id(compact.object_id).is_file()
+    assert not store._compact_path_for_id(compact.object_id).exists()
+    assert b"".join(store.iter_chunks(compact.object_id)) == payload

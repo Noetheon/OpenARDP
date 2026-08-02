@@ -196,7 +196,7 @@ def reproduce_workspace_recovery(
     *,
     now: datetime,
 ) -> tuple[ReproductionResult, ...]:
-    """Exercise supported prior-open, revision-nine migration and exact rollback locally."""
+    """Exercise supported prior-open, previous-revision migration and exact rollback."""
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
     previous_plan = _fixture_plan(fixture_root / "previous-v0.0.1" / "workspace-plan.json")
@@ -214,12 +214,12 @@ def reproduce_workspace_recovery(
     opened = LocalWorkspace.open(previous)
     previous_passed = opened.catalog.schema_version() == CURRENT_SCHEMA_VERSION
 
-    revision_nine = scratch / "revision-nine"
+    revision_nine = scratch / "revision-ten"
     _initialize_historical_workspace(revision_nine, now=now)
     backup = scratch / "pre-upgrade-backup"
     migrated = LocalWorkspace.migrate(revision_nine, backup, now=now)
     migration_passed = migrated.catalog.schema_version() == CURRENT_SCHEMA_VERSION
-    restored = scratch / "restored-revision-nine"
+    restored = scratch / "restored-revision-ten"
     report = LocalWorkspace.restore(backup, restored, now=now)
     rollback_passed = (
         report.catalog_schema_version == CURRENT_SCHEMA_VERSION - 1
@@ -235,6 +235,7 @@ def reproduce_workspace_recovery(
             (canonical_sha256(cast(JsonValue, previous_plan)),),
         ),
         ReproductionResult(
+            # Stable release-evidence check ID retained for schema compatibility.
             "revision-nine-migration",
             "passed" if migration_passed else "failed",
             0,

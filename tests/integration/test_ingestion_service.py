@@ -255,6 +255,17 @@ def test_corrupt_ready_block_fails_explicitly_without_automatic_reparse(tmp_path
     aggregate = catalog.load_representation(first.scope)
     assert aggregate is not None
     block_path = _object_path(store.root, aggregate.blocks[0].object.object_id)
+    if not block_path.exists():
+        digest = aggregate.blocks[0].object.object_id.removeprefix("sha256:")
+        block_path = (
+            store.root
+            / "objects"
+            / "openardp-deflate-dict-v1"
+            / "sha256"
+            / digest[:2]
+            / digest[2:4]
+            / digest[4:]
+        )
     block_path.write_bytes(b"corrupt")
 
     with pytest.raises(RepresentationIntegrityError, match="integrity"):

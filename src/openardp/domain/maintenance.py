@@ -36,6 +36,7 @@ class MaintenanceAnomalyCode(StrEnum):
     HARDLINKED_OBJECT = "HARDLINKED_OBJECT"
     STAGING_RESIDUE = "STAGING_RESIDUE"
     DUPLICATE_LOCATION = "DUPLICATE_LOCATION"
+    DUPLICATE_PHYSICAL_FORM = "DUPLICATE_PHYSICAL_FORM"
     MISSING_QUARANTINE = "MISSING_QUARANTINE"
 
 
@@ -68,6 +69,7 @@ class MaintenanceObject(DomainModel):
     byte_length: int = Field(ge=0)
     modified_at: UtcDatetime
     location: ObjectLocation
+    physical_profile: Literal["ordinary", "openardp-deflate-dict-v1"] = "ordinary"
 
 
 class MaintenanceAnomaly(DomainModel):
@@ -354,6 +356,7 @@ class MaintenanceOperationKind(StrEnum):
     BACKUP = "BACKUP"
     MIGRATE = "MIGRATE"
     INDEX_REBUILD = "INDEX_REBUILD"
+    STORAGE_OPTIMIZE = "STORAGE_OPTIMIZE"
 
 
 class MaintenanceOperationState(StrEnum):
@@ -635,6 +638,65 @@ class StorageDiagnostic(DomainModel):
         return self
 
 
+class StorageOptimizationOutcome(StrEnum):
+    """Closed result for one eligible derived block object."""
+
+    COMPACTED = "compacted"
+    ORDINARY_SMALLER = "ordinary_smaller"
+    ALREADY_COMPACT = "already_compact"
+    DUPLICATE_CONVERGED = "duplicate_converged"
+    FAILED = "failed"
+
+
+class StorageOptimizationItem(DomainModel):
+    """Body- and path-free result for one logical object identity."""
+
+    object_id: Sha256Id
+    outcome: StorageOptimizationOutcome
+    logical_bytes: int = Field(ge=0)
+    stored_bytes_before: int = Field(ge=0)
+    stored_bytes_after: int = Field(ge=0)
+    reason_code: ClosedReason | None = None
+
+
+class StorageOptimizationReport(DomainModel):
+    """Deterministic aggregate from one explicit storage optimization run."""
+
+    workspace_revision: int = Field(ge=1)
+    items: tuple[StorageOptimizationItem, ...]
+    catalog_bytes_before: int = Field(ge=0)
+    catalog_bytes_after: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def _items_are_canonical(self) -> StorageOptimizationReport:
+        identifiers = tuple(item.object_id for item in self.items)
+        if identifiers != tuple(sorted(set(identifiers))):
+            raise ValueError("optimization items must be sorted and unique")
+        return self
+
+    @property
+    def failed_count(self) -> int:
+        """Return the number of safely retained failures."""
+        return sum(item.outcome is StorageOptimizationOutcome.FAILED for item in self.items)
+
+    @property
+    def eligible_count(self) -> int:
+        """Return the number of catalog-approved logical objects considered."""
+        return len(self.items)
+
+    @property
+    def completed_count(self) -> int:
+        """Return the number of objects that safely reached a terminal outcome."""
+        return self.eligible_count - self.failed_count
+
+    @property
+    def stored_bytes_saved(self) -> int:
+        """Return exact non-negative physical object bytes removed."""
+        return sum(
+            max(0, item.stored_bytes_before - item.stored_bytes_after) for item in self.items
+        ) + max(0, self.catalog_bytes_before - self.catalog_bytes_after)
+
+
 __all__ = [
     "BackupFile",
     "BackupManifest",
@@ -670,4 +732,7 @@ __all__ = [
     "StorageCategory",
     "StorageDiagnostic",
     "StorageHealth",
+    "StorageOptimizationItem",
+    "StorageOptimizationOutcome",
+    "StorageOptimizationReport",
 ]

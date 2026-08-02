@@ -13,6 +13,17 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import BinaryIO
 
+from openardp.adapters.compact_objects import (
+    MAX_LOGICAL_BYTES,
+    PROFILE,
+    CompactObjectError,
+    decode_compact,
+    encode_compact,
+)
+from openardp.domain.maintenance import (
+    StorageOptimizationItem,
+    StorageOptimizationOutcome,
+)
 from openardp.domain.storage import (
     ObjectInventory,
     StoreAnomaly,
@@ -48,8 +59,13 @@ class FilesystemObjectStore:
         self._root = configured.resolve(strict=True)
         self._objects = self._root / "objects"
         self._algorithm_root = self._objects / "sha256"
+        self._compact_profile_root = self._objects / PROFILE
+        self._compact_algorithm_root = self._compact_profile_root / "sha256"
         self._staging = self._root / "staging"
-        for directory in (self._objects, self._algorithm_root, self._staging):
+        directories = [self._objects, self._algorithm_root, self._staging]
+        if create:
+            directories.extend((self._compact_profile_root, self._compact_algorithm_root))
+        for directory in directories:
             if create:
                 self._ensure_directory(directory)
             else:
@@ -148,6 +164,119 @@ class FilesystemObjectStore:
                 with suppress(OSError):
                     temporary.unlink(missing_ok=True)
 
+    def put_canonical_block(self, payload: bytes) -> StoredObject:
+        """Publish one canonical derived block using the compact v1 form if smaller."""
+        if not isinstance(payload, bytes):
+            raise TypeError("canonical block payload must be bytes")
+        object_id = "sha256:" + hashlib.sha256(payload).hexdigest()
+        ordinary = self._path_for_id(object_id)
+        if self._lexists(ordinary):
+            return self.verify(object_id, expected_length=len(payload))
+        envelope = encode_compact(payload)
+        if envelope is None:
+            return self.put_chunks((payload,))
+        destination = self._compact_path_for_id(object_id)
+        self._publish_physical_bytes(destination, envelope, object_id=object_id)
+        return self.verify(object_id, expected_length=len(payload))
+
+    def retain_ordinary_authority(
+        self,
+        object_id: str,
+        *,
+        expected_length: int,
+    ) -> StoredObject:
+        """Converge a committed source/native collision to its ordinary authority."""
+        if type(expected_length) is not int or expected_length < 0:
+            raise ValueError("expected_length must be a non-negative integer")
+        ordinary = self._path_for_id(object_id)
+        compact = self._compact_path_for_id(object_id)
+        verified = self._verify_ordinary(ordinary, object_id=object_id)
+        if verified.byte_length != expected_length:
+            raise ObjectCorrupt(f"object length mismatch: {object_id}")
+        if not self._lexists(compact):
+            return verified
+        compact_payload = self._read_verified_compact(compact, object_id=object_id)
+        if len(compact_payload) != expected_length:
+            raise ObjectCorrupt(f"physical object forms disagree: {object_id}")
+        try:
+            compact.unlink()
+            self._sync_directory(compact.parent)
+        except OSError:
+            raise ObjectDurabilityError(
+                f"ordinary authority convergence is uncertain for {object_id}"
+            ) from None
+        return self._verify_ordinary(ordinary, object_id=object_id)
+
+    def optimize_derived_block(
+        self,
+        object_id: str,
+        *,
+        expected_length: int,
+    ) -> StorageOptimizationItem:
+        """Explicitly converge one catalog-approved block to its smaller physical form."""
+        if type(expected_length) is not int or expected_length < 0:
+            raise ValueError("expected_length must be a non-negative integer")
+        ordinary = self._path_for_id(object_id)
+        compact = self._compact_path_for_id(object_id)
+        ordinary_present = self._lexists(ordinary)
+        compact_present = self._lexists(compact)
+        if not ordinary_present and not compact_present:
+            raise ObjectNotFound(object_id)
+        before = 0
+        if ordinary_present:
+            ordinary_verified = self._verify_ordinary(ordinary, object_id=object_id)
+            if ordinary_verified.byte_length != expected_length:
+                raise ObjectCorrupt(f"object length mismatch: {object_id}")
+            before += ordinary.lstat().st_size
+        if compact_present:
+            compact_payload = self._read_verified_compact(compact, object_id=object_id)
+            if len(compact_payload) != expected_length:
+                raise ObjectCorrupt(f"object length mismatch: {object_id}")
+            before += compact.lstat().st_size
+        if compact_present and not ordinary_present:
+            return StorageOptimizationItem(
+                object_id=object_id,
+                outcome=StorageOptimizationOutcome.ALREADY_COMPACT,
+                logical_bytes=expected_length,
+                stored_bytes_before=before,
+                stored_bytes_after=before,
+            )
+        if compact_present:
+            ordinary.unlink()
+            self._sync_directory(ordinary.parent)
+            self._fault_point("after_ordinary_removal")
+            return StorageOptimizationItem(
+                object_id=object_id,
+                outcome=StorageOptimizationOutcome.DUPLICATE_CONVERGED,
+                logical_bytes=expected_length,
+                stored_bytes_before=before,
+                stored_bytes_after=compact.lstat().st_size,
+            )
+        with self._open_regular(ordinary, object_id=object_id) as stream:
+            payload = stream.read(MAX_LOGICAL_BYTES + 1)
+        envelope = encode_compact(payload) if len(payload) == expected_length else None
+        if envelope is None:
+            return StorageOptimizationItem(
+                object_id=object_id,
+                outcome=StorageOptimizationOutcome.ORDINARY_SMALLER,
+                logical_bytes=expected_length,
+                stored_bytes_before=before,
+                stored_bytes_after=before,
+            )
+        self._publish_physical_bytes(compact, envelope, object_id=object_id)
+        self._fault_point("after_compact_publication")
+        self.verify(object_id, expected_length=expected_length)
+        ordinary.unlink()
+        self._sync_directory(ordinary.parent)
+        self._fault_point("after_ordinary_removal")
+        return StorageOptimizationItem(
+            object_id=object_id,
+            outcome=StorageOptimizationOutcome.COMPACTED,
+            logical_bytes=expected_length,
+            stored_bytes_before=before,
+            stored_bytes_after=compact.lstat().st_size,
+        )
+
     def iter_chunks(
         self,
         object_id: str,
@@ -157,8 +286,22 @@ class FilesystemObjectStore:
         """Yield bounded exact object chunks from a safe regular-file handle."""
         if type(chunk_size) is not int or chunk_size <= 0:
             raise ValueError("chunk_size must be a positive integer")
-        path = self._path_for_id(object_id)
-        with self._open_regular(path, object_id=object_id) as stream:
+        ordinary = self._path_for_id(object_id)
+        compact = self._compact_path_for_id(object_id)
+        ordinary_present = self._lexists(ordinary)
+        compact_present = self._lexists(compact)
+        if not ordinary_present and not compact_present:
+            raise ObjectNotFound(object_id)
+        if compact_present:
+            compact_payload = self._read_verified_compact(compact, object_id=object_id)
+            if ordinary_present:
+                ordinary_object = self._verify_ordinary(ordinary, object_id=object_id)
+                if ordinary_object.byte_length != len(compact_payload):
+                    raise ObjectCorrupt(f"physical object forms disagree: {object_id}")
+            for offset in range(0, len(compact_payload), chunk_size):
+                yield compact_payload[offset : offset + chunk_size]
+            return
+        with self._open_regular(ordinary, object_id=object_id) as stream:
             while chunk := stream.read(chunk_size):
                 yield chunk
 
@@ -173,7 +316,28 @@ class FilesystemObjectStore:
             type(expected_length) is not int or expected_length < 0
         ):
             raise ValueError("expected_length must be a non-negative integer")
-        path = self._path_for_id(object_id)
+        ordinary = self._path_for_id(object_id)
+        compact = self._compact_path_for_id(object_id)
+        ordinary_present = self._lexists(ordinary)
+        compact_present = self._lexists(compact)
+        if not ordinary_present and not compact_present:
+            raise ObjectNotFound(object_id)
+        verified: StoredObject | None = None
+        if ordinary_present:
+            verified = self._verify_ordinary(ordinary, object_id=object_id)
+        if compact_present:
+            compact_payload = self._read_verified_compact(compact, object_id=object_id)
+            compact_verified = StoredObject(object_id=object_id, byte_length=len(compact_payload))
+            if verified is not None and verified != compact_verified:
+                raise ObjectCorrupt(f"physical object forms disagree: {object_id}")
+            verified = compact_verified
+        assert verified is not None
+        if expected_length is not None and verified.byte_length != expected_length:
+            raise ObjectCorrupt(f"object length mismatch: {object_id}")
+        return verified
+
+    def _verify_ordinary(self, path: Path, *, object_id: str) -> StoredObject:
+        """Verify one present ordinary physical form without consulting peers."""
         digest = hashlib.sha256()
         byte_length = 0
         with self._open_regular(path, object_id=object_id) as stream:
@@ -190,13 +354,34 @@ class FilesystemObjectStore:
         actual_id = "sha256:" + digest.hexdigest()
         if actual_id != object_id or byte_length != after.st_size:
             raise ObjectCorrupt(f"object digest or length mismatch: {object_id}")
-        if expected_length is not None and byte_length != expected_length:
-            raise ObjectCorrupt(f"object length mismatch: {object_id}")
         return StoredObject(object_id=object_id, byte_length=byte_length)
+
+    def _read_verified_compact(self, path: Path, *, object_id: str) -> bytes:
+        """Read, bound, decode and verify one present compact physical form."""
+        with self._open_compact_regular(path, object_id=object_id) as stream:
+            before = os.fstat(stream.fileno())
+            if before.st_size > MAX_LOGICAL_BYTES:
+                raise ObjectCorrupt(f"compact object is oversized: {object_id}")
+            envelope = stream.read(MAX_LOGICAL_BYTES + 1)
+            after = os.fstat(stream.fileno())
+        if (
+            self._file_identity(before) != self._file_identity(after)
+            or before.st_size != after.st_size
+            or len(envelope) != before.st_size
+        ):
+            raise ObjectCorrupt(f"object changed during verification: {object_id}")
+        try:
+            payload = decode_compact(envelope)
+        except CompactObjectError:
+            raise ObjectCorrupt(f"compact object is malformed: {object_id}") from None
+        actual_id = "sha256:" + hashlib.sha256(payload).hexdigest()
+        if actual_id != object_id:
+            raise ObjectCorrupt(f"object digest or length mismatch: {object_id}")
+        return payload
 
     def inventory(self) -> ObjectInventory:
         """Scan the exact fan-out tree without following or deleting entries."""
-        objects: list[StoredObject] = []
+        objects_by_id: dict[str, StoredObject] = {}
         anomalies: list[StoreAnomaly] = []
         if not self._inventory_directory_is_safe(self._root, anomalies):
             return ObjectInventory(objects=(), anomalies=tuple(anomalies))
@@ -209,10 +394,38 @@ class FilesystemObjectStore:
                     )
                 )
         if not self._inventory_directory_is_safe(self._objects, anomalies):
-            return self._inventory_result(objects, anomalies)
+            return self._inventory_result(list(objects_by_id.values()), anomalies)
         if not self._inventory_directory_is_safe(self._algorithm_root, anomalies):
-            return self._inventory_result(objects, anomalies)
-        for first in self._scandir_sorted(self._algorithm_root):
+            return self._inventory_result(list(objects_by_id.values()), anomalies)
+        self._scan_algorithm_tree(
+            self._algorithm_root,
+            objects_by_id=objects_by_id,
+            anomalies=anomalies,
+            compact=False,
+        )
+        if self._lexists(self._compact_profile_root):
+            if not self._inventory_directory_is_safe(self._compact_profile_root, anomalies):
+                return self._inventory_result(list(objects_by_id.values()), anomalies)
+            if not self._inventory_directory_is_safe(self._compact_algorithm_root, anomalies):
+                return self._inventory_result(list(objects_by_id.values()), anomalies)
+            self._scan_algorithm_tree(
+                self._compact_algorithm_root,
+                objects_by_id=objects_by_id,
+                anomalies=anomalies,
+                compact=True,
+            )
+        return self._inventory_result(list(objects_by_id.values()), anomalies)
+
+    def _scan_algorithm_tree(
+        self,
+        algorithm_root: Path,
+        *,
+        objects_by_id: dict[str, StoredObject],
+        anomalies: list[StoreAnomaly],
+        compact: bool,
+    ) -> None:
+        """Scan one closed physical namespace into a deduplicated logical inventory."""
+        for first in self._scandir_sorted(algorithm_root):
             first_path = Path(first.path)
             if not _FANOUT.fullmatch(first.name):
                 anomalies.append(self._layout_anomaly(first_path, malformed=True))
@@ -235,7 +448,15 @@ class FilesystemObjectStore:
                         continue
                     object_id = f"sha256:{first.name}{second.name}{leaf.name}"
                     try:
-                        objects.append(self.verify(object_id))
+                        if compact:
+                            payload = self._read_verified_compact(leaf_path, object_id=object_id)
+                            stored = StoredObject(object_id=object_id, byte_length=len(payload))
+                        else:
+                            stored = self._verify_ordinary(leaf_path, object_id=object_id)
+                        peer = objects_by_id.get(object_id)
+                        if peer is not None and peer != stored:
+                            raise ObjectCorrupt(f"physical object forms disagree: {object_id}")
+                        objects_by_id[object_id] = stored
                     except ObjectCorrupt:
                         anomalies.append(
                             StoreAnomaly(
@@ -252,7 +473,57 @@ class FilesystemObjectStore:
                                 object_id=object_id,
                             )
                         )
-        return self._inventory_result(objects, anomalies)
+
+    def _publish_physical_bytes(
+        self,
+        destination: Path,
+        payload: bytes,
+        *,
+        object_id: str,
+    ) -> None:
+        """Atomically publish one already-encoded physical form without replacement."""
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix="compact-",
+            suffix=".part",
+            dir=self._staging,
+        )
+        temporary = Path(temporary_name)
+        published = False
+        try:
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(payload)
+                stream.flush()
+                self._sync_staged_file(stream.fileno())
+            self._ensure_directory(destination.parent.parent.parent)
+            self._ensure_directory(destination.parent.parent)
+            self._ensure_directory(destination.parent)
+            if self._lexists(destination):
+                self._read_verified_compact(destination, object_id=object_id)
+                return
+            try:
+                if os.name == "nt":
+                    os.rename(temporary, destination)
+                else:
+                    os.link(temporary, destination, follow_symlinks=False)
+                    temporary.unlink()
+                published = True
+            except FileExistsError:
+                self._read_verified_compact(destination, object_id=object_id)
+                return
+            except OSError:
+                raise ObjectPublicationError(
+                    f"compact object publication failed for {object_id}"
+                ) from None
+            self._read_verified_compact(destination, object_id=object_id)
+            self._sync_directory(destination.parent)
+        except ObjectStoreError:
+            raise
+        except Exception:
+            raise ObjectPublicationError("compact object publication failed") from None
+        finally:
+            if not published:
+                with suppress(OSError):
+                    temporary.unlink(missing_ok=True)
 
     @staticmethod
     def _inventory_result(
@@ -366,11 +637,19 @@ class FilesystemObjectStore:
         return False
 
     def _path_for_id(self, object_id: str) -> Path:
+        digest = self._digest_for_id(object_id)
+        return self._algorithm_root / digest[:2] / digest[2:4] / digest[4:]
+
+    def _compact_path_for_id(self, object_id: str) -> Path:
+        digest = self._digest_for_id(object_id)
+        return self._compact_algorithm_root / digest[:2] / digest[2:4] / digest[4:]
+
+    @staticmethod
+    def _digest_for_id(object_id: str) -> str:
         match = _OBJECT_ID.fullmatch(object_id)
         if match is None:
             raise MalformedObjectIdentity("invalid SHA-256 object identity")
-        digest = match.group(1)
-        return self._algorithm_root / digest[:2] / digest[2:4] / digest[4:]
+        return match.group(1)
 
     def _ensure_directory(self, path: Path) -> None:
         if self._lexists(path):
@@ -433,6 +712,44 @@ class FilesystemObjectStore:
             if not self._lexists(directory):
                 raise ObjectNotFound(object_id)
             self._assert_directory(directory)
+
+    @contextmanager
+    def _open_compact_regular(self, path: Path, *, object_id: str) -> Iterator[BinaryIO]:
+        """Open a compact leaf while validating its distinct managed ancestors."""
+        for directory in (
+            self._root,
+            self._objects,
+            self._compact_profile_root,
+            self._compact_algorithm_root,
+        ):
+            self._assert_directory(directory)
+        for directory in (path.parent.parent, path.parent):
+            if not self._lexists(directory):
+                raise ObjectNotFound(object_id)
+            self._assert_directory(directory)
+        try:
+            before = path.lstat()
+        except FileNotFoundError:
+            raise ObjectNotFound(object_id) from None
+        self._assert_regular_metadata(path, before)
+        flags = os.O_RDONLY
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        try:
+            descriptor = os.open(path, flags)
+        except OSError:
+            raise UnsafeStoreEntry(f"unsafe object entry: {object_id}") from None
+        try:
+            opened = os.fstat(descriptor)
+            self._assert_regular_metadata(path, opened)
+            if self._file_identity(before) != self._file_identity(opened):
+                raise UnsafeStoreEntry(f"object entry changed while opening: {object_id}")
+            with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                yield stream
+        finally:
+            os.close(descriptor)
 
     def _assert_regular_metadata(self, path: Path, metadata: os.stat_result) -> None:
         if self._is_link_or_junction(path, metadata) or not stat.S_ISREG(metadata.st_mode):
@@ -499,3 +816,7 @@ class FilesystemObjectStore:
         except ValueError:
             return "outside-managed-root"
         return "".join(character if ord(character) >= 32 else "?" for character in raw)
+
+    @staticmethod
+    def _fault_point(_point: str) -> None:
+        """Provide deterministic interruption boundaries for recovery tests."""

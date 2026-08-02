@@ -175,6 +175,11 @@ from openardp.domain.ingestion import (
     TextMediaType,
     deterministic_block_id,
 )
+from openardp.domain.maintenance import (
+    StorageOptimizationItem,
+    StorageOptimizationOutcome,
+    StorageOptimizationReport,
+)
 from openardp.domain.manifest import (
     DocumentManifest,
     ManifestState,
@@ -584,6 +589,9 @@ __all__ = [
     "SourceVersionCommit",
     "StatisticalSummary",
     "StatusMode",
+    "StorageOptimizationItem",
+    "StorageOptimizationOutcome",
+    "StorageOptimizationReport",
     "StoreAnomaly",
     "StoreAnomalyCode",
     "StoredObject",

@@ -63,7 +63,12 @@ from openardp.domain.context_compilation import (
 from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import RichMediaType, StatusMode
 from openardp.domain.interchange import AssetDisposition, InterchangeLimits, InterchangePackage
-from openardp.domain.maintenance import InventoryLimits, ReclamationPlan, RetentionPolicy
+from openardp.domain.maintenance import (
+    InventoryLimits,
+    ReclamationPlan,
+    RetentionPolicy,
+    StorageOptimizationReport,
+)
 from openardp.domain.release import (
     EvidenceCheck,
     EvidenceMalformed,
@@ -161,6 +166,7 @@ from openardp.services.release_gate import (
 from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
+from openardp.services.storage_optimization import StorageOptimizationService
 from openardp.services.visual_evidence import VisualEvidenceService
 from openardp.services.watcher import WatcherService
 
@@ -187,6 +193,7 @@ _COMMANDS = {
     "storage-hold-release",
     "storage-diagnostics",
     "storage-inventory",
+    "storage-optimize",
     "storage-plan",
     "storage-quarantine",
     "storage-commit",
@@ -342,6 +349,12 @@ def _parser() -> _ArgumentParser:
         operation = subparsers.add_parser(name, help=help_text)
         operation.add_argument("--reserve-bytes", type=int, default=67_108_864)
         _common_options(operation)
+
+    storage_optimize = subparsers.add_parser(
+        "storage-optimize",
+        help="explicitly compact eligible derived blocks and reclaim catalog pages",
+    )
+    _common_options(storage_optimize)
 
     workspace_backup = subparsers.add_parser(
         "workspace-backup",
@@ -1183,6 +1196,11 @@ def _maintenance_service(workspace: LocalWorkspace) -> MaintenanceService:
     return MaintenanceService(workspace.maintenance_store, workspace.catalog)
 
 
+def _storage_optimization_service(workspace: LocalWorkspace) -> StorageOptimizationService:
+    """Compose the explicit provider-neutral storage optimization capabilities."""
+    return StorageOptimizationService(workspace.object_store, workspace.catalog)
+
+
 def _retention_policy(arguments: argparse.Namespace) -> RetentionPolicy:
     """Build one trusted bounded CLI policy using exact integer units."""
     return RetentionPolicy(
@@ -1344,6 +1362,11 @@ def _execute_maintenance(
     command: str,
 ) -> object:
     """Execute storage maintenance and index-rebuild commands."""
+    if command == "storage-optimize":
+        report = _storage_optimization_service(workspace).optimize()
+        if report.failed_count:
+            raise ObjectStoreError("storage optimization did not converge")
+        return report
     if command == "storage-inventory":
         return _maintenance_service(workspace).inventory(
             policy=_retention_policy(arguments),
@@ -1553,6 +1576,17 @@ def _parse_uuid(value: str) -> UUID:
 
 
 def _json_value(value: object) -> object:
+    if isinstance(value, StorageOptimizationReport):
+        payload = value.model_dump(mode="json")
+        payload.update(
+            {
+                "completed_count": value.completed_count,
+                "eligible_count": value.eligible_count,
+                "failed_count": value.failed_count,
+                "stored_bytes_saved": value.stored_bytes_saved,
+            }
+        )
+        return payload
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json")
     if isinstance(value, tuple):
@@ -1573,6 +1607,14 @@ def _write_json(payload: dict[str, object]) -> None:
             separators=(",", ":"),
         )
         + "\n"
+    )
+
+
+def _print_storage_optimization_summary(report: StorageOptimizationReport) -> None:
+    """Render one body-free explicit optimization summary line."""
+    print(
+        f"eligible={report.eligible_count} completed={report.completed_count} "
+        f"failed={report.failed_count} saved={report.stored_bytes_saved} bytes"
     )
 
 
@@ -1617,6 +1659,9 @@ def _success(command: str, data: object, *, json_output: bool) -> None:
     elif command == "status":
         assert isinstance(converted, dict)
         print(f"{converted['freshness']}\t{converted['integrity_coverage']}")
+    elif command == "storage-optimize":
+        assert isinstance(data, StorageOptimizationReport)
+        _print_storage_optimization_summary(data)
     elif command == "outline":
         assert isinstance(converted, list)
         for item in converted:

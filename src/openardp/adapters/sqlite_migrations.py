@@ -1401,6 +1401,238 @@ MIGRATION_10 = Migration(
     ),
 )
 
+MIGRATION_11 = Migration(
+    version=11,
+    name="normalized-block-storage",
+    statements=(
+        "DROP INDEX representation_blocks_block_id_idx",
+        "DROP INDEX representation_blocks_object_id_idx",
+        "ALTER TABLE representation_blocks RENAME TO lineage_block_keys",
+        """
+        CREATE TABLE representation_scopes (
+            scope_key INTEGER PRIMARY KEY,
+            document_id TEXT NOT NULL CHECK (length(document_id) = 36),
+            version_id TEXT NOT NULL CHECK (
+                length(version_id) = 71 AND substr(version_id, 1, 7) = 'sha256:'
+                AND substr(version_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            representation_id TEXT NOT NULL CHECK (
+                length(representation_id) = 71
+                AND substr(representation_id, 1, 7) = 'sha256:'
+                AND substr(representation_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            UNIQUE (document_id, version_id, representation_id),
+            FOREIGN KEY (document_id, version_id, representation_id)
+                REFERENCES document_representations(
+                    document_id, version_id, representation_id
+                ) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        INSERT INTO representation_scopes(document_id, version_id, representation_id)
+        SELECT document_id, version_id, representation_id
+        FROM document_representations
+        ORDER BY document_id, version_id, representation_id
+        """,
+        """
+        CREATE TABLE representation_blocks (
+            entry_id INTEGER PRIMARY KEY,
+            scope_key INTEGER NOT NULL,
+            ordinal INTEGER NOT NULL CHECK (ordinal BETWEEN 0 AND 99999),
+            block_id TEXT NOT NULL CHECK (length(block_id) = 36),
+            object_id TEXT NOT NULL,
+            parent_id TEXT NULL CHECK (parent_id IS NULL OR length(parent_id) = 36),
+            kind TEXT NOT NULL CHECK (length(kind) BETWEEN 1 AND 64),
+            sibling_order INTEGER NOT NULL CHECK (sibling_order >= 0),
+            line_start INTEGER NOT NULL CHECK (line_start >= 1),
+            line_end INTEGER NOT NULL CHECK (line_end >= line_start),
+            trust_zone TEXT NULL CHECK (
+                trust_zone IS NULL OR length(trust_zone) BETWEEN 1 AND 64
+            ),
+            page INTEGER NULL CHECK (page IS NULL OR page >= 0),
+            slide INTEGER NULL CHECK (slide IS NULL OR slide >= 0),
+            text_hash TEXT NULL CHECK (
+                text_hash IS NULL OR (
+                    length(text_hash) = 71 AND substr(text_hash, 1, 7) = 'sha256:'
+                    AND substr(text_hash, 8) NOT GLOB '*[^0-9a-f]*'
+                )
+            ),
+            indexed_at TEXT NULL CHECK (indexed_at IS NULL OR length(indexed_at) = 27),
+            UNIQUE (scope_key, ordinal),
+            UNIQUE (scope_key, block_id),
+            FOREIGN KEY (scope_key) REFERENCES representation_scopes(scope_key)
+                ON DELETE RESTRICT,
+            FOREIGN KEY (object_id) REFERENCES objects(object_id) ON DELETE RESTRICT,
+            CHECK (
+                (trust_zone IS NULL AND text_hash IS NULL AND indexed_at IS NULL
+                    AND page IS NULL AND slide IS NULL)
+                OR
+                (trust_zone IS NOT NULL AND text_hash IS NOT NULL AND indexed_at IS NOT NULL)
+            )
+        ) STRICT
+        """,
+        """
+        WITH maximum AS (
+            SELECT coalesce(max(entry_id), 0) AS value FROM block_search_entries
+        ), source AS (
+            SELECT l.*, s.scope_key, e.entry_id AS search_entry_id,
+                   e.trust_zone, e.page, e.slide, e.text_hash, e.indexed_at,
+                   row_number() OVER (
+                       ORDER BY l.document_id, l.version_id, l.representation_id, l.ordinal
+                   ) AS sequence
+            FROM lineage_block_keys AS l
+            JOIN representation_scopes AS s
+              ON s.document_id = l.document_id AND s.version_id = l.version_id
+             AND s.representation_id = l.representation_id
+            LEFT JOIN block_search_entries AS e
+              ON e.document_id = l.document_id AND e.version_id = l.version_id
+             AND e.representation_id = l.representation_id AND e.ordinal = l.ordinal
+        )
+        INSERT INTO representation_blocks(
+            entry_id, scope_key, ordinal, block_id, object_id, parent_id, kind,
+            sibling_order, line_start, line_end, trust_zone, page, slide, text_hash,
+            indexed_at
+        )
+        SELECT coalesce(source.search_entry_id, maximum.value + source.sequence),
+               source.scope_key, source.ordinal, source.block_id, source.object_id,
+               source.parent_id, source.kind, source.sibling_order, source.line_start,
+               source.line_end, source.trust_zone, source.page, source.slide,
+               source.text_hash, source.indexed_at
+        FROM source CROSS JOIN maximum
+        ORDER BY source.sequence
+        """,
+        """
+        DELETE FROM lineage_block_keys
+        WHERE NOT EXISTS (
+            SELECT 1 FROM block_lineages AS l
+            WHERE l.document_id = lineage_block_keys.document_id
+              AND l.origin_version_id = lineage_block_keys.version_id
+              AND l.origin_representation_id = lineage_block_keys.representation_id
+              AND l.origin_block_id = lineage_block_keys.block_id
+        ) AND NOT EXISTS (
+            SELECT 1 FROM block_lineage_members AS m
+            WHERE m.document_id = lineage_block_keys.document_id
+              AND m.version_id = lineage_block_keys.version_id
+              AND m.representation_id = lineage_block_keys.representation_id
+              AND m.block_id = lineage_block_keys.block_id
+        )
+        """,
+        "DROP INDEX block_search_entries_block_id_idx",
+        "DROP INDEX block_search_entries_scope_idx",
+        "DROP TABLE block_search_entries",
+        "CREATE INDEX representation_blocks_object_id_idx ON representation_blocks(object_id)",
+        """
+        CREATE VIEW representation_block_projection AS
+        SELECT b.entry_id, s.document_id, s.version_id, s.representation_id,
+               b.scope_key, b.ordinal, b.block_id, b.object_id, b.parent_id, b.kind,
+               b.sibling_order, b.line_start, b.line_end, b.trust_zone, b.page,
+               b.slide, b.text_hash, b.indexed_at
+        FROM representation_blocks AS b
+        JOIN representation_scopes AS s ON s.scope_key = b.scope_key
+        """,
+        "ALTER TABLE maintenance_operation_entries RENAME TO maintenance_operation_entries_v10",
+        "ALTER TABLE maintenance_events RENAME TO maintenance_events_v10",
+        "DROP INDEX maintenance_operations_one_active_idx",
+        "ALTER TABLE maintenance_operations RENAME TO maintenance_operations_v10",
+        """
+        CREATE TABLE maintenance_operations (
+            operation_id TEXT PRIMARY KEY CHECK (length(operation_id) = 36),
+            kind TEXT NOT NULL CHECK (kind IN (
+                'QUARANTINE', 'RESTORE', 'COMMIT', 'BACKUP', 'MIGRATE', 'INDEX_REBUILD',
+                'STORAGE_OPTIMIZE'
+            )),
+            subject_id TEXT NOT NULL CHECK (
+                length(subject_id) = 71 AND substr(subject_id, 1, 7) = 'sha256:'
+                AND substr(subject_id, 8) NOT GLOB '*[^0-9a-f]*'
+            ),
+            state TEXT NOT NULL CHECK (state IN (
+                'PREPARED', 'APPLYING', 'SUCCEEDED', 'FAILED', 'BLOCKED'
+            )),
+            acknowledgement_digest TEXT NULL CHECK (
+                acknowledgement_digest IS NULL OR length(acknowledgement_digest) = 71
+            ),
+            created_at TEXT NOT NULL CHECK (length(created_at) = 27),
+            updated_at TEXT NOT NULL CHECK (length(updated_at) = 27),
+            terminal_at TEXT NULL CHECK (terminal_at IS NULL OR length(terminal_at) = 27),
+            failure_code TEXT NULL CHECK (
+                failure_code IS NULL OR length(failure_code) BETWEEN 1 AND 64
+            ),
+            CHECK (updated_at >= created_at),
+            CHECK ((state IN ('PREPARED', 'APPLYING')) = (terminal_at IS NULL))
+        ) STRICT
+        """,
+        """
+        INSERT INTO maintenance_operations(
+            operation_id, kind, subject_id, state, acknowledgement_digest,
+            created_at, updated_at, terminal_at, failure_code
+        )
+        SELECT operation_id, kind, subject_id, state, acknowledgement_digest,
+               created_at, updated_at, terminal_at, failure_code
+        FROM maintenance_operations_v10
+        ORDER BY operation_id
+        """,
+        "CREATE UNIQUE INDEX maintenance_operations_one_active_idx "
+        "ON maintenance_operations((1)) WHERE state IN ('PREPARED', 'APPLYING')",
+        """
+        CREATE TABLE maintenance_operation_entries (
+            operation_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            object_id TEXT NOT NULL CHECK (length(object_id) = 71),
+            byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+            action TEXT NOT NULL CHECK (action IN (
+                'MOVE_TO_QUARANTINE', 'MOVE_TO_ACTIVE', 'DELETE', 'RESTORE_CONFLICT', 'COPY'
+            )),
+            source_state TEXT NOT NULL CHECK (source_state IN ('ACTIVE', 'QUARANTINE', 'NONE')),
+            destination_state TEXT NOT NULL CHECK (
+                destination_state IN ('ACTIVE', 'QUARANTINE', 'NONE')
+            ),
+            outcome TEXT NULL CHECK (
+                outcome IS NULL OR outcome IN ('MOVED', 'REMOVED', 'RETAINED', 'COPIED')
+            ),
+            PRIMARY KEY (operation_id, sequence),
+            UNIQUE (operation_id, object_id),
+            FOREIGN KEY (operation_id)
+                REFERENCES maintenance_operations(operation_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        INSERT INTO maintenance_operation_entries(
+            operation_id, sequence, object_id, byte_length, action,
+            source_state, destination_state, outcome
+        )
+        SELECT operation_id, sequence, object_id, byte_length, action,
+               source_state, destination_state, outcome
+        FROM maintenance_operation_entries_v10
+        ORDER BY operation_id, sequence
+        """,
+        """
+        CREATE TABLE maintenance_events (
+            operation_id TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 1),
+            event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 64),
+            object_id TEXT NULL CHECK (object_id IS NULL OR length(object_id) = 71),
+            entry_count INTEGER NOT NULL CHECK (entry_count >= 0),
+            byte_count INTEGER NOT NULL CHECK (byte_count >= 0),
+            occurred_at TEXT NOT NULL CHECK (length(occurred_at) = 27),
+            PRIMARY KEY (operation_id, sequence),
+            FOREIGN KEY (operation_id)
+                REFERENCES maintenance_operations(operation_id) ON DELETE RESTRICT
+        ) STRICT
+        """,
+        """
+        INSERT INTO maintenance_events(
+            operation_id, sequence, event_type, object_id, entry_count, byte_count, occurred_at
+        )
+        SELECT operation_id, sequence, event_type, object_id, entry_count, byte_count, occurred_at
+        FROM maintenance_events_v10
+        ORDER BY operation_id, sequence
+        """,
+        "DROP TABLE maintenance_operation_entries_v10",
+        "DROP TABLE maintenance_events_v10",
+        "DROP TABLE maintenance_operations_v10",
+    ),
+)
+
 MIGRATIONS = (
     MIGRATION_1,
     MIGRATION_2,
@@ -1412,6 +1644,7 @@ MIGRATIONS = (
     MIGRATION_8,
     MIGRATION_9,
     MIGRATION_10,
+    MIGRATION_11,
 )
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1].version
 
@@ -1428,5 +1661,6 @@ __all__ = [
     "MIGRATION_8",
     "MIGRATION_9",
     "MIGRATION_10",
+    "MIGRATION_11",
     "Migration",
 ]

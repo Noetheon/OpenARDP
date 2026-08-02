@@ -49,7 +49,7 @@ def _legacy_workspace(root: Path) -> None:
     for suffix in ("", "-shm", "-wal"):
         (root / f"catalog.sqlite3{suffix}").unlink(missing_ok=True)
     shutil.rmtree(root / "quarantine")
-    SQLiteCatalog(root / "catalog.sqlite3", migrations=MIGRATIONS[:9]).initialize(now=NOW)
+    SQLiteCatalog(root / "catalog.sqlite3", migrations=MIGRATIONS[:10]).initialize(now=NOW)
 
 
 def test_backup_is_verified_non_mutating_and_excludes_lexical_rows(tmp_path: Path) -> None:
@@ -74,7 +74,9 @@ def test_backup_is_verified_non_mutating_and_excludes_lexical_rows(tmp_path: Pat
     assert manifest.quarantined_object_ids == (second.object_id,)
     assert "workspace/catalog.sqlite3" in {item.relative_path for item in manifest.files}
     with sqlite3.connect(tmp_path / "backup-a" / "workspace" / "catalog.sqlite3") as db:
-        assert db.execute("SELECT count(*) FROM block_search_entries").fetchone() == (0,)
+        assert db.execute(
+            "SELECT count(*) FROM representation_blocks WHERE indexed_at IS NOT NULL"
+        ).fetchone() == (0,)
         assert db.execute("SELECT count(*) FROM block_search_index").fetchone() == (0,)
         assert db.execute("PRAGMA quick_check").fetchone() == ("ok",)
 
@@ -127,8 +129,8 @@ def test_restore_rejects_corruption_overlap_and_existing_destination(tmp_path: P
     assert sentinel.read_bytes() == b"keep"
 
 
-def test_explicit_revision_nine_migration_publishes_verified_rollback(tmp_path: Path) -> None:
-    """Refuse implicit upgrade, then record a pre-upgrade revision-nine backup."""
+def test_explicit_revision_ten_migration_publishes_verified_rollback(tmp_path: Path) -> None:
+    """Refuse implicit upgrade, then record a pre-upgrade revision-ten backup."""
     root = tmp_path / "legacy"
     _legacy_workspace(root)
     marker = (root / ".openardp-workspace.json").read_bytes()
@@ -141,20 +143,20 @@ def test_explicit_revision_nine_migration_publishes_verified_rollback(tmp_path: 
 
     migrated = LocalWorkspace.migrate(root, tmp_path / "pre-upgrade", now=NOW)
     manifest = _manifest(tmp_path / "pre-upgrade")
-    assert manifest.catalog_schema_version == 9
-    assert migrated.catalog.schema_version() == 10
+    assert manifest.catalog_schema_version == 10
+    assert migrated.catalog.schema_version() == 11
     with sqlite3.connect(root / "catalog.sqlite3") as db:
         row = db.execute(
             "SELECT source_revision, manifest_id, verified FROM migration_backups"
         ).fetchone()
-    assert row == (9, manifest.manifest_id, 1)
+    assert row == (10, manifest.manifest_id, 1)
 
     LocalWorkspace.restore(tmp_path / "pre-upgrade", tmp_path / "rollback-a", now=NOW)
     restored_catalog = SQLiteCatalog(
         tmp_path / "rollback-a" / "catalog.sqlite3",
-        migrations=MIGRATIONS[:9],
+        migrations=MIGRATIONS[:10],
     )
-    assert restored_catalog.schema_version() == 9
+    assert restored_catalog.schema_version() == 10
 
 
 def test_backup_rejects_existing_or_overlapping_destination(tmp_path: Path) -> None:
@@ -229,7 +231,7 @@ def test_backup_interruption_before_publication_leaves_no_destination(
 
 
 def test_parallel_explicit_migration_commits_once_from_exact_revision(tmp_path: Path) -> None:
-    """Only a caller that snapshots revision nine may publish the revision-ten upgrade."""
+    """Only a caller that snapshots revision ten may publish the revision-eleven upgrade."""
     root = tmp_path / "legacy"
     _legacy_workspace(root)
 
@@ -243,10 +245,10 @@ def test_parallel_explicit_migration_commits_once_from_exact_revision(tmp_path: 
     with ThreadPoolExecutor(max_workers=10) as executor:
         outcomes = tuple(executor.map(migrate, range(20)))
     assert sum(outcomes) == 1
-    assert LocalWorkspace.open(root).catalog.schema_version() == 10
+    assert LocalWorkspace.open(root).catalog.schema_version() == 11
     with sqlite3.connect(root / "catalog.sqlite3") as connection:
         assert connection.execute(
-            "SELECT count(*) FROM migration_backups WHERE target_revision=10"
+            "SELECT count(*) FROM migration_backups WHERE target_revision=11"
         ).fetchone() == (1,)
 
 

@@ -88,7 +88,7 @@ def test_reproduction_requires_both_artifacts_and_every_allowlisted_step() -> No
         )
 
 
-def test_previous_application_and_revision_nine_fixture_provenance_is_explicit() -> None:
+def test_previous_application_and_revision_ten_fixture_provenance_is_explicit() -> None:
     """Bind upgrade/recovery plans to independent version and revision facts."""
     previous = json.loads(
         (
@@ -101,13 +101,13 @@ def test_previous_application_and_revision_nine_fixture_provenance_is_explicit()
         ).read_bytes()
     )
     assert previous["application_version"] == "0.0.1"
-    assert previous["catalog_revision"] == 10
+    assert previous["catalog_revision"] == 11
     assert len(previous["source_merge_commit"]) == 40
-    assert revision_nine["catalog_revision"] == 9
+    assert revision_nine["catalog_revision"] == 10
     assert revision_nine["synthetic"] is True
 
 
-def test_previous_open_revision_nine_migration_and_disjoint_rollback(tmp_path: Path) -> None:
+def test_previous_open_revision_ten_migration_and_disjoint_rollback(tmp_path: Path) -> None:
     """Execute the complete supported workspace reproduction instead of asserting a plan."""
     results = reproduce_workspace_recovery(
         ROOT / "tests" / "fixtures" / "release",
@@ -120,6 +120,6 @@ def test_previous_open_revision_nine_migration_and_disjoint_rollback(tmp_path: P
         "backup-upgrade-restore",
     )
     assert all(item.status == "passed" for item in results)
-    assert (tmp_path / "reproduction" / "revision-nine").is_dir()
+    assert (tmp_path / "reproduction" / "revision-ten").is_dir()
     assert (tmp_path / "reproduction" / "pre-upgrade-backup").is_dir()
-    assert (tmp_path / "reproduction" / "restored-revision-nine").is_dir()
+    assert (tmp_path / "reproduction" / "restored-revision-ten").is_dir()

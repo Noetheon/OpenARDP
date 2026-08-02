@@ -7,7 +7,7 @@ from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from threading import Barrier
+from threading import Barrier, Lock
 
 import pytest
 
@@ -123,6 +123,53 @@ def test_concurrent_posix_links_converge_to_one_exact_destination(
     )
     assert inventory.active == ()
     assert inventory.quarantined[0].object_id == stored.object_id
+
+
+def test_concurrent_exact_removals_converge_after_verified_unlink_race(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Converge transient Windows unlink conflicts to one exact winner."""
+    workspace = LocalWorkspace.initialize(tmp_path / "store", now=NOW)
+    stored = workspace.object_store.put_chunks((b"contended-removal",))
+    workspace.maintenance_store.transition(
+        stored.object_id,
+        to_quarantine=True,
+        byte_length=stored.byte_length,
+    )
+    digest = stored.object_id.removeprefix("sha256:")
+    quarantine = workspace.root / "quarantine" / "sha256" / digest[:2] / digest[2:4] / digest[4:]
+    real_unlink = Path.unlink
+    barrier = Barrier(10)
+    lock = Lock()
+    calls = 0
+
+    def contested_unlink(path: Path, missing_ok: bool = False) -> None:
+        nonlocal calls
+        if path == quarantine:
+            barrier.wait()
+            with lock:
+                calls += 1
+                if calls < barrier.parties:
+                    raise PermissionError("synthetic sharing violation")
+        real_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", contested_unlink)
+
+    def remove(_: int) -> None:
+        workspace.maintenance_store.remove(
+            stored.object_id,
+            byte_length=stored.byte_length,
+        )
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        tuple(executor.map(remove, range(10)))
+
+    inventory = workspace.maintenance_store.inventory(
+        InventoryLimits(max_entries=10, max_bytes=100)
+    )
+    assert inventory.active == ()
+    assert inventory.quarantined == ()
 
 
 def test_storage_diagnostics_and_capacity_are_exact_at_reserve_boundary(

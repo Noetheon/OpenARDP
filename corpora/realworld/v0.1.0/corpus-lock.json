@@ -1,0 +1,167 @@
+{
+  "aggregate_payload_bytes": 6634970,
+  "assets": [
+    {
+      "authors": ["Cybersecurity and Infrastructure Security Agency"],
+      "byte_length": 7469,
+      "expected_content_types": ["text/plain"],
+      "format": "txt",
+      "key": "cisa-kev-license",
+      "media_type": "text/plain",
+      "path": "sources/cisa-kev-license.txt",
+      "publication_date": "2026-07-29",
+      "publisher": "Cybersecurity and Infrastructure Security Agency",
+      "rights_id": "cisa-kev-cc0-1.0",
+      "sha256": "sha256:8dfcf2d0cba33bede386eb470daf2ac08caf6540fc2516baab10dd546f90938a",
+      "source_record_url": "https://github.com/cisagov/kev-data/commit/564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_revision": "564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_url": "https://raw.githubusercontent.com/cisagov/kev-data/564b8c59f9039926e2d9548ba5b334db45cb6b50/LICENSE",
+      "title": "CISA Known Exploited Vulnerabilities data CC0 dedication"
+    },
+    {
+      "authors": ["Cybersecurity and Infrastructure Security Agency"],
+      "byte_length": 3246,
+      "expected_content_types": ["text/plain"],
+      "format": "md",
+      "key": "cisa-kev-readme",
+      "media_type": "text/markdown",
+      "path": "sources/cisa-kev-readme.md",
+      "publication_date": "2026-07-29",
+      "publisher": "Cybersecurity and Infrastructure Security Agency",
+      "rights_id": "cisa-kev-cc0-1.0",
+      "sha256": "sha256:947fbb52bc557a4c0f0b174d37605b66f476f43c6a7d8ad33d927faf3692e886",
+      "source_record_url": "https://github.com/cisagov/kev-data/commit/564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_revision": "564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_url": "https://raw.githubusercontent.com/cisagov/kev-data/564b8c59f9039926e2d9548ba5b334db45cb6b50/README.md",
+      "title": "Known Exploited Vulnerabilities Catalog data mirror README"
+    },
+    {
+      "authors": ["Cybersecurity and Infrastructure Security Agency"],
+      "byte_length": 932085,
+      "expected_content_types": ["text/plain"],
+      "format": "csv",
+      "key": "cisa-known-exploited-vulnerabilities",
+      "media_type": "text/csv",
+      "path": "sources/cisa-known-exploited-vulnerabilities.csv",
+      "publication_date": "2026-07-29",
+      "publisher": "Cybersecurity and Infrastructure Security Agency",
+      "rights_id": "cisa-kev-cc0-1.0",
+      "sha256": "sha256:e9a3a5412b0d714931ffbd8114e3784519a003ce473d9db5bd382f739d6b4a24",
+      "source_record_url": "https://github.com/cisagov/kev-data/commit/564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_revision": "564b8c59f9039926e2d9548ba5b334db45cb6b50",
+      "source_url": "https://raw.githubusercontent.com/cisagov/kev-data/564b8c59f9039926e2d9548ba5b334db45cb6b50/known_exploited_vulnerabilities.csv",
+      "title": "CISA Known Exploited Vulnerabilities Catalog snapshot"
+    },
+    {
+      "authors": ["Brian A Thomas", "Louis M Barbier", "Julie A Crooke", "Harley Thronson", "Alison Lowndes", "Nargess Memarsadeghi", "James Parr", "Shahin Samadi", "Guilio Varsi", "Kenneth D Wright"],
+      "byte_length": 77306,
+      "expected_content_types": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+      "format": "docx",
+      "key": "nasa-ai-strategic-planning-workshop",
+      "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "path": "sources/nasa-ai-strategic-planning-workshop.docx",
+      "publication_date": "2021-04-30",
+      "publisher": "NASA Technical Reports Server",
+      "rights_id": "nasa-ntrs-public-use",
+      "sha256": "sha256:f33208a39260d97a68ba62d20139a609fecaae09fe03ea95cab92d420bb73f7f",
+      "source_record_url": "https://ntrs.nasa.gov/citations/20210014231",
+      "source_revision": "NTRS:20210014231",
+      "source_url": "https://ntrs.nasa.gov/api/citations/20210014231/downloads/Report%20on%20First%20Workshop%20on%20Artificial%20Intelligence%20in%20Strategic%20Planning%20and%20Science%20Prioritization%20-%20Final.docx",
+      "title": "Report on Workshop on Artificial Intelligence in Strategic Planning and Science Prioritization"
+    },
+    {
+      "authors": ["Edward Mclarney", "Yuri Gawdiak", "Nikunj Oza", "Chris Mattmann", "Martin Garcia", "Manil Maskey", "Scott Tashakkor", "David Meza", "John Sprague", "Phyllis Hestnes", "Pamela Wolfe", "James Illingworth", "Vikram Shyam", "Paul Rydeen", "Lorraine Prokop", "Latonya Powell", "Terry Brown", "Warnecke Miller", "Claire Little"],
+      "byte_length": 969738,
+      "expected_content_types": ["application/pdf"],
+      "format": "pdf",
+      "key": "nasa-ethical-ai-framework",
+      "media_type": "application/pdf",
+      "path": "sources/nasa-ethical-ai-framework.pdf",
+      "publication_date": "2021-04-09",
+      "publisher": "NASA Technical Reports Server",
+      "rights_id": "nasa-ntrs-public-use",
+      "sha256": "sha256:ebcd5bfcaf68e9851e7c39e99c875c00ede57453b0aa9f5dbc233ccbf00d7229",
+      "source_record_url": "https://ntrs.nasa.gov/citations/20210012886",
+      "source_revision": "NTRS:20210012886",
+      "source_url": "https://ntrs.nasa.gov/api/citations/20210012886/downloads/NASA-TM-20210012886.pdf",
+      "title": "NASA Framework for the Ethical Use of Artificial Intelligence (AI)"
+    },
+    {
+      "authors": ["Rahul Ramachandran"],
+      "byte_length": 4645126,
+      "expected_content_types": ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+      "format": "pptx",
+      "key": "nasa-open-science-and-ai",
+      "media_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "path": "sources/nasa-open-science-and-ai.pptx",
+      "publication_date": "2021-12-13",
+      "publisher": "NASA Technical Reports Server",
+      "rights_id": "nasa-ntrs-public-use",
+      "sha256": "sha256:b49b96d6eb24ae0df31146f03cc04df78390eb74cc06dd8edbdb217759e6f290",
+      "source_record_url": "https://ntrs.nasa.gov/citations/20210025005",
+      "source_revision": "NTRS:20210025005",
+      "source_url": "https://ntrs.nasa.gov/api/citations/20210025005/downloads/Open%20Science%20and%20AI.pptx",
+      "title": "Open Science and AI"
+    }
+  ],
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "corpus_name": "openardp-realworld",
+  "corpus_version": "0.1.0",
+  "evidence_files": [
+    {
+      "byte_length": 775,
+      "media_type": "application/json",
+      "path": "evidence/cisa-kev-revision.json",
+      "sha256": "sha256:7fd84a2184ec3016f986e51798e9a872da197e3bc52b4efa7f90a3e770e998b7"
+    },
+    {
+      "byte_length": 648,
+      "media_type": "application/json",
+      "path": "evidence/nasa-ntrs-20210012886.json",
+      "sha256": "sha256:2329ed869ec1a083c3184218302ee37fc682eed9653d0860aa68d102fe511e21"
+    },
+    {
+      "byte_length": 944,
+      "media_type": "application/json",
+      "path": "evidence/nasa-ntrs-20210014231.json",
+      "sha256": "sha256:cd5bfda57b76b1070fdee231c8a55e0fd8c13ef68c7a14c90ad0f5b6915e346d"
+    },
+    {
+      "byte_length": 671,
+      "media_type": "application/json",
+      "path": "evidence/nasa-ntrs-20210025005.json",
+      "sha256": "sha256:cd71dd9130fdc3832fbfd505bf07d7af7afcaf2f122dd2c4a32c8f05418192c2"
+    }
+  ],
+  "extensions": {
+    "https://openardp.org/ns/corpus/reproduction-v1": {
+      "allowed_hosts": ["ntrs.nasa.gov", "raw.githubusercontent.com"],
+      "maximum_aggregate_bytes": 16777216,
+      "maximum_file_bytes": 8388608,
+      "redirect_hosts": ["ntrs.nasa.gov", "raw.githubusercontent.com"]
+    }
+  },
+  "payload_root": "sources",
+  "required_formats": ["csv", "docx", "md", "pdf", "pptx", "txt"],
+  "rights": [
+    {
+      "basis": "CC0-1.0",
+      "evidence_url": "https://raw.githubusercontent.com/cisagov/kev-data/564b8c59f9039926e2d9548ba5b334db45cb6b50/LICENSE",
+      "notice": "CISA KEV data is dedicated to the public domain under CC0 1.0; attribution is retained for provenance.",
+      "publisher": "Cybersecurity and Infrastructure Security Agency",
+      "restrictions": ["No endorsement by CISA is stated or implied."],
+      "review_assertion": "human_review_required_not_legal_advice",
+      "rights_id": "cisa-kev-cc0-1.0"
+    },
+    {
+      "basis": "NASA-NTRS-PUBLIC-USE",
+      "evidence_url": "https://ntrs.nasa.gov/",
+      "notice": "Selected NTRS records state PUBLIC_USE_PERMITTED or GOV_PUBLIC_USE_PERMITTED and report no third-party material.",
+      "publisher": "National Aeronautics and Space Administration",
+      "restrictions": ["NASA names, initials, insignia, logotypes and marks are not licensed as OpenARDP branding.", "Redistribution and evaluation do not imply NASA endorsement."],
+      "review_assertion": "human_review_required_not_legal_advice",
+      "rights_id": "nasa-ntrs-public-use"
+    }
+  ],
+  "schema_version": "0.1.0"
+}

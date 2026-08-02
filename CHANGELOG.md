@@ -5,6 +5,21 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 024 — redistributable real-world corpus
+
+- Added a 6,634,970-byte, six-format NASA/CISA corpus with exact unmodified publisher bytes, RFC 8785/SHA-256 lock,
+  immutable revisions/drift detection, retained NTRS/CC0 evidence, attribution and explicit non-endorsement/legal-review
+  limits.
+- Added independent closed-tree offline validation and explicit allowlisted, bounded, staged source reproduction. Two
+  fresh publisher reproductions matched every committed byte and the same corpus identity.
+- Added a stdlib-only isolated body-free CSV probe after the real 932,085-byte input proved F016's complete-artifact
+  response exceeds its deliberate 1 MiB cap. The probe is benchmark tooling, not a stable core CSV API.
+- Hardened rich evidence projection for real Office geometry: visible out-of-slide intersections are clipped with
+  warning codes and unusable boxes fall back to exact opaque pointers while complete native provenance remains unchanged.
+- Added an independently validated `REALWORLD_BASELINE_READY` result over 12 offline runs. All six formats are
+  deterministic/retrievable; the report retains one PPTX pointer correctly bounded by the 8 MiB output limit and makes
+  no semantic, population-wide, legal-certainty or publisher-endorsement claim.
+
 ### Feature 023 — offline PDF model bundle
 
 - Added an immutable source lock for the exact five Docling 2.114.0 Heron/TableFormer runtime files, independent

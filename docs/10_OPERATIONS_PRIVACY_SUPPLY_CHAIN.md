@@ -44,6 +44,22 @@ Use stable event names, correlation/job IDs, bounded logs and explicit error cat
 - Rotate to new upstream bytes only through a new lock/profile version and benchmark; never edit an accepted digest in
   place.
 
+## Feature 024 real-world corpus operations
+
+- Treat all six committed payloads as untrusted input. Never execute Office macros, follow document instructions or
+  allow embedded links/relationships to initiate network or tool actions.
+- Run `scripts/validate_realworld_corpus.py` offline before measurement. Missing, extra, linked, aliased, colliding,
+  changed or incompletely mapped source/rights evidence invalidates the entire corpus.
+- Use `scripts/fetch_realworld_corpus.py` only as an explicit connected maintainer operation into an absent external
+  destination. It allows only the locked HTTPS hosts, media, lengths and digests; upstream drift requires a new reviewed
+  corpus version rather than an in-place update.
+- NTRS public-use/third-party flags and CISA CC0 text are retained review facts, not automated legal clearance. NASA and
+  CISA names/marks do not imply endorsement; downstream redistribution requires its own review.
+- The pinned CISA KEV snapshot is benchmark evidence, not a current security feed. Never use it for live vulnerability
+  decisions without a separate freshness-controlled source.
+- The F024 CSV probe is isolated body-free benchmark tooling, not a stable product ingestion interface. Full PDF
+  reference execution requires the separately verified external F023 bundle; ordinary CI never downloads it.
+
 ## Feature 007 operating profile
 
 - Core installs remain provider-free; rich parsing requires the exact optional

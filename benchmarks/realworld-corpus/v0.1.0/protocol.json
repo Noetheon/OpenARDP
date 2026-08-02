@@ -1,0 +1,16 @@
+{
+  "benchmark_version": "f024-realworld-corpus-0.1.0",
+  "expected_corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "expected_csv_probe_sha256": "sha256:be43804c9814903b04a0325b3bdfa92aae2904054c25ac323bd99a3c0e539316",
+  "expected_model_bundle_id": "sha256:442ab96f3d56146c63e6e98dfb7452a679571b4343e9b01e2bdb02b3eb0c74b8",
+  "expected_model_source_lock_id": "sha256:232a68ac675fc8c6801b652a20e2f6adffc311aa7847e7dfb6d0759efb2bc5cb",
+  "expected_payload_bytes": 6634970,
+  "expected_payload_count": 6,
+  "maximum_asset_wall_ns": 120000000000,
+  "maximum_peak_rss_bytes": 4294967296,
+  "maximum_result_bytes": 1048576,
+  "maximum_run_ns": 900000000000,
+  "required_formats": ["csv", "docx", "md", "pdf", "pptx", "txt"],
+  "required_repetitions": 2,
+  "schema_version": "0.1.0"
+}

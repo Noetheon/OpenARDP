@@ -19,6 +19,24 @@ is recorded in the [feature 001 notes](specs/001-repository-baseline/implementat
 [feature 022 notes](specs/022-storage-amplification/implementation-notes.md) and
 [feature 023 notes](specs/023-offline-pdf-model-bundle/implementation-notes.md).
 
+## Feature 024 redistributable real-world corpus evidence
+
+The independently validated macOS arm64 result is `REALWORLD_BASELINE_READY`. The corpus contains exactly six
+publisher-original files/6,634,970 bytes across PDF, DOCX, PPTX, CSV, Markdown and plain text, with canonical corpus ID
+`sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd`. Two connected reproductions matched every
+byte and identity in 11.750 and 10.802 seconds; ordinary validation and tests remain offline.
+
+All six assets were structurally processed twice with identical accepted identities. The 35-page PDF yielded 632 units
+at 15.606/15.720-second wall p50/p95 and a conservative 1,725,415,424-byte child high-water mark; DOCX yielded 678 units,
+PPTX 209, CSV 1,656, Markdown 17 and text 14. The first `NOT_READY` attempt exposed and retained the F016 response cap and
+real Office out-of-page/zero-area geometry; warning-preserving clipping/pointer fallback and a body-free CSV probe closed
+those harness/provider gaps. One PPTX native picture pointer remains correctly bounded by the 8 MiB output limit.
+
+Run `uv run python scripts/validate_realworld_corpus.py` and
+`uv run python scripts/validate_realworld_corpus_benchmark.py --result
+benchmarks/realworld-corpus/v0.1.0/results/reference-macos-arm64`. This establishes exact structural behavior only; F025
+still owns semantic answers and source-quality judgments. See [the full result](docs/23_REALWORLD_CORPUS.md).
+
 ## Feature 023 offline PDF model-bundle evidence
 
 The independently validated macOS arm64 reference decision is `PDF_OFFLINE_READY`. The exact installation contains five

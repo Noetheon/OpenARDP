@@ -1,0 +1,26 @@
+{
+  "commit": "564b8c59f9039926e2d9548ba5b334db45cb6b50",
+  "committed_at": "2026-07-29T19:16:45Z",
+  "files": [
+    {
+      "git_blob": "bd3f969029f08512e9a67348be9d744b2eb81a7a",
+      "path": "LICENSE",
+      "size": 7469
+    },
+    {
+      "git_blob": "2961684014040c461041d37521fb3a87e462a582",
+      "path": "README.md",
+      "size": 3246
+    },
+    {
+      "git_blob": "2f715d008830557dc335c612bcc7bc9f247ecd14",
+      "path": "known_exploited_vulnerabilities.csv",
+      "size": 932085
+    }
+  ],
+  "license": "CC0-1.0",
+  "record_url": "https://github.com/cisagov/kev-data/commit/564b8c59f9039926e2d9548ba5b334db45cb6b50",
+  "repository": "cisagov/kev-data",
+  "snapshot_profile": "openardp-git-selection-v1",
+  "tree": "1d4a49ccfd26dd09a168479e566816c71afc70ef"
+}

@@ -1,0 +1,18 @@
+{
+  "copyright": {
+    "contains_third_party_material": false,
+    "determination_type": "PUBLIC_USE_PERMITTED",
+    "third_party_permissions_produced": false
+  },
+  "distribution_date": "2021-04-09T04:00:00Z",
+  "download": {
+    "draft": false,
+    "media_type": "application/pdf",
+    "name": "NASA-TM-20210012886.pdf",
+    "url": "https://ntrs.nasa.gov/api/citations/20210012886/downloads/NASA-TM-20210012886.pdf"
+  },
+  "ntrs_id": "20210012886",
+  "record_url": "https://ntrs.nasa.gov/citations/20210012886",
+  "snapshot_profile": "openardp-ntrs-selection-v1",
+  "title": "NASA Framework for the Ethical Use of Artificial Intelligence (AI)"
+}

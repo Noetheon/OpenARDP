@@ -68,7 +68,7 @@ storage observation, PDF availability or semantic-quality limitations. See
 [`docs/20_INCREMENTAL_FRESHNESS.md`](20_INCREMENTAL_FRESHNESS.md) for the exact assurance boundary and reproduction
 commands.
 
-## F022 and F023 follow-ups
+## F022 to F024 follow-ups
 
 F022 separately reduced the F020 logical workspace amplification by 64.77–65.21 percent across fresh reference,
 migrated reference and fresh scale scenarios while every retained product-correctness check passed. It does not rewrite
@@ -79,3 +79,11 @@ F023 separately closes the missing-PDF-asset prerequisite for the frozen synthet
 fresh workers emitted identical canonical native output with complete anchors/pointers at 4.169/4.271-second wall
 p50/p95. This evidence does not retroactively change F020, does not override F015 `NO-GO` and does not claim the
 real-world/semantic quality reserved for F024/F025.
+
+F024 now closes the selected real-world structural boundary without rewriting F020. Its exact six-file NASA/CISA corpus
+is 6,634,970 bytes and independently reproducible from reviewed publisher records. Twelve retained runs produced
+`REALWORLD_BASELINE_READY`: all source/native/ordered-block identities were deterministic, the 35-page PDF produced 632
+units at 15.606/15.720-second wall p50/p95, and all retrieval/anchor checks passed offline. A first `NOT_READY` attempt
+exposed a real CSV response-amplification limit and Office geometry edge cases; their bounded fixes and one remaining
+8 MiB PPTX pointer rejection are retained explicitly. This result is still not semantic answer/source-quality evidence;
+that remains F025.

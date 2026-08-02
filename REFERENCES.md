@@ -14,6 +14,13 @@ Checked on 2026-07-22. Re-verify versions and licenses before implementation.
 - Microsoft MarkItDown: https://github.com/microsoft/markitdown
 - MinerU: https://github.com/opendatalab/MinerU
 - MinerU Document Explorer: https://github.com/opendatalab/MinerU-Document-Explorer
+- NASA NTRS OpenAPI: https://ntrs.nasa.gov/api/openapi/
+- NASA NTRS ethical AI framework record: https://ntrs.nasa.gov/citations/20210012886
+- NASA NTRS AI strategic-planning workshop record: https://ntrs.nasa.gov/citations/20210014231
+- NASA NTRS Open Science and AI record: https://ntrs.nasa.gov/citations/20210025005
+- Official CISA KEV data mirror: https://github.com/cisagov/kev-data
+- CISA Known Exploited Vulnerabilities catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+- CC0 1.0 legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 
 ## Protocols and formats
 

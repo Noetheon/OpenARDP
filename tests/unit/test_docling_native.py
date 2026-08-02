@@ -217,6 +217,52 @@ def test_top_left_coordinate_conversion_is_exact() -> None:
     }
 
 
+def test_projection_clamps_only_tiny_provider_bbox_rounding_with_warning() -> None:
+    """Accept sub-100-ppm Office rounding without hiding the repaired provenance."""
+    native = _native_document()
+    native["texts"][1]["prov"][0]["bbox"]["t"] = 200.01  # type: ignore[index]
+
+    candidates, warnings = project_native_document(native, limits=RichParserLimits())
+
+    assert "provider_bbox_clamped" in warnings
+    assert candidates[1].warning_codes == ("provider_bbox_clamped",)
+    assert candidates[1].anchor.model_dump()["y"] == 0
+
+    native["texts"][1]["prov"][0]["bbox"]["t"] = 200.1  # type: ignore[index]
+    candidates, warnings = project_native_document(native, limits=RichParserLimits())
+    assert "provider_bbox_clipped" in warnings
+    assert candidates[1].warning_codes == ("provider_bbox_clipped",)
+
+    native["texts"][1]["prov"][0]["bbox"] = {  # type: ignore[index]
+        "l": 101,
+        "t": 100,
+        "r": 120,
+        "b": 80,
+        "coord_origin": "TOPLEFT",
+    }
+    candidates, warnings = project_native_document(native, limits=RichParserLimits())
+    assert "provider_bbox_unusable" in warnings
+    assert isinstance(candidates[1].anchor, OpaqueProviderPointerAnchor)
+
+
+def test_projection_falls_back_to_pointer_for_unusable_provider_bbox() -> None:
+    """Retain text and exact native provenance without inventing invalid geometry."""
+    native = _native_document()
+    native["texts"][1]["prov"][0]["bbox"] = {  # type: ignore[index]
+        "l": 0,
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "coord_origin": "TOPLEFT",
+    }
+
+    candidates, warnings = project_native_document(native, limits=RichParserLimits())
+
+    assert "provider_bbox_unusable" in warnings
+    assert candidates[1].warning_codes == ("provider_bbox_unusable",)
+    assert isinstance(candidates[1].anchor, OpaqueProviderPointerAnchor)
+
+
 def test_projection_rejects_duplicate_pointer_cycle_and_resource_overflow() -> None:
     """Reject ambiguous graphs and enforce candidate/retrieval bounds."""
     duplicate = _native_document()

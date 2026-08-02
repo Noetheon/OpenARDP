@@ -10,3 +10,6 @@
 *.txt text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+
+# Exact publisher payloads may contain upstream whitespace that must remain byte-identical.
+corpora/realworld/**/sources/** -whitespace

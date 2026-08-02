@@ -48,6 +48,8 @@ _LEAF = re.compile(r"^[0-9a-f]{60}$")
 _OBJECT_ID = re.compile(r"^sha256:([0-9a-f]{64})$")
 _CHUNK_SIZE = 1024 * 1024
 _BACKUP_LIMITS = InventoryLimits(max_entries=1_000_000, max_bytes=9_007_199_254_740_991)
+_WINDOWS_TRANSITION_ATTEMPTS = 10
+_WINDOWS_TRANSITION_DELAY_SECONDS = 0.05
 PhysicalProfile = Literal["ordinary", "openardp-deflate-dict-v1"]
 _ORDINARY_PROFILE: PhysicalProfile = "ordinary"
 _COMPACT_PROFILE: PhysicalProfile = "openardp-deflate-dict-v1"
@@ -317,14 +319,10 @@ class FilesystemMaintenanceStore:
         physical_profile: PhysicalProfile = _ORDINARY_PROFILE,
     ) -> None:
         """Finish or verify the single admissible exact transition end state."""
-        try:
-            destination_metadata = destination.lstat()
-        except FileNotFoundError:
-            raise MaintenanceError("transition destination is missing") from None
-        try:
-            source_metadata = source.lstat()
-        except FileNotFoundError:
-            source_metadata = None
+        destination_metadata, source_metadata = self._await_transition_metadata(
+            source,
+            destination,
+        )
         if source_metadata is not None:
             if (
                 os.name == "nt"
@@ -344,6 +342,32 @@ class FilesystemMaintenanceStore:
         )
         if verified.byte_length != byte_length:
             raise MaintenanceError("transition destination length conflicts")
+
+    @staticmethod
+    def _await_transition_metadata(
+        source: Path,
+        destination: Path,
+    ) -> tuple[os.stat_result, os.stat_result | None]:
+        """Await the bounded Windows rename convergence window."""
+        attempts = _WINDOWS_TRANSITION_ATTEMPTS if os.name == "nt" else 1
+        destination_metadata: os.stat_result | None = None
+        source_metadata: os.stat_result | None = None
+        for attempt in range(attempts):
+            try:
+                destination_metadata = destination.lstat()
+            except FileNotFoundError:
+                destination_metadata = None
+            try:
+                source_metadata = source.lstat()
+            except FileNotFoundError:
+                source_metadata = None
+            if destination_metadata is not None and (os.name != "nt" or source_metadata is None):
+                return destination_metadata, source_metadata
+            if attempt + 1 < attempts:
+                sleep(_WINDOWS_TRANSITION_DELAY_SECONDS)
+        if destination_metadata is None:
+            raise MaintenanceError("transition destination is missing")
+        return destination_metadata, source_metadata
 
     def remove(self, object_id: str, *, byte_length: int) -> None:
         """Remove only exact verified quarantine bytes, idempotently after intent."""

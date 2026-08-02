@@ -201,7 +201,7 @@ any drift, extra file, body/path leakage, arithmetic mismatch or unmet threshold
 - [X] T070 Run the focused commands in `specs/022-storage-amplification/quickstart.md` and record exact outcomes in `specs/022-storage-amplification/tasks.md`
 - [X] T071 Run `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, `uv run python scripts/validate_repository.py`, `uv build` and `uv run pre-commit run --all-files`
 - [X] T072 Run Spec-Kit analysis and convergence, resolve every critical/high issue, and record remaining risks in `specs/022-storage-amplification/tasks.md`
-- [ ] T073 Open the private GitHub pull request, pass trusted Linux/macOS/Windows quality gates, merge it and verify post-merge CI
+- [X] T073 Open the private GitHub pull request, pass trusted Linux/macOS/Windows quality gates, merge it and verify post-merge CI
 
 ---
 
@@ -262,5 +262,9 @@ any drift, extra file, body/path leakage, arithmetic mismatch or unmet threshold
 - Repository and packaging gates: repository validation, maintainability audit, source/wheel build and every pre-commit hook passed.
 - Spec-Kit analysis found no critical contradiction. Convergence reviewed 48 requirements/acceptance criteria, 14 plan
   decisions and 12 constitution principles; its one partial high-severity write-fence gap is closed by T074 and the
-  restart/concurrent-ingestion integration tests. T073 remains open until private PR, three-platform CI, merge and
-  post-merge CI evidence exist.
+  restart/concurrent-ingestion integration tests.
+- Final race-hardening verification on commit `67c3e486e15a428ba6915908a3d9bfe4fe7a51f9` passed Ruff check/format,
+  strict mypy and the clean-worktree full suite: `1468 passed in 168.87s` with 85.19% coverage.
+- T073 release evidence: private PR #27 passed CI run `30750875260` on Linux, macOS and Windows and Release Evidence
+  run `30750875278` on all three platforms plus its aggregate gate. It merged as
+  `a80d426b9229b2cc57208c23b7f53857d92e545a`; post-merge `main` CI run `30751319160` passed.

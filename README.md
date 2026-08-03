@@ -288,10 +288,12 @@ bodies, always inside delimited untrusted-data envelopes. Search returns bounded
 verified snippets. Receipts, default `context` output, logs and error envelopes never
 contain the task string, evidence bodies or source paths. Replay reuses the recorded
 exact snapshot and fails with a stable mismatch error instead of recompiling silently.
-New compilations also apply the provider-free F026 minimum-relevance profile. Below-floor
+New compilations apply the provider-free combined F026/F027 relevance and allocation profile. Below-floor
 candidates remain auditable receipt rejections; a valid no-match returns explicit
-`no_relevant_evidence` abstention. Historical receipts select their recorded legacy
-algorithm for replay. See [the measured F026 result](docs/25_RELEVANCE_AND_ABSTENTION.md).
+`no_relevant_evidence` abstention. A four-item ranked prefix preserves early lexical quality,
+then exact-body deduplication, fair document interleaving and a 16-item per-document quota
+bound source dominance. Historical receipts select their recorded legacy or F026-only
+algorithm for replay. See [the measured F027 result](docs/26_LEXICAL_RANKING_AND_DIVERSITY.md).
 Every workspace command except `init` requires an explicitly initialized compatible
 workspace; package commands are intentionally workspace-independent and use only their
 explicit local request/package/destination. Commands do not search parent directories

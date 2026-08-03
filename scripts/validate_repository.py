@@ -335,6 +335,31 @@ _F026_REQUIRED_FILES = (
     "tests/unit/test_relevance_benchmark.py",
 )
 
+_F027_REQUIRED_FILES = (
+    "benchmarks/ranking/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/ranking/v0.1.0/results/reference-macos-arm64/result.json",
+    "docs/26_LEXICAL_RANKING_AND_DIVERSITY.md",
+    "scripts/run_ranking_benchmark.py",
+    "scripts/validate_ranking_benchmark.py",
+    "spec-kit/feature-prompts/027-lexical-ranking-diversity.md",
+    "specs/027-lexical-ranking-diversity/analysis.md",
+    "specs/027-lexical-ranking-diversity/contracts/lexical-allocation.md",
+    "specs/027-lexical-ranking-diversity/data-model.md",
+    "specs/027-lexical-ranking-diversity/implementation-notes.md",
+    "specs/027-lexical-ranking-diversity/plan.md",
+    "specs/027-lexical-ranking-diversity/quickstart.md",
+    "specs/027-lexical-ranking-diversity/research.md",
+    "specs/027-lexical-ranking-diversity/spec.md",
+    "specs/027-lexical-ranking-diversity/tasks.md",
+    "src/openardp/domain/context_ranking.py",
+    "src/openardp/services/context_ranking.py",
+    "tests/domain/test_context_ranking.py",
+    "tests/integration/test_context_ranking.py",
+    "tests/security/test_context_ranking_boundaries.py",
+    "tests/unit/test_context_ranking.py",
+    "tests/unit/test_ranking_benchmark.py",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
@@ -952,6 +977,20 @@ def _validate_f026_relevance(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f027_ranking(root: Path) -> list[Diagnostic]:
+    """Require the complete F027 ranking, benchmark and validation boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV023",
+            relative,
+            "required F027 lexical ranking artifact is missing",
+        )
+        for relative in _F027_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1042,6 +1081,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f024_realworld_corpus(root))
     diagnostics.extend(_validate_f025_semantic_evaluation(root))
     diagnostics.extend(_validate_f026_relevance(root))
+    diagnostics.extend(_validate_f027_ranking(root))
     return _sort_diagnostics(root, diagnostics)
 
 

@@ -508,6 +508,19 @@ full support and complete citations; Q17/Q18 now select zero evidence and expose
 limitations and reproduction commands are in [the F026 record](docs/25_RELEVANCE_AND_ABSTENTION.md). Full repository,
 build, pre-commit and remote CI evidence is recorded in the implementation notes.
 
+## Feature 027 lexical ranking and diversity evidence
+
+Feature `027-lexical-ranking-diversity` adds no dependency, network default, migration or public-schema change. Pure,
+integration, replay, CLI, security and reference tests cover canonical policy identity, lexical total ordering, exact
+CAS-body deduplication, four-item ranked-prefix preservation, fair interleaving, hard per-document quotas and exhaustive
+body-free receipt reasons.
+
+The paired two-workspace reference is independently valid as `LEXICAL_RANKING_READY`. Against the identical F025 inputs
+and paired F026 control, direct positive precision rises from 0.050847 to 0.068182 while MRR and source recall remain
+0.638889 and 1.000000. All six positive support/citation outcomes and both unsupported abstentions are preserved; Q03
+selects 34 instead of 64 items and never exceeds 16 from one document. Exact results and diagnostic tradeoffs are in
+[the F027 record](docs/26_LEXICAL_RANKING_AND_DIVERSITY.md).
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

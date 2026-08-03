@@ -7,6 +7,7 @@ from openardp.services.context_compiler import (
     context_algorithm_identity,
     required_representations,
 )
+from openardp.services.context_ranking import ClassifiedCandidates
 from openardp.services.derivations import DerivationService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
@@ -36,6 +37,7 @@ from openardp.services.search import SearchService
 from openardp.services.watcher import WatcherService
 
 __all__ = [
+    "ClassifiedCandidates",
     "ContextCompilerService",
     "DerivationService",
     "DocumentQueryService",

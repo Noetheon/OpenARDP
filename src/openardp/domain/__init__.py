@@ -77,6 +77,13 @@ from openardp.domain.context_compilation import (
     context_policy_digest,
     task_digest,
 )
+from openardp.domain.context_ranking import (
+    DEFAULT_MAX_PER_DOCUMENT,
+    AllocationResult,
+    LexicalAllocationPolicy,
+    allocate_lexical_candidates,
+    lexical_candidate_rank_key,
+)
 from openardp.domain.context_relevance import (
     RELEVANCE_SCORE_SCALE,
     CandidateRelevance,
@@ -374,6 +381,7 @@ __all__ = [
     "CONTEXT_BUNDLE_SCHEMA_VERSION",
     "CONTEXT_BUNDLE_UUID_NAMESPACE",
     "CONTEXT_COMPILATION_IDENTITY_VERSION",
+    "DEFAULT_MAX_PER_DOCUMENT",
     "DEFAULT_PARSER_TIMEOUT_SECONDS",
     "DEFAULT_SEARCH_LIMIT",
     "DOCLING_NATIVE_MEDIA_TYPE",
@@ -403,6 +411,7 @@ __all__ = [
     "VISUAL_CONTRACT_VERSION",
     "AdmittedWatchRoot",
     "AlgorithmIdentity",
+    "AllocationResult",
     "ArtifactReference",
     "Baseline",
     "BenchmarkMetric",
@@ -496,6 +505,7 @@ __all__ = [
     "JobLease",
     "JobSpec",
     "JobState",
+    "LexicalAllocationPolicy",
     "LogicalDocument",
     "ManifestState",
     "MatchMethod",
@@ -645,6 +655,7 @@ __all__ = [
     "WatchScan",
     "WatchScanEntry",
     "WatchScanReason",
+    "allocate_lexical_candidates",
     "aspect_error_ppm",
     "block_content_hash",
     "block_lineage_id",
@@ -669,6 +680,7 @@ __all__ = [
     "extract_relevance_signals",
     "generate_uuid7",
     "indexed_text_hash",
+    "lexical_candidate_rank_key",
     "model_bundle_id",
     "native_representation_id",
     "pixel_bounds",

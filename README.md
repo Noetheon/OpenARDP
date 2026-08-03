@@ -63,7 +63,8 @@ and source-quality evaluation in
 [`025-semantic-e2e-source-evaluation`](specs/025-semantic-e2e-source-evaluation/spec.md), explicit relevance and abstention
 in [`026-relevance-abstention`](specs/026-relevance-abstention/spec.md), lexical allocation in
 [`027-lexical-ranking-diversity`](specs/027-lexical-ranking-diversity/spec.md), and stable CSV ingestion in
-[`028-csv-ingestion`](specs/028-csv-ingestion/spec.md):
+[`028-csv-ingestion`](specs/028-csv-ingestion/spec.md), followed by optional provider-neutral multilingual retrieval in
+[`029-provider-neutral-multilingual-retrieval`](specs/029-provider-neutral-multilingual-retrieval/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -95,6 +96,15 @@ both frozen operator-query answers at rank 1 with exact citations. Direct natura
 exact lexical search and remain an explicit F029 retrieval target. See the
 [`F028 report`](benchmarks/csv-ingestion/v0.1.0/results/reference-macos-arm64/report.md).
 
+F029 adds an explicit offline multilingual E5 profile while retaining F027 as the provider-free default and
+higher-priority exact fallback. The independently validated v0.3 result is `PROVIDER_RETRIEVAL_READY`: direct full
+support improves from 41.18% to 52.94%, atom recall from 34.78% to 50.00% and source recall from 44.44% to 72.22%; both
+German questions move from zero to complete support, with 100% citation integrity, unsupported abstention and fresh-run
+determinism. The two earlier negative runs remain committed and drove source-balanced admission and Rich-first evidence
+precedence without changing the frozen questions, 0.80 floor or model. F029 costs about 2.65x summed query wall time and
+1.23 GB peak worker RSS in the reference workload, so exact lexical retrieval remains the lightweight default. See the
+[`F029 report`](benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/report.md).
+
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
 - strict Pydantic v2 domain models, five F002 JSON Schema roots, and four independently
@@ -104,6 +114,8 @@ exact lexical search and remain an explicit F029 retrieval target. See the
 - checksummed transactional SQLite migrations, exact source/version facts and fenced job transitions;
 - explicit local workspace plus an installable `openardp` command;
 - read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md`, `.markdown` and `.csv` files;
+- an opt-in provider-neutral semantic score port and exact six-file multilingual E5 bundle with local-only SafeTensors
+  loading, socket-denied spawned inference, integer scores and disposable in-memory passage vectors;
 - a bounded spawned parser worker with denied socket creation and documented residual platform risk;
 - deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
 - body-minimizing `list`, exact bounded `status`, explicit `status --full-integrity`, `outline` and exact persisted `get`
@@ -119,6 +131,8 @@ exact lexical search and remain an explicit F029 retrieval target. See the
 - deterministic budgeted context compilation over verified text and rich evidence with
   an exact corpus snapshot, a documented total order and greedy byte-exact admission
   under a versioned estimator budget with ten-percent response reserve;
+- explicit hybrid multilingual context composition that preserves minimum-relevant lexical candidates, prefers accepted
+  RichEvidence, balances semantic candidates across documents and reuses F027 exact deduplication/source quotas;
 - the public `ContextBundle 0.2.0` handoff with structurally delimited untrusted-data
   envelopes and the body-free experimental `SelectionReceipt 0.1.0` recording every
   selection, omission, rejection, stale item and unit of budget;

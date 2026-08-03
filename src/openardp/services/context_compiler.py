@@ -189,6 +189,7 @@ class ContextCompilerService:
         algorithm: AlgorithmIdentity | None = None,
         relevance_policy: RelevancePolicy | None = None,
         allocation_policy: LexicalAllocationPolicy | None = None,
+        semantic_abstention: bool = False,
     ) -> None:
         """Bind provider-neutral ports and one exact estimator/algorithm identity."""
         self._object_store = object_store
@@ -197,6 +198,7 @@ class ContextCompilerService:
         self._candidate_sources = candidate_sources
         self._relevance_policy = relevance_policy
         self._allocation_policy = allocation_policy
+        self._semantic_abstention = semantic_abstention
         self._algorithm = algorithm or context_algorithm_identity(
             relevance_policy, allocation_policy
         )
@@ -326,6 +328,7 @@ class ContextCompilerService:
         final_warnings, extra_notices = compilation_notices(
             truncated=truncated,
             relevance_abstained=relevance_abstained,
+            semantic_abstained=self._semantic_abstention and not ordered,
         )
         receipt_notices.extend(extra_notices)
         if missing or final_warnings:

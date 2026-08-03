@@ -186,6 +186,32 @@ def test_text_discovery_returns_verified_rescored_candidates(tmp_path: Path) -> 
     assert all(item.reason_code == "fts_lexical_match" for item in candidates)
 
 
+def test_text_discovery_pages_every_bounded_fts_match_without_truncation(
+    tmp_path: Path,
+) -> None:
+    """Preserve exact FTS semantics when one document exceeds the public page size."""
+    ingestion, store, catalog = _text_services(tmp_path)
+    source_path = _write(
+        tmp_path / "many.md",
+        "\n\n".join(f"alpha evidence row {index}" for index in range(125)) + "\n",
+    )
+    result = ingestion.ingest(source_path)
+    snapshot = _snapshot_for(catalog, result.scope.document_id)
+    source = TextLexicalCandidateSource(store, catalog)
+
+    candidates = source.discover("alpha", snapshot, LIMITS, _never_cancel)
+
+    assert len(candidates) == 125
+    assert len({candidate.evidence_id for candidate in candidates}) == 125
+    with pytest.raises(ContextLimitExceeded, match="max_discovered"):
+        source.discover(
+            "alpha",
+            snapshot,
+            ContextCompileLimits(max_discovered=100, max_candidates=100),
+            _never_cancel,
+        )
+
+
 def test_text_discovery_fails_closed_on_incomplete_index(tmp_path: Path) -> None:
     """Never trust indexed bodies or metadata when coverage is incomplete."""
     ingestion, store, catalog = _text_services(tmp_path)

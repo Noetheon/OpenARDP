@@ -22,6 +22,7 @@ from openardp.domain.search import MAX_QUERY_ITEMS, MAX_TERM_CHARACTERS
 RELEVANCE_ALGORITHM_NAME = "openardp.lexical-context-relevance"
 RELEVANCE_ALGORITHM_VERSION = "1.0.0"
 RELEVANCE_EXTENSION_NAMESPACE = "https://openardp.example/ns/context-relevance/v1"
+SEMANTIC_EXTENSION_NAMESPACE = "https://openardp.example/ns/semantic-retrieval/v1"
 RANKING_ALGORITHM_NAME = "openardp.lexical-context-ranked"
 RANKING_ALGORITHM_VERSION = "1.0.0"
 
@@ -124,6 +125,7 @@ def compilation_notices(
     *,
     truncated: bool,
     relevance_abstained: bool,
+    semantic_abstained: bool = False,
 ) -> tuple[tuple[ContextBundleNotice, ...], tuple[ReceiptNotice, ...]]:
     """Build stable bundle warnings and matching body-free receipt notices."""
     warnings: list[ContextBundleNotice] = []
@@ -144,14 +146,25 @@ def compilation_notices(
                 message="No verified candidate met the configured minimum relevance policy.",
             )
         )
+    if semantic_abstained:
+        notices.append(ReceiptNotice(code="no_semantic_evidence"))
+        warnings.append(
+            ContextBundleNotice(
+                code="no_semantic_evidence",
+                message="No verified candidate met the configured semantic retrieval policy.",
+            )
+        )
     return tuple(warnings), tuple(notices)
 
 
 def relevance_extensions(candidate: ContextCandidate) -> dict[str, JsonValue]:
-    """Return the optional body-free relevance decision extension."""
-    if candidate.relevance is None:
-        return {}
-    return {RELEVANCE_EXTENSION_NAMESPACE: candidate.relevance.extension_value()}
+    """Return optional body-free lexical and semantic decision extensions."""
+    extensions: dict[str, JsonValue] = {}
+    if candidate.relevance is not None:
+        extensions[RELEVANCE_EXTENSION_NAMESPACE] = candidate.relevance.extension_value()
+    if candidate.semantic is not None:
+        extensions[SEMANTIC_EXTENSION_NAMESPACE] = candidate.semantic.model_dump(mode="json")
+    return extensions
 
 
 __all__ = [
@@ -160,6 +173,7 @@ __all__ = [
     "RELEVANCE_ALGORITHM_NAME",
     "RELEVANCE_ALGORITHM_VERSION",
     "RELEVANCE_EXTENSION_NAMESPACE",
+    "SEMANTIC_EXTENSION_NAMESPACE",
     "compilation_notices",
     "context_algorithm_identity",
     "is_relevance_abstention",

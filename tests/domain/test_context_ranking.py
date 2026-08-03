@@ -40,6 +40,7 @@ def _candidate(
     body: int | None = None,
     coverage: int = 2,
     occurrences: int = 2,
+    retrieval_tier: int = 0,
 ) -> ContextCandidate:
     document_id = UUID(f"01890f62-24e8-7c00-8000-{document:012d}")
     block_id = UUID(f"12345678-1234-4234-9234-{evidence:012d}")
@@ -79,6 +80,7 @@ def _candidate(
         occurrences=occurrences,
         reason_code="fts_lexical_match",
         high_value=True,
+        retrieval_tier=retrieval_tier,
         relevance=CandidateRelevance(
             policy_id=policy.policy_id,
             total_signals=4,
@@ -172,6 +174,26 @@ def test_round_robin_is_fair_deterministic_and_input_order_independent() -> None
         "000000000004",
     ]
     assert forward == reverse
+
+
+def test_fallback_tier_is_exhausted_before_semantic_round_robin_additions() -> None:
+    """Never let a semantic-only source displace an eligible lexical baseline item."""
+    lexical = (
+        _candidate(1, 1, coverage=1),
+        _candidate(1, 2, coverage=1),
+        _candidate(2, 3, coverage=1),
+    )
+    semantic = (
+        _candidate(3, 4, coverage=900_000, retrieval_tier=1),
+        _candidate(4, 5, coverage=850_000, retrieval_tier=1),
+    )
+
+    result = allocate_lexical_candidates(
+        (*semantic, *lexical),
+        LexicalAllocationPolicy(ranked_prefix=0),
+    )
+
+    assert [candidate.retrieval_tier for candidate in result.ordered] == [0, 0, 0, 1, 1]
 
 
 def test_hard_document_quota_rejects_tail_without_padding_other_sources() -> None:

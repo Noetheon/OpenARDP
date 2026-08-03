@@ -1,0 +1,87 @@
+{
+  "benchmark_version": "0.3.0",
+  "binding_runs": 2,
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "question_set_id": "sha256:e251354b95bcd59d68604cd4a1cf0a5e2300dabdf8145844e2e2a0bb5703bdce",
+  "source_protocol_id": "sha256:8182f5d410292529b3ae35c0bfe3e07f674fc2e3c02b78406073c8890d924ad8",
+  "question_count": 19,
+  "direct_treatments": [
+    "f027_lexical_direct",
+    "f029_semantic_direct"
+  ],
+  "german_questions": [
+    "Q04",
+    "Q08"
+  ],
+  "supported_formats": [
+    "csv",
+    "docx",
+    "md",
+    "pdf",
+    "pptx",
+    "txt"
+  ],
+  "context": {
+    "budget_bytes": 262144,
+    "max_scopes": 6,
+    "max_discovered": 10000,
+    "max_candidates": 64,
+    "max_body_bytes": 8388608,
+    "max_decisions": 12000,
+    "max_bundle_units": 262144
+  },
+  "semantic_policy": {
+    "minimum_score_millionths": 800000,
+    "top_k": 128,
+    "require_volatile_time_match": true
+  },
+  "provider_limits": {
+    "max_passages": 10000,
+    "max_total_text_bytes": 67108864,
+    "max_passage_bytes": 8388608,
+    "batch_size": 16,
+    "max_cache_entries": 10000,
+    "max_response_entries": 10000,
+    "timeout_seconds": 900
+  },
+  "model": {
+    "model_id": "intfloat/multilingual-e5-small",
+    "model_revision": "f470c6a1a906014160ece1968c484b275f0396de",
+    "model_bundle_id": "sha256:1d1242c4f405989f1c134ad2fc4557afaa75bcf2d5bca58990c70a54b39c4b02",
+    "dimensions": 384,
+    "max_tokens": 512
+  },
+  "gates": {
+    "citation_integrity": [
+      1,
+      1
+    ],
+    "unsupported_abstention": [
+      1,
+      1
+    ],
+    "overall_non_regression": [
+      "full_support",
+      "atom_recall",
+      "source_recall"
+    ],
+    "german_per_question_non_regression": true,
+    "german_per_question_strict_improvement": true,
+    "semantic_runs_identical": true
+  },
+  "result_max_bytes": 4194304,
+  "parent_protocol_id": "sha256:fb926295bb7f60b0c2b95fb3eb71297990ddff7b840cea7faf656d86d452f1e7",
+  "negative_evidence_run_id": "sha256:7cd6e9aa601295a8cd6a1e2d7eed74fa7ffd91896d6919caa719408c2cc38a6a",
+  "retrieval_profile": {
+    "hybrid_lexical_fallback": true,
+    "source_balanced_semantic_admission": true,
+    "semantic_max_per_document": 32,
+    "semantic_ranked_prefix": 4,
+    "retrieval_tier_order": [
+      "minimum_relevant_lexical",
+      "semantic"
+    ],
+    "representation_precedence": "rich_then_text"
+  },
+  "protocol_id": "sha256:5d8d927e9f9675508257a6054fe6ad5bc93ff5b93fd71274ae0ab4e8e1306582"
+}

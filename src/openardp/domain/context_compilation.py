@@ -43,6 +43,7 @@ from openardp.domain.identity import (
     context_policy_id,
     selection_receipt_id,
 )
+from openardp.domain.semantic_retrieval import SemanticCandidateObservation
 from openardp.domain.storage import StoredObject
 
 CONTEXT_BUNDLE_SCHEMA_VERSION = "0.2.0"
@@ -350,7 +351,9 @@ class ContextCandidate(DomainModel):
     occurrences: int = Field(strict=True, ge=0, le=MAX_SAFE_INTEGER)
     reason_code: MachineCode
     high_value: bool
+    retrieval_tier: int = Field(default=0, strict=True, ge=0, le=1)
     relevance: CandidateRelevance | None = None
+    semantic: SemanticCandidateObservation | None = None
 
     @model_validator(mode="after")
     def _identity_and_scope_match_provenance(self) -> Self:

@@ -12,15 +12,22 @@ from openardp.adapters.context_candidates import (
 )
 from openardp.adapters.context_relevance import RelevanceObservingCandidateSource
 from openardp.adapters.local_workspace import LocalWorkspace
+from openardp.adapters.semantic_candidates import (
+    HybridRetrievalCandidateSource,
+    SemanticContextCandidateSource,
+)
 from openardp.domain.context_compilation import AlgorithmIdentity
 from openardp.domain.context_ranking import LexicalAllocationPolicy
 from openardp.domain.context_relevance import RelevancePolicy
+from openardp.domain.semantic_retrieval import SemanticRetrievalLimits, SemanticRetrievalPolicy
 from openardp.ports.context import (
     ContextCandidateSource,
     ContextConfigurationMismatch,
     ContextEstimator,
 )
+from openardp.ports.semantic_retrieval import SemanticRetrievalProvider
 from openardp.services.context_compiler import ContextCompilerService, context_algorithm_identity
+from openardp.services.semantic_retrieval import semantic_algorithm_identity
 
 
 def local_context_compiler(
@@ -97,4 +104,77 @@ def local_context_compiler_for_algorithm(
     raise ContextConfigurationMismatch("algorithm_mismatch")
 
 
-__all__ = ["local_context_compiler", "local_context_compiler_for_algorithm"]
+def local_semantic_context_compiler(
+    workspace: LocalWorkspace,
+    estimator: ContextEstimator,
+    text_verifier: Callable[[Any], None],
+    rich_verifier: Callable[[Any], None],
+    provider: SemanticRetrievalProvider,
+    *,
+    policy: SemanticRetrievalPolicy | None = None,
+    provider_limits: SemanticRetrievalLimits | None = None,
+    allocation_policy: LexicalAllocationPolicy | None = None,
+    hybrid_lexical_fallback: bool = True,
+    source_balanced: bool = True,
+    semantic_max_per_document: int = 32,
+    semantic_ranked_prefix: int = 4,
+    rich_first: bool = True,
+) -> ContextCompilerService:
+    """Compose one explicit optional semantic profile; default composition stays lexical."""
+    selected_policy = policy or SemanticRetrievalPolicy()
+    selected_limits = provider_limits or SemanticRetrievalLimits()
+    selected_allocation = allocation_policy or LexicalAllocationPolicy()
+    source = SemanticContextCandidateSource(
+        workspace.object_store,
+        workspace.catalog,
+        provider,
+        selected_policy,
+        selected_limits,
+        text_verifier=text_verifier,
+        rich_verifier=rich_verifier,
+        source_balanced=source_balanced,
+        max_per_document=semantic_max_per_document,
+        ranked_prefix=semantic_ranked_prefix,
+        rich_first=rich_first,
+    )
+    candidate_source: ContextCandidateSource = source
+    if hybrid_lexical_fallback:
+        lexical = RelevanceObservingCandidateSource(
+            workspace.object_store,
+            (
+                TextLexicalCandidateSource(workspace.object_store, workspace.catalog),
+                RichLexicalCandidateSource(
+                    workspace.object_store,
+                    workspace.catalog,
+                    representation_verifier=rich_verifier,
+                ),
+            ),
+            RelevancePolicy(),
+        )
+        candidate_source = HybridRetrievalCandidateSource(lexical, source)
+    return ContextCompilerService(
+        workspace.object_store,
+        workspace.catalog,
+        estimator,
+        (candidate_source,),
+        algorithm=semantic_algorithm_identity(
+            provider.recipe,
+            selected_policy,
+            selected_limits,
+            selected_allocation,
+            hybrid_lexical_fallback=hybrid_lexical_fallback,
+            source_balanced=source_balanced,
+            semantic_max_per_document=semantic_max_per_document,
+            semantic_ranked_prefix=semantic_ranked_prefix,
+            rich_first=rich_first,
+        ),
+        allocation_policy=selected_allocation,
+        semantic_abstention=True,
+    )
+
+
+__all__ = [
+    "local_context_compiler",
+    "local_context_compiler_for_algorithm",
+    "local_semantic_context_compiler",
+]

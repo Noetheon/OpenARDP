@@ -4249,10 +4249,13 @@ class SQLiteCatalog:
         *,
         match: str,
         filters: SearchFilters,
+        offset: int = 0,
     ) -> SearchMatchPage:
         """Coverage-check scopes, MATCH the FTS index and return one total-ordered page."""
         if not match:
             raise ValueError("match expression is required")
+        if type(offset) is not int or offset < 0:
+            raise ValueError("search offset must be a non-negative integer")
         with self._read_connection() as connection:
             self._assert_in_scope_coverage(connection, filters)
             # Bound optional filters use NULL-sentinel predicates so the SQL text is static.
@@ -4322,9 +4325,9 @@ class SQLiteCatalog:
                       AND (? IS NULL OR e.page = ?)
                       AND (? IS NULL OR e.slide = ?)
                     ORDER BY rank ASC, e.document_id ASC, e.ordinal ASC
-                    LIMIT ?
+                    LIMIT ? OFFSET ?
                     """,
-                    [*bound, filters.limit],
+                    [*bound, filters.limit, offset],
                 ).fetchall()
             except sqlite3.OperationalError as error:
                 raise CatalogError("search query execution failed") from error

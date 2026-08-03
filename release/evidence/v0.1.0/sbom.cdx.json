@@ -2183,11 +2183,15 @@
     {
       "dependsOn": [
         "docling-20@2.114.0",
+        "huggingface-hub-34@1.24.0",
         "jsonschema-39@4.26.0",
         "pillow-73@12.3.0",
         "pydantic-78@2.12.5",
         "pypdfium2-83@5.12.1",
-        "rfc8785-94@0.1.4"
+        "rfc8785-94@0.1.4",
+        "safetensors-98@0.8.0",
+        "torch-109@2.13.0",
+        "transformers-112@5.8.1"
       ],
       "ref": "openardp-1@0.1.0rc1"
     },
@@ -2542,7 +2546,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:1bbb5357-2e10-c69d-28db-205e431d663c",
+  "serialNumber": "urn:uuid:0a015ea0-cd03-4b2a-d987-2c24a87b27ac",
   "specVersion": "1.5",
   "version": 1
 }

@@ -5,6 +5,17 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 028 — stable CSV ingestion
+
+- Added direct immutable `.csv` ingestion under a distinct `openardp-csv` recipe through the existing spawned,
+  socket-denied parser and atomic READY publication path, without changing historical TXT/Markdown recipe identities.
+- Preserved ordered duplicate/empty headers, ragged rows, exact decoded cells and quoted physical-line provenance as
+  canonical self-contained table evidence; formulas remain inert untrusted strings and native source bytes stay exact.
+- Added local source/CLI/watcher routing, cache reuse, FTS indexing, exact retrieval, hostile/resource tests and an
+  independently validated two-workspace benchmark over unchanged F025 Q15/Q16 fixtures.
+- The reference result is `CSV_INGESTION_READY`: 1,656 records/18,216 cells are complete, operator queries select the
+  exact required source at rank 1 with complete citations, and direct semantic misses remain visible for F029.
+
 ### Feature 027 — lexical ranking, diversity and source quotas
 
 - Added a canonical combined F026+F027 algorithm profile that preserves early lexical relevance, exact-deduplicates CAS

@@ -15,7 +15,12 @@ NOW = datetime(2026, 7, 22, 12, 0, tzinfo=UTC)
 
 @pytest.mark.parametrize(
     ("name", "media_type"),
-    [("note.TXT", "text/plain"), ("readme.md", "text/markdown"), ("doc.MARKDOWN", "text/markdown")],
+    [
+        ("table.CSV", "text/csv"),
+        ("note.TXT", "text/plain"),
+        ("readme.md", "text/markdown"),
+        ("doc.MARKDOWN", "text/markdown"),
+    ],
 )
 def test_snapshot_streams_exact_bytes_to_cas(
     tmp_path: Path,

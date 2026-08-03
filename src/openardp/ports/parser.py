@@ -25,6 +25,10 @@ class UnsafeTextContent(ParserError, ValueError):
     """Raised when prohibited text such as NUL is observed."""
 
 
+class MalformedCsv(ParserError, ValueError):
+    """Raised when strict CSV parsing cannot form complete logical records."""
+
+
 class TextResourceLimitExceeded(ParserError):
     """Raised when a byte, line, block or worker resource bound is exceeded."""
 
@@ -139,6 +143,7 @@ class RichParserAdapter(Protocol):
 __all__ = [
     "InvalidParserOutput",
     "InvalidRichParserOutput",
+    "MalformedCsv",
     "ParserAdapter",
     "ParserError",
     "ParserProcessCrashed",

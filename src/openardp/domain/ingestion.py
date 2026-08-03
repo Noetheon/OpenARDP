@@ -34,10 +34,11 @@ OutlineLabel = Annotated[str, StringConstraints(strict=True, max_length=512)]
 
 
 class TextMediaType(StrEnum):
-    """Text media types supported by the F004 built-in parser."""
+    """Text media types supported by stable built-in parser adapters."""
 
     PLAIN = "text/plain"
     MARKDOWN = "text/markdown"
+    CSV = "text/csv"
 
 
 class RichMediaType(StrEnum):

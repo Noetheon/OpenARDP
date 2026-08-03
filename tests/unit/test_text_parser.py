@@ -153,6 +153,7 @@ def test_recipe_is_stable_and_changes_with_reviewed_limits() -> None:
     assert default.profile == "default"
     assert default == TextParserAdapter().recipe
     assert default.config_hash != TextParserAdapter(max_source_bytes=1024).recipe.config_hash
+    assert default == TextParserAdapter().recipe
 
 
 @pytest.mark.parametrize("media_type", ["application/pdf", "TEXT/PLAIN", ""])

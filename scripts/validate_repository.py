@@ -360,6 +360,31 @@ _F027_REQUIRED_FILES = (
     "tests/unit/test_ranking_benchmark.py",
 )
 
+_F028_REQUIRED_FILES = (
+    "benchmarks/csv-ingestion/v0.1.0/README.md",
+    "benchmarks/csv-ingestion/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/csv-ingestion/v0.1.0/results/reference-macos-arm64/result.json",
+    "docs/27_STABLE_CSV_INGESTION.md",
+    "scripts/run_csv_ingestion_benchmark.py",
+    "scripts/validate_csv_ingestion_benchmark.py",
+    "spec-kit/feature-prompts/028-csv-ingestion.md",
+    "specs/028-csv-ingestion/analysis.md",
+    "specs/028-csv-ingestion/contracts/README.md",
+    "specs/028-csv-ingestion/data-model.md",
+    "specs/028-csv-ingestion/implementation-notes.md",
+    "specs/028-csv-ingestion/plan.md",
+    "specs/028-csv-ingestion/quickstart.md",
+    "specs/028-csv-ingestion/research.md",
+    "specs/028-csv-ingestion/spec.md",
+    "specs/028-csv-ingestion/tasks.md",
+    "src/openardp/adapters/csv_parser.py",
+    "src/openardp/interfaces/ingestion_composition.py",
+    "tests/integration/test_csv_ingestion.py",
+    "tests/security/test_csv_boundaries.py",
+    "tests/unit/test_csv_ingestion_benchmark.py",
+    "tests/unit/test_csv_parser.py",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
@@ -991,6 +1016,20 @@ def _validate_f027_ranking(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f028_csv(root: Path) -> list[Diagnostic]:
+    """Require the complete F028 stable CSV and measured-validation boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV024",
+            relative,
+            "required F028 stable CSV artifact is missing",
+        )
+        for relative in _F028_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1082,6 +1121,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f025_semantic_evaluation(root))
     diagnostics.extend(_validate_f026_relevance(root))
     diagnostics.extend(_validate_f027_ranking(root))
+    diagnostics.extend(_validate_f028_csv(root))
     return _sort_diagnostics(root, diagnostics)
 
 

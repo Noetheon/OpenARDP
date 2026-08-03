@@ -60,7 +60,10 @@ the behavior-preserving maintenance pass in
 [`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md), and the licensed real-world corpus in
 [`024-redistributable-realworld-corpus`](specs/024-redistributable-realworld-corpus/spec.md), and the realistic semantic
 and source-quality evaluation in
-[`025-semantic-e2e-source-evaluation`](specs/025-semantic-e2e-source-evaluation/spec.md):
+[`025-semantic-e2e-source-evaluation`](specs/025-semantic-e2e-source-evaluation/spec.md), explicit relevance and abstention
+in [`026-relevance-abstention`](specs/026-relevance-abstention/spec.md), lexical allocation in
+[`027-lexical-ranking-diversity`](specs/027-lexical-ranking-diversity/spec.md), and stable CSV ingestion in
+[`028-csv-ingestion`](specs/028-csv-ingestion/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -86,6 +89,12 @@ untouched questions achieve only 35.3% full support, 32.6% atom recall and 1.1% 
 improve full support to 82.4% but remain manual assistance and miss the 90% atom/source conditional gates. See the
 [`F025 report`](benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/report.md).
 
+F028 now ingests the frozen 932,085-byte CISA CSV directly through the stable local product path. Its independently
+validated `CSV_INGESTION_READY` result preserves all 1,656 records and 18,216 cells, reuses unchanged work and retrieves
+both frozen operator-query answers at rank 1 with exact citations. Direct natural-language CSV questions still miss under
+exact lexical search and remain an explicit F029 retrieval target. See the
+[`F028 report`](benchmarks/csv-ingestion/v0.1.0/results/reference-macos-arm64/report.md).
+
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
 - strict Pydantic v2 domain models, five F002 JSON Schema roots, and four independently
@@ -94,7 +103,7 @@ improve full support to 82.4% but remain manual assistance and miss the 90% atom
 - immutable streaming filesystem CAS with verified reads and atomic same-filesystem publication;
 - checksummed transactional SQLite migrations, exact source/version facts and fenced job transitions;
 - explicit local workspace plus an installable `openardp` command;
-- read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md` and `.markdown` files;
+- read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md`, `.markdown` and `.csv` files;
 - a bounded spawned parser worker with denied socket creation and documented residual platform risk;
 - deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
 - body-minimizing `list`, exact bounded `status`, explicit `status --full-integrity`, `outline` and exact persisted `get`

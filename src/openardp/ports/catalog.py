@@ -476,8 +476,9 @@ class Catalog(Protocol):
         *,
         match: str,
         filters: SearchFilters,
+        offset: int = 0,
     ) -> SearchMatchPage:
-        """Execute coverage-checked FTS match and return one total-ordered page."""
+        """Execute coverage-checked FTS match and return one total-ordered offset page."""
         ...
 
     def index_coverage(

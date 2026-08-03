@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import cast
 from uuid import UUID
 
@@ -29,9 +29,9 @@ from openardp.domain.ingestion import RepresentationScope
 from openardp.domain.rich_ingestion import RichEvidenceRecord, RichRepresentationArtifacts
 from openardp.domain.search import (
     MAX_QUERY_ITEMS,
+    MAX_SEARCH_LIMIT,
     MAX_TERM_CHARACTERS,
     SearchFilters,
-    SearchMatchPage,
     SearchMatchRow,
     block_text_for_index,
     indexed_text_hash,
@@ -121,10 +121,7 @@ class TextLexicalCandidateSource:
         match = lexical_match_expression(items)
         candidates: list[ContextCandidate] = []
         for document_id in _snapshot_document_ids(snapshot):
-            page = self._match_page(document_id, match)
-            if page.available > len(page.rows):
-                raise ContextLimitExceeded("discovery_page_exhausted")
-            for row in page.rows:
+            for row in self._match_rows(document_id, match):
                 if cancel():
                     raise ContextCompilationCancelled("cancelled_during_text_verification")
                 if len(candidates) >= limits.max_discovered:
@@ -147,18 +144,46 @@ class TextLexicalCandidateSource:
         if version is None:
             raise ContextIntegrityFailure("accelerator_drifted")
 
-    def _match_page(self, document_id: UUID, match: str) -> SearchMatchPage:
-        """Execute one coverage-checked FTS query with closed failure mapping."""
-        filters = SearchFilters(
-            document_id=document_id,
-            include_history=True,
-        )
-        try:
-            return self._catalog.search_block_entries(match=match, filters=filters)
-        except SearchIndexIncomplete as error:
-            raise ContextIntegrityFailure("accelerator_incomplete") from error
-        except SearchIndexDrifted as error:
-            raise ContextIntegrityFailure("accelerator_drifted") from error
+    def _match_rows(
+        self,
+        document_id: UUID,
+        match: str,
+    ) -> Iterator[SearchMatchRow]:
+        """Stream every FTS row through deterministic bounded offset pages."""
+        offset = 0
+        available: int | None = None
+        identities: set[tuple[str, str, str]] = set()
+        while available is None or offset < available:
+            filters = SearchFilters(
+                document_id=document_id,
+                include_history=True,
+                limit=MAX_SEARCH_LIMIT,
+            )
+            try:
+                page = self._catalog.search_block_entries(
+                    match=match,
+                    filters=filters,
+                    offset=offset,
+                )
+            except SearchIndexIncomplete as error:
+                raise ContextIntegrityFailure("accelerator_incomplete") from error
+            except SearchIndexDrifted as error:
+                raise ContextIntegrityFailure("accelerator_drifted") from error
+            if available is None:
+                available = page.available
+            elif page.available != available:
+                raise ContextIntegrityFailure("accelerator_changed_during_paging")
+            if not page.rows and offset < available:
+                raise ContextIntegrityFailure("accelerator_page_incomplete")
+            for row in page.rows:
+                identity = (str(row.scope.document_id), row.scope.version_id, str(row.block_id))
+                if identity in identities:
+                    raise ContextIntegrityFailure("accelerator_page_drift")
+                identities.add(identity)
+                yield row
+            offset += len(page.rows)
+        if available != len(identities):
+            raise ContextIntegrityFailure("accelerator_page_drift")
 
     def _verified_candidate(
         self,

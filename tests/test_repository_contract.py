@@ -211,10 +211,10 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
 def test_f028_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active CSV governance, accepted ADRs and frozen prior contracts."""
+    """Require retained CSV governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/028-csv-ingestion"
-    feature = repository_root / active["feature_directory"]
+    assert active["feature_directory"] == "specs/029-provider-neutral-multilingual-retrieval"
+    feature = repository_root / "specs/028-csv-ingestion"
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
         "plan.md",
@@ -426,6 +426,12 @@ def test_project_metadata_has_only_reviewed_runtime_dependencies(repository_root
     ]
     assert project.get("optional-dependencies", {}) == {
         "docling": ["docling==2.114.0"],
+        "semantic": [
+            "huggingface-hub==1.24.0",
+            "safetensors==0.8.0",
+            "torch==2.13.0",
+            "transformers==5.8.1",
+        ],
         "visual": ["Pillow==12.3.0", "pypdfium2==5.12.1"],
     }
     assert project["scripts"] == {"openardp": "openardp.interfaces.cli:main"}

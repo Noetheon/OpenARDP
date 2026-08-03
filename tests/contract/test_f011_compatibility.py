@@ -42,10 +42,10 @@ def test_all_eleven_prior_schemas_vectors_and_mcp_descriptors_remain_frozen(
     )
 
 
-def test_visual_extra_is_the_only_new_optional_dependency_surface(
+def test_only_reviewed_optional_dependency_surfaces_are_present(
     repository_root: Path,
 ) -> None:
-    """Allow only the exact reviewed visual provider pair beside unchanged Docling."""
+    """Allow only exact reviewed optional provider dependency sets beside the core."""
     project = _toml(repository_root / "pyproject.toml")["project"]
     assert project["dependencies"] == [
         "pydantic>=2.12.5,<2.13",
@@ -53,6 +53,12 @@ def test_visual_extra_is_the_only_new_optional_dependency_surface(
     ]
     assert project["optional-dependencies"] == {
         "docling": ["docling==2.114.0"],
+        "semantic": [
+            "huggingface-hub==1.24.0",
+            "safetensors==0.8.0",
+            "torch==2.13.0",
+            "transformers==5.8.1",
+        ],
         "visual": ["Pillow==12.3.0", "pypdfium2==5.12.1"],
     }
     lock = _toml(repository_root / "uv.lock")
@@ -61,3 +67,5 @@ def test_visual_extra_is_the_only_new_optional_dependency_surface(
     }
     assert ("pillow", "12.3.0") in packages
     assert ("pypdfium2", "5.12.1") in packages
+    assert ("torch", "2.13.0") in packages
+    assert ("transformers", "5.8.1") in packages

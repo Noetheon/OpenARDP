@@ -52,6 +52,7 @@ DOMAIN_MODULES = {
     "storage",
     "ingestion",
     "search",
+    "semantic_retrieval",
     "visual",
     "watcher",
 }
@@ -64,6 +65,7 @@ PORT_MODULES = {
     "object_store",
     "parser",
     "release",
+    "semantic_retrieval",
     "visual",
     "watcher",
 }
@@ -78,6 +80,9 @@ ADAPTER_MODULES = {
     "docling_bundle_archive",
     "docling_bundle_provisioning",
     "docling_native",
+    "e5_semantic",
+    "embedding_bundle",
+    "embedding_bundle_provisioning",
     "filesystem_cas",
     "filesystem_convergence",
     "filesystem_maintenance",
@@ -94,6 +99,7 @@ ADAPTER_MODULES = {
     "release_reproduction",
     "release_security",
     "release_supply_chain",
+    "semantic_candidates",
     "sqlite_catalog",
     "sqlite_document_queries",
     "sqlite_migrations",
@@ -119,6 +125,7 @@ SERVICE_MODULES = {
     "rich_evidence",
     "rich_ingestion",
     "search",
+    "semantic_retrieval",
     "storage_optimization",
     "visual_evidence",
     "visual_interpretation",
@@ -172,11 +179,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_028(
+def test_module_surface_is_bounded_to_feature_029(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F028 product modules."""
+    """Expose exactly the reviewed F002-F029 product modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

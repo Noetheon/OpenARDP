@@ -91,6 +91,8 @@ class ProductWorkspace:
     rich_body_by_id: dict[str, str]
     rich_anchor_by_id: dict[str, str]
     formats: tuple[str, ...]
+    text_verifier: Any
+    rich_verifier: Any
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:
@@ -113,6 +115,7 @@ def _compose_workspace(
     *,
     relevance_policy: RelevancePolicy | None = None,
     allocation_policy: LexicalAllocationPolicy | None = None,
+    include_csv: bool = False,
 ) -> ProductWorkspace:
     workspace = LocalWorkspace.initialize(workspace_root, now=_FIXED_TIME)
     entropy = 0
@@ -130,6 +133,16 @@ def _compose_workspace(
         clock=lambda: _FIXED_TIME,
         owner_id_factory=lambda: "semantic-benchmark",
         lease_token_factory=lambda: "0" * 64,
+        random_bits=bits,
+    )
+    csv_ingestion = IngestionService(
+        workspace.object_store,
+        workspace.catalog,
+        IsolatedParserAdapter(parser_kind="csv"),
+        source_factory=LocalSource,
+        clock=lambda: _FIXED_TIME,
+        owner_id_factory=lambda: "semantic-benchmark",
+        lease_token_factory=lambda: "4" * 64,
         random_bits=bits,
     )
     rich_services = {
@@ -177,8 +190,10 @@ def _compose_workspace(
         source = corpus / str(asset["path"])
         if format_name == "csv":
             oracle_bodies[source_key] = [source.read_text(encoding="utf-8-sig")]
-            continue
-        if format_name in {"md", "txt"}:
+            if not include_csv:
+                continue
+            result = csv_ingestion.ingest(source)
+        elif format_name in {"md", "txt"}:
             result = text_ingestion.ingest(source)
             oracle_bodies[source_key] = [source.read_text(encoding="utf-8")]
         else:
@@ -250,6 +265,8 @@ def _compose_workspace(
         rich_body_by_id=rich_body_by_id,
         rich_anchor_by_id=rich_anchor_by_id,
         formats=tuple(sorted(formats)),
+        text_verifier=text_ingestion.verify_ready_representation,
+        rich_verifier=verifier,
     )
 
 
@@ -329,8 +346,11 @@ def _execute_rows(
     include_context_audit: bool = False,
     question_ids: frozenset[str] | None = None,
     treatments: tuple[str, ...] = PRODUCT_TREATMENTS,
+    csv_supported: bool = False,
+    direct_query_treatments: frozenset[str] = frozenset({"openardp_direct"}),
+    context_override: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    context = inputs.protocol["context"]
+    context = context_override or inputs.protocol["context"]
     limits = ContextCompileLimits(
         max_scopes=context["max_scopes"],
         max_discovered=context["max_discovered"],
@@ -344,7 +364,11 @@ def _execute_rows(
         if question_ids is not None and question["question_id"] not in question_ids:
             continue
         for treatment in treatments:
-            if question["answerable"] and "csv" in question["required_formats"]:
+            if (
+                not csv_supported
+                and question["answerable"]
+                and "csv" in question["required_formats"]
+            ):
                 rows.append(
                     make_observation(
                         question,
@@ -357,7 +381,7 @@ def _execute_rows(
                 continue
             task = (
                 question["question"]
-                if treatment == "openardp_direct"
+                if treatment in direct_query_treatments
                 else question["operator_query"]
             )
             started = time.perf_counter_ns()

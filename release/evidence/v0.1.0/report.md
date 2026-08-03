@@ -2,8 +2,8 @@
 
 **Decision**: `NO-GO`
 **Candidate**: `0.1.0rc1`
-**Decision ID**: `sha256:1d69c1918557c900893e857ecce6253a027ed54271c399a3027283272d73ecf6`
-**Source tree**: `sha256:47b1ef774387617afff299260925f38d892a4531783b2e8c84b5c10de1bb8c0b`
+**Decision ID**: `sha256:13bb88e3a5f22ee26e75420bf80ace31685e894fcc3d3ae8aedbdbeb8966b333`
+**Source tree**: `sha256:06cd35de5dfb2c56f53e2727d1a40aec3184eaa64fcffe2a1e8546d620f9df3d`
 **Policy**: `sha256:6c4100c13332cb6c27b43bcf1e7c88a8b074c79a6484bfcad110e710f93fbe16`
 
 ## Evidence registry
@@ -21,7 +21,7 @@
 - `suite-completeness`: **FAIL** (`mandatory-suite-failed`; observed `7`, expected `8`)
 - `reference-timing-uniqueness`: **PASS** (`reference-timing-present`; observed `1`, expected `1`)
 - `timing-sample-sufficiency`: **PASS** (`timing-samples-sufficient`; observed `63`, expected `7`)
-- `raw-reparse-latency-value`: **PASS** (`raw-reparse-interval-exceeded`; observed `6542`, expected `266875`)
+- `raw-reparse-latency-value`: **PASS** (`raw-reparse-interval-exceeded`; observed `6833`, expected `270583`)
 - `warm-parser-avoidance`: **PASS** (`warm-parser-invocations-zero`; observed `0`, expected `0`)
 - `correctness-threshold`: **PASS** (`correctness-threshold-met`; observed `1`, expected `1`)
 - `coverage-threshold`: **PASS** (`coverage-threshold-met`; observed `1`, expected `1`)

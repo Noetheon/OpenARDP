@@ -385,6 +385,55 @@ _F028_REQUIRED_FILES = (
     "tests/unit/test_csv_parser.py",
 )
 
+_F029_REQUIRED_FILES = (
+    "benchmarks/provider-retrieval/v0.1.0/protocol.json",
+    "benchmarks/provider-retrieval/v0.1.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/provider-retrieval/v0.2.0/protocol.json",
+    "benchmarks/provider-retrieval/v0.2.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/provider-retrieval/v0.3.0/protocol.json",
+    "benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/observations.json",
+    "benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/report.md",
+    "benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/run-manifest.json",
+    "benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/summary.json",
+    "docs/28_PROVIDER_NEUTRAL_MULTILINGUAL_RETRIEVAL.md",
+    "docs/adr/0019-optional-semantic-retrieval.md",
+    "model-bundles/multilingual-e5-small-v1/README.md",
+    "model-bundles/multilingual-e5-small-v1/THIRD_PARTY_NOTICES.md",
+    "model-bundles/multilingual-e5-small-v1/licenses/MIT.txt",
+    "model-bundles/multilingual-e5-small-v1/manifest.json",
+    "model-bundles/multilingual-e5-small-v1/source-lock.json",
+    "scripts/provider_retrieval_benchmark.py",
+    "scripts/provision_embedding_bundle.py",
+    "scripts/run_provider_retrieval_benchmark.py",
+    "scripts/validate_provider_retrieval_benchmark.py",
+    "scripts/verify_embedding_bundle.py",
+    "spec-kit/feature-prompts/029-provider-neutral-multilingual-retrieval.md",
+    "specs/029-provider-neutral-multilingual-retrieval/analysis.md",
+    "specs/029-provider-neutral-multilingual-retrieval/contracts/README.md",
+    "specs/029-provider-neutral-multilingual-retrieval/data-model.md",
+    "specs/029-provider-neutral-multilingual-retrieval/implementation-notes.md",
+    "specs/029-provider-neutral-multilingual-retrieval/plan.md",
+    "specs/029-provider-neutral-multilingual-retrieval/quickstart.md",
+    "specs/029-provider-neutral-multilingual-retrieval/research.md",
+    "specs/029-provider-neutral-multilingual-retrieval/spec.md",
+    "specs/029-provider-neutral-multilingual-retrieval/tasks.md",
+    "src/openardp/adapters/e5_semantic.py",
+    "src/openardp/adapters/embedding_bundle.py",
+    "src/openardp/adapters/embedding_bundle_provisioning.py",
+    "src/openardp/adapters/semantic_candidates.py",
+    "src/openardp/domain/semantic_retrieval.py",
+    "src/openardp/ports/semantic_retrieval.py",
+    "src/openardp/services/semantic_retrieval.py",
+    "tests/integration/test_e5_semantic_provider.py",
+    "tests/integration/test_provider_retrieval_reference.py",
+    "tests/integration/test_semantic_candidates.py",
+    "tests/security/test_semantic_retrieval_boundaries.py",
+    "tests/unit/test_embedding_bundle.py",
+    "tests/unit/test_provider_retrieval_benchmark.py",
+    "tests/unit/test_semantic_retrieval.py",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
@@ -1030,6 +1079,20 @@ def _validate_f028_csv(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f029_semantic_retrieval(root: Path) -> list[Diagnostic]:
+    """Require the complete F029 provider, benchmark and validation boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV025",
+            relative,
+            "required F029 provider-neutral retrieval artifact is missing",
+        )
+        for relative in _F029_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1122,6 +1185,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f026_relevance(root))
     diagnostics.extend(_validate_f027_ranking(root))
     diagnostics.extend(_validate_f028_csv(root))
+    diagnostics.extend(_validate_f029_semantic_retrieval(root))
     return _sort_diagnostics(root, diagnostics)
 
 

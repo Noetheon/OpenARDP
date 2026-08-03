@@ -9,8 +9,8 @@
       "reason": "Reviewed F022 dual-form inventory, exact backup, restore and quarantine compatibility over the legacy recovery adapter."
     },
     "src/openardp/adapters/sqlite_catalog.py": {
-      "maximum_lines": 7179,
-      "reason": "Reviewed F022 revision-11 normalized projection, fail-closed search coverage, restart-persistent optimizer fence, safe inventory and catalog compaction over the legacy transactional facade."
+      "maximum_lines": 7182,
+      "reason": "Reviewed F029 bounded deterministic FTS offset paging plus F022 revision-11 normalized projection, fail-closed search coverage, optimizer fence, safe inventory and compaction over the legacy transactional facade."
     },
     "src/openardp/adapters/sqlite_migrations.py": {
       "maximum_lines": 1666,

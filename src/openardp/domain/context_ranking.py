@@ -56,9 +56,11 @@ class AllocationResult(DomainModel):
 def lexical_candidate_rank_key(candidate: ContextCandidate) -> tuple[object, ...]:
     """Return the cross-platform total rank key for one eligible candidate."""
     relevance = candidate.relevance
+    semantic = candidate.semantic
     return (
         not candidate.high_value,
-        -candidate.term_coverage,
+        candidate.retrieval_tier,
+        -(semantic.score_millionths if semantic is not None else candidate.term_coverage),
         -candidate.occurrences,
         -(relevance.score_millionths if relevance is not None else 0),
         -(relevance.matched_weight if relevance is not None else 0),
@@ -117,22 +119,28 @@ def allocate_lexical_candidates(
             for candidate in queues[source]
             if _candidate_identity(candidate) not in prefix_ids
         ]
-    source_order = sorted(
-        (source for source in queues if queues[source]),
-        key=lambda source: lexical_candidate_rank_key(queues[source][0]),
-    )
     ordered: list[ContextCandidate] = list(prefix)
-    round_index = 0
-    while True:
-        emitted = False
-        for source in source_order:
-            queue = queues[source]
-            if round_index < len(queue):
-                ordered.append(queue[round_index])
-                emitted = True
-        if not emitted:
-            break
-        round_index += 1
+    tiers = sorted({candidate.retrieval_tier for queue in queues.values() for candidate in queue})
+    for tier in tiers:
+        tier_queues = {
+            source: [candidate for candidate in queue if candidate.retrieval_tier == tier]
+            for source, queue in queues.items()
+        }
+        source_order = sorted(
+            (source for source in tier_queues if tier_queues[source]),
+            key=lambda source: lexical_candidate_rank_key(tier_queues[source][0]),
+        )
+        round_index = 0
+        while True:
+            emitted = False
+            for source in source_order:
+                queue = tier_queues[source]
+                if round_index < len(queue):
+                    ordered.append(queue[round_index])
+                    emitted = True
+            if not emitted:
+                break
+            round_index += 1
     return AllocationResult(ordered=tuple(ordered), rejected=tuple(rejected))
 
 

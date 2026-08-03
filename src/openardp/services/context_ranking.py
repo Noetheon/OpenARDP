@@ -45,7 +45,12 @@ def candidate_total_order_key(candidate: ContextCandidate) -> tuple[object, ...]
     """Return the historical F008/F026 deterministic total order key."""
     return (
         not candidate.high_value,
-        -candidate.term_coverage,
+        candidate.retrieval_tier,
+        -(
+            candidate.semantic.score_millionths
+            if candidate.semantic is not None
+            else candidate.term_coverage
+        ),
         -candidate.occurrences,
         str(candidate.scope.document_id),
         candidate.scope.version_id,

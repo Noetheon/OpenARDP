@@ -5,6 +5,20 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 029 — provider-neutral multilingual retrieval
+
+- Added an optional provider-neutral fixed-point scoring port and exact local `intfloat/multilingual-e5-small` adapter
+  behind a verified 492,794,646-byte external bundle, spawned socket-denied offline execution and disposable passage
+  cache; the lexical default, schemas, catalogs and authoritative evidence remain unchanged.
+- Added hybrid retrieval that exhausts F027 minimum-relevant lexical evidence before semantic additions, prefers accepted
+  RichEvidence over generic rows, diversifies eligible semantic candidates across documents before Top-K and retains
+  exact deduplication, source quotas, volatile-time guards, citations and explicit abstention.
+- Added a body-free two-workspace comparison and stdlib-only validator over all unchanged F025 questions plus F028 CSV.
+  The two negative v0.1/v0.2 runs remain evidence for the corrected source-balance and Rich-precedence mechanisms.
+- The final v0.3 result is `PROVIDER_RETRIEVAL_READY`: full support improves 41.18%→52.94%, atom recall 34.78%→50.00%
+  and source recall 44.44%→72.22%; Q04/Q08 reach complete support with perfect citation/abstention/determinism. Reference
+  F029 query time is about 2.65x F027 with 1.23 GB peak worker RSS and 94.73% passage-cache reuse.
+
 ### Feature 028 — stable CSV ingestion
 
 - Added direct immutable `.csv` ingestion under a distinct `openardp-csv` recipe through the existing spawned,

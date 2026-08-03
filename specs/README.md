@@ -53,7 +53,8 @@ refine those decisions but may not silently contradict them.
 | `025-semantic-e2e-source-evaluation` | Frozen real-world semantic questions, citations and honest readiness decision | Converged, merged and remotely verified; `SEMANTIC_E2E_NOT_READY` |
 | `026-relevance-abstention` | Minimum lexical relevance and explicit deterministic abstention | Converged, merged and remotely verified |
 | `027-lexical-ranking-diversity` | Deterministic lexical ranking, deduplication, diversity and source quotas | Converged, merged and remotely verified |
-| `028-csv-ingestion` | Stable lossless logical CSV ingestion, retrieval and frozen Q15/Q16 evidence | Active; local benchmark `CSV_INGESTION_READY` |
+| `028-csv-ingestion` | Stable lossless logical CSV ingestion, retrieval and frozen Q15/Q16 evidence | Converged, merged and remotely verified; `CSV_INGESTION_READY` |
+| `029-provider-neutral-multilingual-retrieval` | Optional offline semantic provider, hybrid retrieval and frozen multilingual comparison | Converged; v0.3 `PROVIDER_RETRIEVAL_READY`, publication pending |
 
 ## Release evidence registry
 

@@ -1042,6 +1042,12 @@ dependencies = [
 docling = [
     { name = "docling" },
 ]
+semantic = [
+    { name = "huggingface-hub" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "transformers" },
+]
 visual = [
     { name = "pillow" },
     { name = "pypdfium2" },
@@ -1061,12 +1067,16 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "docling", marker = "extra == 'docling'", specifier = "==2.114.0" },
+    { name = "huggingface-hub", marker = "extra == 'semantic'", specifier = "==1.24.0" },
     { name = "pillow", marker = "extra == 'visual'", specifier = "==12.3.0" },
     { name = "pydantic", specifier = ">=2.12.5,<2.13" },
     { name = "pypdfium2", marker = "extra == 'visual'", specifier = "==5.12.1" },
     { name = "rfc8785", specifier = ">=0.1.4,<0.2" },
+    { name = "safetensors", marker = "extra == 'semantic'", specifier = "==0.8.0" },
+    { name = "torch", marker = "extra == 'semantic'", specifier = "==2.13.0" },
+    { name = "transformers", marker = "extra == 'semantic'", specifier = "==5.8.1" },
 ]
-provides-extras = ["docling", "visual"]
+provides-extras = ["docling", "visual", "semantic"]
 
 [package.metadata.requires-dev]
 dev = [

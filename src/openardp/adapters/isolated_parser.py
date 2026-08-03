@@ -16,6 +16,7 @@ from typing import NoReturn, Protocol, Self
 
 from pydantic import ValidationError
 
+from openardp.adapters.csv_parser import CsvParserAdapter
 from openardp.adapters.text_parser import TextParserAdapter
 from openardp.domain.ingestion import (
     DEFAULT_PARSER_TIMEOUT_SECONDS,
@@ -24,9 +25,11 @@ from openardp.domain.ingestion import (
     MAX_SOURCE_BYTES,
     ParsedTextDocument,
     ParserRecipe,
+    TextMediaType,
 )
 from openardp.ports.parser import (
     InvalidParserOutput,
+    MalformedCsv,
     ParserError,
     ParserProcessCrashed,
     ParserTimedOut,
@@ -64,6 +67,7 @@ class _IpcConnection(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class _WorkerConfig:
+    parser_kind: str
     profile: str
     max_source_bytes: int
     max_line_characters: int
@@ -120,19 +124,23 @@ class IsolatedParserAdapter:
         max_line_characters: int = MAX_LINE_CHARACTERS,
         max_blocks: int = MAX_NORMALIZED_BLOCKS,
         timeout_seconds: float = DEFAULT_PARSER_TIMEOUT_SECONDS,
+        parser_kind: str = "text",
         _worker_behavior: _WorkerBehavior | None = None,
     ) -> None:
         """Configure a recipe-identical worker and its wall-clock deadline."""
         if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be finite and positive")
-        parser = TextParserAdapter(
+        parser = _parser_for_kind(
+            parser_kind,
             profile=profile,
             max_source_bytes=max_source_bytes,
             max_line_characters=max_line_characters,
             max_blocks=max_blocks,
         )
         self._recipe = parser.recipe
+        self._parser_kind = parser_kind
         self._config = _WorkerConfig(
+            parser_kind=parser_kind,
             profile=profile,
             max_source_bytes=max_source_bytes,
             max_line_characters=max_line_characters,
@@ -148,7 +156,9 @@ class IsolatedParserAdapter:
 
     def supports(self, media_type: str) -> bool:
         """Return whether the built-in worker accepts the media type."""
-        return media_type in {"text/plain", "text/markdown"}
+        if self._parser_kind == "csv":
+            return media_type == TextMediaType.CSV.value
+        return media_type in {TextMediaType.PLAIN.value, TextMediaType.MARKDOWN.value}
 
     def parse(
         self,
@@ -245,7 +255,8 @@ def _parse_worker_behavior(
     config: _WorkerConfig,
 ) -> None:
     """Run the pure parser against the parent-provided byte-message stream."""
-    parser = TextParserAdapter(
+    parser = _parser_for_kind(
+        config.parser_kind,
         profile=config.profile,
         max_source_bytes=config.max_source_bytes,
         max_line_characters=config.max_line_characters,
@@ -325,6 +336,8 @@ def _parser_error_code(error: ParserError) -> str:
         return "decoding_failed"
     if isinstance(error, UnsafeTextContent):
         return "unsafe_content"
+    if isinstance(error, MalformedCsv):
+        return "malformed_csv"
     if isinstance(error, TextResourceLimitExceeded):
         return "resource_limit"
     return "parser_failed"
@@ -336,6 +349,7 @@ def _error_from_code(code: str) -> ParserError:
         "unsupported_media": UnsupportedTextMedia("unsupported text media"),
         "decoding_failed": TextDecodingError("text decoding failed"),
         "unsafe_content": UnsafeTextContent("unsafe text content"),
+        "malformed_csv": MalformedCsv("malformed csv"),
         "resource_limit": TextResourceLimitExceeded("text resource limit exceeded"),
         "worker_failed": ParserProcessCrashed("parser process crashed"),
         "parser_failed": ParserProcessCrashed("parser process failed"),
@@ -344,6 +358,32 @@ def _error_from_code(code: str) -> ParserError:
         return errors[code]
     except KeyError as error:
         raise InvalidParserOutput("parser output invalid") from error
+
+
+def _parser_for_kind(
+    parser_kind: str,
+    *,
+    profile: str,
+    max_source_bytes: int,
+    max_line_characters: int,
+    max_blocks: int,
+) -> TextParserAdapter | CsvParserAdapter:
+    """Construct one reviewed pure parser without ambient media dispatch."""
+    if parser_kind == "text":
+        return TextParserAdapter(
+            profile=profile,
+            max_source_bytes=max_source_bytes,
+            max_line_characters=max_line_characters,
+            max_blocks=max_blocks,
+        )
+    if parser_kind == "csv":
+        return CsvParserAdapter(
+            profile=profile,
+            max_source_bytes=max_source_bytes,
+            max_line_characters=max_line_characters,
+            max_blocks=max_blocks,
+        )
+    raise ValueError("unsupported parser kind")
 
 
 def _disable_network_access() -> None:

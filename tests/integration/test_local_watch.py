@@ -35,6 +35,7 @@ def test_scan_is_supported_sorted_and_nonrecursive_when_selected(tmp_path: Path)
     """Return only supported regular files in deterministic relative order."""
     workspace, root = _locations(tmp_path)
     (root / "z.txt").write_text("z", encoding="utf-8")
+    (root / "table.csv").write_text("key,value\na,b\n", encoding="utf-8")
     (root / "a.md").write_text("a", encoding="utf-8")
     (root / "ignored.bin").write_bytes(b"x")
     if os.name != "nt":
@@ -50,7 +51,11 @@ def test_scan_is_supported_sorted_and_nonrecursive_when_selected(tmp_path: Path)
     )
     scan = scanner.scan(admitted, started_at=NOW, completed_at=NOW + timedelta(seconds=1))
     assert scan.complete
-    assert tuple(entry.relative_locator for entry in scan.entries) == ("a.md", "z.txt")
+    assert tuple(entry.relative_locator for entry in scan.entries) == (
+        "a.md",
+        "table.csv",
+        "z.txt",
+    )
 
 
 def test_scan_refreshes_identity_instead_of_using_direntry_cached_stat(

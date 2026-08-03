@@ -412,7 +412,7 @@ def test_cli_runner_reuses_rich_service_and_observes_post_commit_cancellation(
 
     text = _Ingestion("text")
     rich = _Ingestion("rich")
-    runner = _CliWatchRunner(text, rich)  # type: ignore[arg-type]
+    runner = _CliWatchRunner(text, text, rich)  # type: ignore[arg-type]
     source = tmp_path / "document.docx"
     source.write_bytes(b"synthetic-rich-container")
     with pytest.raises(WatchCancellationObserved):

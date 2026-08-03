@@ -208,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f027_governance_and_prior_contracts_are_present_and_frozen(
+def test_f028_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active ranking governance, accepted ADRs and frozen prior contracts."""
+    """Require active CSV governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/027-lexical-ranking-diversity"
+    assert active["feature_directory"] == "specs/028-csv-ingestion"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",

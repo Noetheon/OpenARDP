@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Protocol
 from uuid import UUID
 
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from openardp.domain.block import BlockKind, ContentBlock
 from openardp.domain.common import (
@@ -38,6 +38,7 @@ from openardp.domain.ingestion import (
     RepresentationBlock,
     RepresentationScope,
     SourceSnapshot,
+    TextMediaType,
     deterministic_block_id,
 )
 from openardp.domain.manifest import (
@@ -97,6 +98,27 @@ def _lease_token() -> str:
 
 def _random_uuid7_bits() -> int:
     return secrets.randbits(74)
+
+
+def _text_source_locator(
+    media_type: TextMediaType,
+    *,
+    ordinal: int,
+    line_start: int,
+    line_end: int,
+) -> SourceLocator:
+    """Build exact text or CSV provenance without widening commit orchestration."""
+    extensions: dict[str, JsonValue] = {
+        "openardp.text": {"line_start": line_start, "line_end": line_end}
+    }
+    if media_type is TextMediaType.CSV:
+        extensions["openardp.csv"] = {"record": ordinal + 1}
+    return SourceLocator(
+        extraction_method=(
+            "openardp-csv-v1" if media_type is TextMediaType.CSV else "openardp-text-v1"
+        ),
+        extensions=extensions,
+    )
 
 
 class IngestionService:
@@ -330,14 +352,11 @@ class IngestionService:
                 order=candidate.order,
                 text=candidate.text,
                 canonical_hash=canonical_hash,
-                source=SourceLocator(
-                    extraction_method="openardp-text-v1",
-                    extensions={
-                        "openardp.text": {
-                            "line_start": candidate.line_start,
-                            "line_end": candidate.line_end,
-                        }
-                    },
+                source=_text_source_locator(
+                    parsed.media_type,
+                    ordinal=ordinal,
+                    line_start=candidate.line_start,
+                    line_end=candidate.line_end,
                 ),
                 trust=DataTrustClassification(
                     zone=TrustZone.EXTERNAL_UNTRUSTED,

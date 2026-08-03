@@ -13,11 +13,13 @@ from typing import assert_type
 import pytest
 
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
+from openardp.domain.block import BlockKind
 from openardp.domain.ingestion import ParsedTextDocument, ParserRecipe, TextMediaType
 from openardp.ports.catalog import Catalog, RichCatalog
 from openardp.ports.parser import (
     InvalidParserOutput,
     InvalidRichParserOutput,
+    MalformedCsv,
     ParserAdapter,
     ParserError,
     ParserProcessCrashed,
@@ -94,7 +96,11 @@ def _network_probe_worker(
         (
             "ok",
             ParsedTextDocument(
-                media_type=TextMediaType.PLAIN,
+                media_type=(
+                    TextMediaType.CSV
+                    if getattr(config, "parser_kind", "text") == "csv"
+                    else TextMediaType.PLAIN
+                ),
                 blocks=(),
                 warnings=("network_blocked",) if blocked else ("network_available",),
                 bom_present=False,
@@ -151,6 +157,7 @@ def test_parser_error_taxonomy_is_typed_and_sanitized() -> None:
         ParserTimedOut("parser timed out"),
         ParserProcessCrashed("parser process crashed"),
         InvalidParserOutput("parser output invalid"),
+        MalformedCsv("malformed csv"),
     )
     assert all(isinstance(error, ParserError) for error in errors)
     assert all("secret-body" not in str(error) for error in errors)
@@ -219,6 +226,34 @@ def test_isolated_parser_handles_empty_markdown_block_quote() -> None:
     )
     assert result.blocks == ()
     assert result.warnings == ("empty_block_quote_ignored",)
+
+
+def test_isolated_parser_runs_csv_recipe_in_the_same_network_denied_boundary() -> None:
+    """Select the distinct CSV recipe without changing the historical text recipe."""
+    text = IsolatedParserAdapter(timeout_seconds=5)
+    csv_parser = IsolatedParserAdapter(parser_kind="csv", timeout_seconds=5)
+    result = csv_parser.parse(
+        (b"key,value\nCVE-2021-44228,2021-12-24",),
+        media_type=TextMediaType.CSV.value,
+    )
+
+    assert csv_parser.recipe.name == "openardp-csv"
+    assert text.recipe == IsolatedParserAdapter(timeout_seconds=5).recipe
+    assert [block.kind for block in result.blocks] == [
+        BlockKind.TABLE,
+        BlockKind.TABLE,
+    ]
+    assert "CVE-2021-44228" in result.blocks[1].text
+
+
+def test_isolated_csv_parser_inherits_worker_network_denial() -> None:
+    """Deny socket construction before selected CSV worker behavior executes."""
+    result = IsolatedParserAdapter(
+        parser_kind="csv",
+        timeout_seconds=5,
+        _worker_behavior=_network_probe_worker,
+    ).parse((), media_type=TextMediaType.CSV.value)
+    assert result.warnings == ("network_blocked",)
 
 
 def test_isolated_parser_enforces_worker_network_denial() -> None:

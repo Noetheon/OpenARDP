@@ -24,7 +24,6 @@ from openardp.adapters.context_estimators import (
     Utf8ByteEstimator,
 )
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
-from openardp.adapters.isolated_parser import IsolatedParserAdapter
 from openardp.adapters.isolated_visual import IsolatedVisualRenderer
 from openardp.adapters.local_source import (
     InvalidSourcePath,
@@ -57,7 +56,7 @@ from openardp.domain.context_compilation import (
     ContextSelectionPolicy,
 )
 from openardp.domain.identity import canonical_json_bytes
-from openardp.domain.ingestion import RichMediaType, StatusMode
+from openardp.domain.ingestion import RichMediaType, StatusMode, TextMediaType
 from openardp.domain.interchange import AssetDisposition, InterchangeLimits, InterchangePackage
 from openardp.domain.maintenance import (
     InventoryLimits,
@@ -82,6 +81,7 @@ from openardp.interfaces.context_composition import (
     local_context_compiler,
     local_context_compiler_for_algorithm,
 )
+from openardp.interfaces.ingestion_composition import local_text_ingestion
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
@@ -528,13 +528,7 @@ def _utc_now() -> datetime:
 def _services(
     workspace: LocalWorkspace,
 ) -> tuple[IngestionService, DocumentQueryService, SearchService]:
-    parser = IsolatedParserAdapter()
-    ingestion = IngestionService(
-        workspace.object_store,
-        workspace.catalog,
-        parser,
-        source_factory=LocalSource,
-    )
+    ingestion = local_text_ingestion(workspace)
     query = DocumentQueryService(
         workspace.object_store,
         workspace.catalog,
@@ -1091,9 +1085,11 @@ class _CliWatchRunner:
     def __init__(
         self,
         text: IngestionService,
+        csv: IngestionService,
         rich: RichIngestionService | None,
     ) -> None:
         self._text = text
+        self._csv = csv
         self._rich = rich
 
     def ingest(
@@ -1113,6 +1109,8 @@ class _CliWatchRunner:
                 if self._rich is None:
                     raise WatchPermanentIngestion("rich parser is unavailable")
                 result = self._rich.ingest(path, profile=profile)
+            elif media_type is TextMediaType.CSV:
+                result = self._csv.ingest(path, profile=profile)
             else:
                 result = self._text.ingest(path, profile=profile)
         except WatchPermanentIngestion:
@@ -1166,7 +1164,7 @@ def _watch_service(workspace: LocalWorkspace, arguments: argparse.Namespace) -> 
     return WatcherService(
         workspace.catalog,
         LocalWatchScanner(),
-        _CliWatchRunner(text_ingestion, rich),
+        _CliWatchRunner(text_ingestion, local_text_ingestion(workspace, TextMediaType.CSV), rich),
         workspace_root=workspace.root,
     )
 
@@ -1475,8 +1473,7 @@ def _execute_ingestion(
             ),
             force=bool(arguments.force),
         )
-    ingestion, _query, _search = _services(workspace)
-    return ingestion.ingest(
+    return local_text_ingestion(workspace, media_type).ingest(
         source,
         profile=str(arguments.profile) if arguments.profile is not None else "default",
         force=bool(arguments.force),

@@ -26,6 +26,7 @@ from openardp.ports.watcher import (
 )
 
 _MEDIA_BY_SUFFIX = {
+    ".csv": "text/csv",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ".markdown": "text/markdown",
     ".md": "text/markdown",

@@ -47,6 +47,13 @@ refine those decisions but may not silently contradict them.
 | `019-ci-cost-optimization` | Event-aware lower-cost CI with unchanged final three-platform tests and bounded release evidence | Converged, merged and remotely verified |
 | `020-product-value-benchmark` | Reproducible end-to-end value, scale and rich-reuse benchmark with a three-state worth-it decision | Converged, merged and remotely verified; `CONDITIONALLY_WORTHWHILE` |
 | `021-incremental-freshness` | Exact bounded HEAD freshness plus explicit exhaustive FULL integrity and frozen 10k/100k evidence | Active; local benchmark `PASS` |
+| `022-storage-amplification` | Compact derived block storage with exact logical verification and migration evidence | Converged, merged and remotely verified |
+| `023-offline-pdf-model-bundle` | Explicit offline Docling PDF model package, verification and measured conversion | Converged, merged and remotely verified |
+| `024-redistributable-realworld-corpus` | Licensed frozen six-format NASA/CISA corpus and structural baseline | Converged, merged and remotely verified |
+| `025-semantic-e2e-source-evaluation` | Frozen real-world semantic questions, citations and honest readiness decision | Converged, merged and remotely verified; `SEMANTIC_E2E_NOT_READY` |
+| `026-relevance-abstention` | Minimum lexical relevance and explicit deterministic abstention | Converged, merged and remotely verified |
+| `027-lexical-ranking-diversity` | Deterministic lexical ranking, deduplication, diversity and source quotas | Converged, merged and remotely verified |
+| `028-csv-ingestion` | Stable lossless logical CSV ingestion, retrieval and frozen Q15/Q16 evidence | Active; local benchmark `CSV_INGESTION_READY` |
 
 ## Release evidence registry
 

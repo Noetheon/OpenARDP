@@ -1,4 +1,4 @@
-"""Read-only stable snapshot boundary for explicit local TXT/Markdown sources."""
+"""Read-only stable snapshot boundary for explicit supported local sources."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from openardp.ports.parser import UnsupportedTextMedia
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _MEDIA_BY_SUFFIX: dict[str, SourceMediaType] = {
+    ".csv": TextMediaType.CSV,
     ".md": TextMediaType.MARKDOWN,
     ".markdown": TextMediaType.MARKDOWN,
     ".txt": TextMediaType.PLAIN,

@@ -37,6 +37,7 @@ Checked on 2026-07-22. Re-verify versions and licenses before implementation.
 
 F025's scoring contract uses only the committed JSON Schema/RFC 8785 identities and exact publisher sources above. Its
 source-fitness rubric is a question-specific benchmark judgment, not an external credibility standard or legal opinion.
+F026 reuses those unchanged local inputs and adds no external relevance library, model, dataset or standards claim.
 
 ## Microsoft 365 and Office
 

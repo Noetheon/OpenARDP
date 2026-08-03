@@ -15,6 +15,7 @@ from openardp.adapters.context_estimators import (
     fixed_point_measure,
     resolve_estimator,
 )
+from openardp.adapters.context_relevance import RelevanceObservingCandidateSource
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
@@ -33,6 +34,7 @@ __all__ = [
     "LocalSource",
     "LocalWatchScanner",
     "LocalWorkspace",
+    "RelevanceObservingCandidateSource",
     "RichLexicalCandidateSource",
     "SQLiteCatalog",
     "TextLexicalCandidateSource",

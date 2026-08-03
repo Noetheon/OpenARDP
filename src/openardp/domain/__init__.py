@@ -77,6 +77,15 @@ from openardp.domain.context_compilation import (
     context_policy_digest,
     task_digest,
 )
+from openardp.domain.context_relevance import (
+    RELEVANCE_SCORE_SCALE,
+    CandidateRelevance,
+    RelevancePolicy,
+    RelevanceSignal,
+    RelevanceSignalClass,
+    evaluate_candidate_relevance,
+    extract_relevance_signals,
+)
 from openardp.domain.derivation import DerivationRecord, DerivationState
 from openardp.domain.derivation_lifecycle import (
     DerivationDependency,
@@ -385,6 +394,7 @@ __all__ = [
     "RECONCILIATION_CONFIG_HASH",
     "RELEASE_EVIDENCE_VERSION",
     "RELEASE_GATE_POLICY_VERSION",
+    "RELEVANCE_SCORE_SCALE",
     "RICH_SCHEMA_VERSION",
     "SCHEMA_VERSION",
     "SELECTION_RECEIPT_CONTRACT_VERSION",
@@ -405,6 +415,7 @@ __all__ = [
     "BudgetUnit",
     "BundleNotice",
     "CandidateFreshness",
+    "CandidateRelevance",
     "CanonicalUuid",
     "CanonicalizationError",
     "ComponentDescriptor",
@@ -535,6 +546,9 @@ __all__ = [
     "ReleaseEvidenceError",
     "ReleaseGatePolicy",
     "ReleaseStatus",
+    "RelevancePolicy",
+    "RelevanceSignal",
+    "RelevanceSignalClass",
     "RepresentationAcquireDisposition",
     "RepresentationAcquireResult",
     "RepresentationAggregate",
@@ -648,9 +662,11 @@ __all__ = [
     "deterministic_block_id",
     "encode_storage_datetime",
     "ensure_json_value",
+    "evaluate_candidate_relevance",
     "evidence_binding_id",
     "evidence_projection_id",
     "evidence_reference_id",
+    "extract_relevance_signals",
     "generate_uuid7",
     "indexed_text_hash",
     "model_bundle_id",

@@ -308,6 +308,32 @@ _F025_REQUIRED_FILES = (
     "tests/test_semantic_e2e_drift.py",
     "tests/unit/test_semantic_e2e_benchmark.py",
 )
+_F026_REQUIRED_FILES = (
+    "benchmarks/relevance/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/relevance/v0.1.0/results/reference-macos-arm64/result.json",
+    "docs/25_RELEVANCE_AND_ABSTENTION.md",
+    "scripts/run_relevance_benchmark.py",
+    "scripts/validate_relevance_benchmark.py",
+    "spec-kit/feature-prompts/026-relevance-abstention.md",
+    "specs/026-relevance-abstention/analysis.md",
+    "specs/026-relevance-abstention/contracts/context-relevance.md",
+    "specs/026-relevance-abstention/data-model.md",
+    "specs/026-relevance-abstention/implementation-notes.md",
+    "specs/026-relevance-abstention/plan.md",
+    "specs/026-relevance-abstention/quickstart.md",
+    "specs/026-relevance-abstention/research.md",
+    "specs/026-relevance-abstention/spec.md",
+    "specs/026-relevance-abstention/tasks.md",
+    "src/openardp/adapters/context_relevance.py",
+    "src/openardp/domain/context_relevance.py",
+    "src/openardp/interfaces/context_composition.py",
+    "src/openardp/services/context_relevance.py",
+    "tests/integration/test_context_relevance.py",
+    "tests/integration/test_context_relevance_reference.py",
+    "tests/security/test_context_relevance_boundaries.py",
+    "tests/unit/test_context_relevance.py",
+    "tests/unit/test_relevance_benchmark.py",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -912,6 +938,20 @@ def _validate_f025_semantic_evaluation(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f026_relevance(root: Path) -> list[Diagnostic]:
+    """Require the complete F026 policy, benchmark and independent-validation boundary."""
+    return [
+        _governance_finding(
+            root,
+            "GOV022",
+            relative,
+            "required F026 relevance and abstention artifact is missing",
+        )
+        for relative in _F026_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1001,6 +1041,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f020_product_benchmark(root))
     diagnostics.extend(_validate_f024_realworld_corpus(root))
     diagnostics.extend(_validate_f025_semantic_evaluation(root))
+    diagnostics.extend(_validate_f026_relevance(root))
     return _sort_diagnostics(root, diagnostics)
 
 

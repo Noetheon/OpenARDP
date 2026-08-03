@@ -45,6 +45,7 @@ from openardp.domain.context_compilation import (
     context_policy_digest,
     task_digest,
 )
+from openardp.domain.context_relevance import CandidateRelevance, RelevancePolicy
 from openardp.domain.identity import (
     context_bundle_id,
     context_compilation_fingerprint,
@@ -390,6 +391,25 @@ def test_context_candidate_requires_exactly_one_complete_body_or_visual_handle()
             },
             strict=False,
         )
+
+
+def test_context_candidate_accepts_only_consistent_body_free_relevance() -> None:
+    """Carry optional per-task audit facts without changing evidence identity."""
+    policy = RelevancePolicy()
+    relevance = CandidateRelevance(
+        policy_id=policy.policy_id,
+        total_signals=4,
+        matched_signals=2,
+        total_weight=4,
+        matched_weight=2,
+        score_millionths=500_000,
+        volatile_time_matched=True,
+        meets_minimum=True,
+    )
+    candidate = _candidate().model_copy(update={"relevance": relevance})
+
+    assert candidate.relevance == relevance
+    assert candidate.evidence_id == str(BLOCK_ID)
     with pytest.raises(ValidationError, match="visual_handle"):
         ContextCandidate.model_validate(
             {**_candidate().model_dump(mode="json"), "representation": "visual_handle"},

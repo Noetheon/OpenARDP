@@ -42,6 +42,10 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 23 | `023-offline-pdf-model-bundle` | Reproducibly provision and measure the complete offline PDF model boundary. |
 | 24 | `024-redistributable-realworld-corpus` | Add a licensed, realistic and independently reproducible multi-format corpus. |
 | 25 | `025-semantic-e2e-source-evaluation` | Test semantic questions, evidence selection and source-quality evaluation end to end. |
+| 26 | `026-relevance-abstention` | Reject candidates below a frozen explainable relevance floor and emit explicit evidence abstention. |
+| 27 | `027-lexical-ranking-diversity` | Rank lexical candidates deterministically while diversifying and bounding per-source selection. |
+| 28 | `028-csv-ingestion` | Ingest bounded RFC 4180 CSV as stable source-backed evidence without conversion or body loss. |
+| 29 | `029-provider-neutral-multilingual-retrieval` | Evaluate optional provider-neutral multilingual retrieval against the unchanged F025 benchmark. |
 
 ## Dependency rule
 
@@ -52,6 +56,10 @@ automation and its enforcement evidence. Feature 020 measures the delivered prod
 persisted-native baselines without changing runtime behavior or superseding the independent F015 release gate; none of
 these features authorizes a new product capability. Feature 021 resolves only the measured status-path bottleneck and
 does not pre-implement the storage, PDF, corpus or semantic work assigned to Features 022–025.
+Feature 026 addresses only the false-positive/no-abstention failure exposed by F025. Feature 027 may use its relevance
+facts for ranking and source allocation but does not add CSV or query expansion. Feature 028 adds CSV ingestion without
+semantic retrieval. Feature 029 introduces the optional provider-neutral query-planning boundary and is the first point
+at which the unchanged F025 benchmark is rerun as a comparative multilingual product evaluation.
 
 ## Scope rule
 

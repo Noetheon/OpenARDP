@@ -17,10 +17,6 @@ from openardp.domain.block import ContentBlock
 from openardp.domain.common import ContentRole, Sensitivity, validate_json
 from openardp.domain.context import ContextMode, EvidenceRepresentation, VersionScope
 from openardp.domain.context_compilation import (
-    CONTEXT_ALGORITHM_NAME,
-    CONTEXT_ALGORITHM_VERSION,
-    PROVENANCE_TARGET_PERCENT,
-    RESPONSE_RESERVE_PERCENT,
     AlgorithmIdentity,
     BudgetLedger,
     CandidateFreshness,
@@ -49,18 +45,17 @@ from openardp.domain.context_compilation import (
     context_policy_digest,
     task_digest,
 )
+from openardp.domain.context_relevance import RelevancePolicy
 from openardp.domain.identity import (
     CANONICALIZATION_ALGORITHM,
     IDENTITY_VERSION,
     SELECTION_RECEIPT_DOMAIN,
     canonical_json_bytes,
-    canonical_sha256,
     context_bundle_id,
     context_compilation_fingerprint,
     selection_receipt_id,
 )
 from openardp.domain.ingestion import RepresentationScope
-from openardp.domain.search import MAX_QUERY_ITEMS, MAX_TERM_CHARACTERS
 from openardp.domain.storage import StoredObject
 from openardp.ports.catalog import (
     CatalogError,
@@ -80,6 +75,14 @@ from openardp.ports.context import (
     ContextNotFound,
 )
 from openardp.ports.object_store import ObjectStore, ObjectStoreError
+from openardp.services.context_relevance import (
+    compilation_notices,
+    is_relevance_abstention,
+    relevance_extensions,
+)
+from openardp.services.context_relevance import (
+    context_algorithm_identity as _context_algorithm_identity,
+)
 
 _LOGGER = logging.getLogger("openardp.context_compiler")
 
@@ -129,31 +132,11 @@ def _log_failure(operation: str, started: float, error: BaseException) -> None:
     )
 
 
-def context_algorithm_identity() -> AlgorithmIdentity:
-    """Return the exact deterministic lexical-context algorithm identity."""
-    return AlgorithmIdentity(
-        name=CONTEXT_ALGORITHM_NAME,
-        version=CONTEXT_ALGORITHM_VERSION,
-        config_hash=canonical_sha256(
-            {
-                "algorithm": CONTEXT_ALGORITHM_NAME,
-                "version": CONTEXT_ALGORITHM_VERSION,
-                "max_lexical_items": MAX_QUERY_ITEMS,
-                "max_lexical_item_characters": MAX_TERM_CHARACTERS,
-                "ordering": [
-                    "high_value_desc",
-                    "term_coverage_desc",
-                    "occurrences_desc",
-                    "scope_asc",
-                    "source_order_asc",
-                    "representation_asc",
-                    "evidence_id_asc",
-                ],
-                "response_reserve_percent": RESPONSE_RESERVE_PERCENT,
-                "provenance_target_percent": PROVENANCE_TARGET_PERCENT,
-            }
-        ),
-    )
+def context_algorithm_identity(
+    relevance_policy: RelevancePolicy | None = None,
+) -> AlgorithmIdentity:
+    """Return the exact legacy or minimum-relevance algorithm identity."""
+    return _context_algorithm_identity(relevance_policy)
 
 
 def required_representations(policy: ContextSelectionPolicy) -> set[EvidenceRepresentation]:
@@ -190,6 +173,8 @@ class ClassifiedCandidates:
 def classify_candidates(
     candidates: tuple[ContextCandidate, ...],
     policy: ContextSelectionPolicy,
+    *,
+    relevance_policy: RelevancePolicy | None = None,
 ) -> ClassifiedCandidates:
     """Partition every discovered subject exactly once under the declared policy."""
     valid: list[ContextCandidate] = []
@@ -218,6 +203,17 @@ def classify_candidates(
             rejected.append((candidate, "duplicate_candidate"))
             continue
         seen.add(key)
+        if (
+            relevance_policy is not None
+            and candidate.representation is not EvidenceRepresentation.VISUAL_HANDLE
+        ):
+            if candidate.relevance is None:
+                raise ContextIntegrityFailure("candidate_relevance_missing")
+            if candidate.relevance.policy_id != relevance_policy.policy_id:
+                raise ContextIntegrityFailure("candidate_relevance_policy_mismatch")
+            if not candidate.relevance.meets_minimum:
+                rejected.append((candidate, "insufficient_relevance"))
+                continue
         high_value = candidate.representation in _MODE_PREFERRED[policy.mode]
         valid.append(candidate.model_copy(update={"high_value": high_value}))
     valid.sort(key=candidate_total_order_key)
@@ -263,13 +259,15 @@ class ContextCompilerService:
         candidate_sources: tuple[ContextCandidateSource, ...],
         *,
         algorithm: AlgorithmIdentity | None = None,
+        relevance_policy: RelevancePolicy | None = None,
     ) -> None:
         """Bind provider-neutral ports and one exact estimator/algorithm identity."""
         self._object_store = object_store
         self._catalog = catalog
         self._estimator = estimator
         self._candidate_sources = candidate_sources
-        self._algorithm = algorithm or context_algorithm_identity()
+        self._relevance_policy = relevance_policy
+        self._algorithm = algorithm or context_algorithm_identity(relevance_policy)
 
     def compile(
         self,
@@ -326,14 +324,16 @@ class ContextCompilerService:
         truncated = False
         for source in self._candidate_sources:
             discovered.extend(source.discover(request.task, snapshot, request.limits, cancel))
-            # Truncate after every source so combined discovery can never
-            # allocate beyond the configured discovery bound.
             if len(discovered) > request.limits.max_discovered:
                 del discovered[request.limits.max_discovered :]
                 truncated = True
         if cancel():
             raise ContextCompilationCancelled("cancelled_before_selection")
-        classified = classify_candidates(tuple(discovered), request.policy)
+        classified = classify_candidates(
+            tuple(discovered),
+            request.policy,
+            relevance_policy=self._relevance_policy,
+        )
         ordered = classified.ordered
         if len(ordered) > request.limits.max_candidates:
             ordered = ordered[: request.limits.max_candidates]
@@ -388,18 +388,16 @@ class ContextCompilerService:
             else:
                 omitted.append((candidate, usage - used))
 
+        relevance_abstained = is_relevance_abstention(
+            tuple(discovered), ordered, classified.rejected, self._relevance_policy
+        )
         missing, receipt_notices = _missing_evidence(request.policy, selected)
-        if truncated:
-            receipt_notices.append(ReceiptNotice(code="discovery_truncated"))
-        warnings: tuple[ContextBundleNotice, ...] = ()
-        if truncated:
-            warnings = (
-                ContextBundleNotice(
-                    code="discovery_truncated",
-                    message="Discovery or evaluation was truncated at configured limits.",
-                ),
-            )
-        if missing:
+        final_warnings, extra_notices = compilation_notices(
+            truncated=truncated,
+            relevance_abstained=relevance_abstained,
+        )
+        receipt_notices.extend(extra_notices)
+        if missing or final_warnings:
             final_missing = tuple(missing)
             used = fixed_point_measure(
                 lambda usage: self._canonical_bundle_bytes(
@@ -407,7 +405,7 @@ class ContextCompilerService:
                     snapshot,
                     tuple(entry[1] for entry in selected),
                     final_missing,
-                    warnings,
+                    final_warnings,
                     usage,
                 ),
                 self._estimator,
@@ -437,7 +435,7 @@ class ContextCompilerService:
             snapshot,
             tuple(selected),
             tuple(missing),
-            warnings,
+            final_warnings,
             used,
         )
         receipt = self._build_receipt(
@@ -890,9 +888,6 @@ class ContextCompilerService:
             created_at=snapshot.created_at,
             query=request.task,
             mode=request.policy.mode,
-            # Measurement drafts must tolerate usage above the budget limit so
-            # the fixed point converges honestly; only the final validated
-            # bundle may persist, and admission guarantees it fits.
             budget=ContextBundleBudget.model_construct(
                 unit=request.estimator.unit,
                 limit=request.budget_limit,
@@ -1046,6 +1041,7 @@ def _decision(
         source_order=candidate.source_order,
         estimated_cost=(cost if cost is not None else _candidate_object_cost(candidate)),
         final_order=final_order,
+        extensions=relevance_extensions(candidate),
     )
 
 

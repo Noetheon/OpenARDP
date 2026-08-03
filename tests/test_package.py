@@ -35,6 +35,7 @@ DOMAIN_MODULES = {
     "context",
     "context_compilation",
     "context_relevance",
+    "context_ranking",
     "derivation",
     "derivation_lifecycle",
     "evidence",
@@ -101,6 +102,7 @@ ADAPTER_MODULES = {
 }
 SERVICE_MODULES = {
     "context_compiler",
+    "context_ranking",
     "context_relevance",
     "document_query",
     "derivations",
@@ -168,11 +170,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_026(
+def test_module_surface_is_bounded_to_feature_027(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F026 product modules."""
+    """Expose exactly the reviewed F002-F027 product modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

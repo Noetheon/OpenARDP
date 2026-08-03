@@ -5,6 +5,16 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 027 — lexical ranking, diversity and source quotas
+
+- Added a canonical combined F026+F027 algorithm profile that preserves early lexical relevance, exact-deduplicates CAS
+  bodies, fairly interleaves remaining document queues and audits a hard 16-item per-document quota.
+- Preserved explicit legacy and F026-only replay identities while making the ranked profile the default local CLI
+  composition; no schema, workspace, dependency, network or original/evidence identity changes.
+- The independently validated paired result is `LEXICAL_RANKING_READY`: positive support, citations, MRR and source
+  recall remain unchanged, Q17/Q18 continue to abstain, evidence precision rises from 5.08% to 6.82%, and Q03 falls from
+  64 to 34 selected items across three sources.
+
 ### Feature 026 — minimum relevance and explicit abstention
 
 - Added deterministic, integer-only exact signal coverage over CAS-reverified text/rich evidence, including explicit

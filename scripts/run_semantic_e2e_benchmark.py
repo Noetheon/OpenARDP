@@ -63,9 +63,11 @@ from openardp.domain.context_compilation import (
     ContextCompileRequest,
     ContextSelectionPolicy,
 )
+from openardp.domain.context_ranking import LexicalAllocationPolicy
 from openardp.domain.context_relevance import RelevancePolicy
 from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.rich_ingestion import ModelBundleManifest
+from openardp.ports.context import ContextCandidateSource
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
@@ -79,7 +81,9 @@ _MODEL_LOCK = Path("model-bundles/pdf-docling-2.114.0-v1/source-lock.json")
 class ProductWorkspace:
     """Composed product services and stable source mappings for one fresh run."""
 
+    workspace: LocalWorkspace
     compiler: ContextCompilerService
+    candidate_sources: tuple[ContextCandidateSource, ...]
     query: DocumentQueryService
     document_ids: tuple[Any, ...]
     source_by_document: dict[str, str]
@@ -108,6 +112,7 @@ def _compose_workspace(
     assets: list[dict[str, Any]],
     *,
     relevance_policy: RelevancePolicy | None = None,
+    allocation_policy: LexicalAllocationPolicy | None = None,
 ) -> ProductWorkspace:
     workspace = LocalWorkspace.initialize(workspace_root, now=_FIXED_TIME)
     entropy = 0
@@ -232,9 +237,12 @@ def _compose_workspace(
         Utf8ByteEstimator(),
         candidate_sources,
         relevance_policy=relevance_policy,
+        allocation_policy=allocation_policy,
     )
     return ProductWorkspace(
+        workspace=workspace,
         compiler=compiler,
+        candidate_sources=lexical_sources,
         query=query,
         document_ids=tuple(sorted(document_ids, key=str)),
         source_by_document=source_by_document,
@@ -242,6 +250,27 @@ def _compose_workspace(
         rich_body_by_id=rich_body_by_id,
         rich_anchor_by_id=rich_anchor_by_id,
         formats=tuple(sorted(formats)),
+    )
+
+
+def _profile_compiler(
+    product: ProductWorkspace,
+    relevance_policy: RelevancePolicy,
+    allocation_policy: LexicalAllocationPolicy | None,
+) -> ContextCompilerService:
+    """Compose a comparison profile over one already-ingested workspace."""
+    observed = RelevanceObservingCandidateSource(
+        product.workspace.object_store,
+        product.candidate_sources,
+        relevance_policy,
+    )
+    return ContextCompilerService(
+        product.workspace.object_store,
+        product.workspace.catalog,
+        Utf8ByteEstimator(),
+        (observed,),
+        relevance_policy=relevance_policy,
+        allocation_policy=allocation_policy,
     )
 
 

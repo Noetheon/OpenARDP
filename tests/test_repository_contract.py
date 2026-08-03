@@ -208,12 +208,12 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f026_governance_and_prior_contracts_are_present_and_frozen(
+def test_f027_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require active relevance governance, accepted ADRs and frozen prior contracts."""
+    """Require active ranking governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/026-relevance-abstention"
+    assert active["feature_directory"] == "specs/027-lexical-ranking-diversity"
     feature = repository_root / active["feature_directory"]
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -269,10 +269,12 @@ def test_f026_governance_and_prior_contracts_are_present_and_frozen(
         repository_root / "spec-kit/feature-prompts/025-semantic-e2e-source-evaluation.md"
     ).is_file()
     assert (repository_root / "spec-kit/feature-prompts/026-relevance-abstention.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/027-lexical-ranking-diversity.md").is_file()
     assert (
         repository_root / "benchmarks/relevance/v0.1.0/results/reference-macos-arm64/result.json"
     ).is_file()
     assert (repository_root / "scripts/validate_relevance_benchmark.py").is_file()
+    assert (repository_root / "scripts/validate_ranking_benchmark.py").is_file()
     f021_adr = (repository_root / "docs/adr/0017-freshness-integrity-coverage.md").read_text(
         encoding="utf-8"
     )

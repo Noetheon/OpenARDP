@@ -14,12 +14,11 @@ from pydantic import JsonValue, ValidationError
 
 from openardp.adapters.context_estimators import fixed_point_measure
 from openardp.domain.block import ContentBlock
-from openardp.domain.common import ContentRole, Sensitivity, validate_json
-from openardp.domain.context import ContextMode, EvidenceRepresentation, VersionScope
+from openardp.domain.common import ContentRole, validate_json
+from openardp.domain.context import EvidenceRepresentation, VersionScope
 from openardp.domain.context_compilation import (
     AlgorithmIdentity,
     BudgetLedger,
-    CandidateFreshness,
     ContextBlockProvenance,
     ContextBundleBudget,
     ContextBundleNotice,
@@ -44,6 +43,10 @@ from openardp.domain.context_compilation import (
     UntrustedContentEnvelope,
     context_policy_digest,
     task_digest,
+)
+from openardp.domain.context_ranking import (
+    LexicalAllocationPolicy,
+    allocate_lexical_candidates,
 )
 from openardp.domain.context_relevance import RelevancePolicy
 from openardp.domain.identity import (
@@ -75,6 +78,12 @@ from openardp.ports.context import (
     ContextNotFound,
 )
 from openardp.ports.object_store import ObjectStore, ObjectStoreError
+from openardp.services.context_ranking import (
+    ClassifiedCandidates,
+    candidate_total_order_key,
+    classify_candidates,
+    required_representations,
+)
 from openardp.services.context_relevance import (
     compilation_notices,
     is_relevance_abstention,
@@ -85,25 +94,6 @@ from openardp.services.context_relevance import (
 )
 
 _LOGGER = logging.getLogger("openardp.context_compiler")
-
-_SENSITIVITY_RANK = {
-    Sensitivity.PUBLIC: 0,
-    Sensitivity.INTERNAL: 1,
-    Sensitivity.CONFIDENTIAL: 2,
-    Sensitivity.RESTRICTED: 3,
-    Sensitivity.UNKNOWN: 4,
-}
-
-_MODE_PREFERRED: dict[ContextMode, frozenset[EvidenceRepresentation]] = {
-    ContextMode.SUMMARY: frozenset({EvidenceRepresentation.SUMMARY}),
-    ContextMode.EXACT: frozenset({EvidenceRepresentation.EXACT}),
-    ContextMode.NUMERIC: frozenset(
-        {EvidenceRepresentation.EXACT, EvidenceRepresentation.STRUCTURED}
-    ),
-    ContextMode.VISUAL: frozenset({EvidenceRepresentation.VISUAL_HANDLE}),
-    ContextMode.VERIFICATION: frozenset({EvidenceRepresentation.EXACT}),
-    ContextMode.MIXED: frozenset({EvidenceRepresentation.EXACT, EvidenceRepresentation.STRUCTURED}),
-}
 
 
 def _never_cancel() -> bool:
@@ -134,94 +124,32 @@ def _log_failure(operation: str, started: float, error: BaseException) -> None:
 
 def context_algorithm_identity(
     relevance_policy: RelevancePolicy | None = None,
+    allocation_policy: LexicalAllocationPolicy | None = None,
 ) -> AlgorithmIdentity:
-    """Return the exact legacy or minimum-relevance algorithm identity."""
-    return _context_algorithm_identity(relevance_policy)
+    """Return the exact legacy, relevance, or ranked algorithm identity."""
+    return _context_algorithm_identity(relevance_policy, allocation_policy)
 
 
-def required_representations(policy: ContextSelectionPolicy) -> set[EvidenceRepresentation]:
-    """Derive honest evidence requirements from explicit policy or mode defaults."""
-    if policy.required_evidence:
-        return set(policy.required_evidence)
-    return set(_MODE_PREFERRED[policy.mode])
-
-
-def candidate_total_order_key(candidate: ContextCandidate) -> tuple[object, ...]:
-    """Return the documented deterministic total order key for one candidate."""
-    return (
-        not candidate.high_value,
-        -candidate.term_coverage,
-        -candidate.occurrences,
-        str(candidate.scope.document_id),
-        candidate.scope.version_id,
-        candidate.scope.representation_id,
-        candidate.source_order,
-        candidate.representation.value,
-        candidate.evidence_id,
-    )
-
-
-@dataclass(frozen=True, slots=True)
-class ClassifiedCandidates:
-    """Policy-classified discovery partition before budget selection."""
-
-    ordered: tuple[ContextCandidate, ...]
-    rejected: tuple[tuple[ContextCandidate, str], ...]
-    stale: tuple[ContextCandidate, ...]
-
-
-def classify_candidates(
-    candidates: tuple[ContextCandidate, ...],
-    policy: ContextSelectionPolicy,
-    *,
-    relevance_policy: RelevancePolicy | None = None,
+def _allocate_candidates(
+    classified: ClassifiedCandidates,
+    policy: LexicalAllocationPolicy | None,
 ) -> ClassifiedCandidates:
-    """Partition every discovered subject exactly once under the declared policy."""
-    valid: list[ContextCandidate] = []
-    rejected: list[tuple[ContextCandidate, str]] = []
-    stale: list[ContextCandidate] = []
-    seen: set[tuple[str, ...]] = set()
-    maximum_rank = _SENSITIVITY_RANK[policy.maximum_sensitivity]
-    for candidate in candidates:
-        if candidate.freshness is not CandidateFreshness.CURRENT:
-            stale.append(candidate)
-            continue
-        if candidate.trust.zone not in policy.allowed_trust_zones:
-            rejected.append((candidate, "trust_zone_not_allowed"))
-            continue
-        if _SENSITIVITY_RANK[candidate.trust.sensitivity] > maximum_rank:
-            rejected.append((candidate, "sensitivity_exceeded"))
-            continue
-        key = (
-            str(candidate.scope.document_id),
-            candidate.scope.version_id,
-            candidate.scope.representation_id,
-            candidate.evidence_id,
-            candidate.representation.value,
-        )
-        if key in seen:
-            rejected.append((candidate, "duplicate_candidate"))
-            continue
-        seen.add(key)
-        if (
-            relevance_policy is not None
-            and candidate.representation is not EvidenceRepresentation.VISUAL_HANDLE
-        ):
-            if candidate.relevance is None:
-                raise ContextIntegrityFailure("candidate_relevance_missing")
-            if candidate.relevance.policy_id != relevance_policy.policy_id:
-                raise ContextIntegrityFailure("candidate_relevance_policy_mismatch")
-            if not candidate.relevance.meets_minimum:
-                rejected.append((candidate, "insufficient_relevance"))
-                continue
-        high_value = candidate.representation in _MODE_PREFERRED[policy.mode]
-        valid.append(candidate.model_copy(update={"high_value": high_value}))
-    valid.sort(key=candidate_total_order_key)
+    if policy is None:
+        return classified
+    allocation = allocate_lexical_candidates(classified.ordered, policy)
     return ClassifiedCandidates(
-        ordered=tuple(valid),
-        rejected=tuple(rejected),
-        stale=tuple(stale),
+        ordered=allocation.ordered,
+        rejected=(*classified.rejected, *allocation.rejected),
+        stale=classified.stale,
     )
+
+
+def _bounded(
+    classified: ClassifiedCandidates,
+    maximum: int,
+) -> tuple[tuple[ContextCandidate, ...], bool]:
+    ordered = classified.ordered
+    return ordered[:maximum], len(ordered) > maximum
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +188,7 @@ class ContextCompilerService:
         *,
         algorithm: AlgorithmIdentity | None = None,
         relevance_policy: RelevancePolicy | None = None,
+        allocation_policy: LexicalAllocationPolicy | None = None,
     ) -> None:
         """Bind provider-neutral ports and one exact estimator/algorithm identity."""
         self._object_store = object_store
@@ -267,7 +196,10 @@ class ContextCompilerService:
         self._estimator = estimator
         self._candidate_sources = candidate_sources
         self._relevance_policy = relevance_policy
-        self._algorithm = algorithm or context_algorithm_identity(relevance_policy)
+        self._allocation_policy = allocation_policy
+        self._algorithm = algorithm or context_algorithm_identity(
+            relevance_policy, allocation_policy
+        )
 
     def compile(
         self,
@@ -334,10 +266,9 @@ class ContextCompilerService:
             request.policy,
             relevance_policy=self._relevance_policy,
         )
-        ordered = classified.ordered
-        if len(ordered) > request.limits.max_candidates:
-            ordered = ordered[: request.limits.max_candidates]
-            truncated = True
+        classified = _allocate_candidates(classified, self._allocation_policy)
+        ordered, cut = _bounded(classified, request.limits.max_candidates)
+        truncated = truncated or cut
 
         limit = request.budget_limit
         reserve = (limit + 9) // 10

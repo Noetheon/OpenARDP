@@ -51,6 +51,7 @@ from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
 from openardp.domain.common import SCHEMA_VERSION, Sensitivity
 from openardp.domain.context import ContextMode
 from openardp.domain.context_compilation import (
+    AlgorithmIdentity,
     ContextCompilationResult,
     ContextCompileRequest,
     ContextSelectionPolicy,
@@ -77,7 +78,10 @@ from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
 from openardp.interfaces.cli_query_arguments import add_query_arguments
-from openardp.interfaces.context_composition import local_context_compiler
+from openardp.interfaces.context_composition import (
+    local_context_compiler,
+    local_context_compiler_for_algorithm,
+)
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
@@ -142,7 +146,6 @@ from openardp.ports.watcher import (
 )
 from openardp.services.context_compiler import (
     ContextCompilerService,
-    context_algorithm_identity,
 )
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
@@ -588,16 +591,14 @@ def _context_compiler(
     workspace: LocalWorkspace,
     estimator: ContextEstimator,
     *,
-    minimum_relevance: bool = True,
+    algorithm: AlgorithmIdentity | None = None,
 ) -> ContextCompilerService:
     """Compose the provider-free compiler over the open local workspace."""
     rich_ingestion, _evidence = _rich_services(workspace)
-    return local_context_compiler(
-        workspace,
-        estimator,
-        rich_ingestion.verify_ready_representation,
-        minimum_relevance=minimum_relevance,
-    )
+    verifier = rich_ingestion.verify_ready_representation
+    if algorithm is not None:
+        return local_context_compiler_for_algorithm(workspace, estimator, verifier, algorithm)
+    return local_context_compiler(workspace, estimator, verifier)
 
 
 def _visual_service(workspace: LocalWorkspace) -> VisualEvidenceService:
@@ -666,8 +667,7 @@ def _context_compile(workspace: LocalWorkspace, arguments: argparse.Namespace) -
             raise _UsageError("replay accepts only task, unit, receipt and store options")
         receipt_id = _receipt_identity(str(arguments.replay))
         loaded = compiler.load_verified(receipt_id)
-        if loaded.receipt.algorithm == context_algorithm_identity():
-            compiler = _context_compiler(workspace, estimator, minimum_relevance=False)
+        compiler = _context_compiler(workspace, estimator, algorithm=loaded.receipt.algorithm)
         result = compiler.replay(task, receipt_id)
         return _context_summary(
             result,

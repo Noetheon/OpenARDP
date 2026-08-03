@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import time
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -49,6 +50,7 @@ from openardp.adapters.context_candidates import (
     TextLexicalCandidateSource,
 )
 from openardp.adapters.context_estimators import Utf8ByteEstimator
+from openardp.adapters.context_relevance import RelevanceObservingCandidateSource
 from openardp.adapters.docling_bundle import verify_installation
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_parser import IsolatedParserAdapter
@@ -61,6 +63,7 @@ from openardp.domain.context_compilation import (
     ContextCompileRequest,
     ContextSelectionPolicy,
 )
+from openardp.domain.context_relevance import RelevancePolicy
 from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.services.context_compiler import ContextCompilerService
@@ -103,6 +106,8 @@ def _compose_workspace(
     pdf_bundle: Path,
     manifest: ModelBundleManifest,
     assets: list[dict[str, Any]],
+    *,
+    relevance_policy: RelevancePolicy | None = None,
 ) -> ProductWorkspace:
     workspace = LocalWorkspace.initialize(workspace_root, now=_FIXED_TIME)
     entropy = 0
@@ -202,18 +207,31 @@ def _compose_workspace(
         representation_verifier=text_ingestion.verify_ready_representation,
         clock=lambda: _FIXED_TIME,
     )
+    lexical_sources = (
+        TextLexicalCandidateSource(workspace.object_store, workspace.catalog),
+        RichLexicalCandidateSource(
+            workspace.object_store,
+            workspace.catalog,
+            representation_verifier=verifier,
+        ),
+    )
+    candidate_sources = (
+        (
+            RelevanceObservingCandidateSource(
+                workspace.object_store,
+                lexical_sources,
+                relevance_policy,
+            ),
+        )
+        if relevance_policy is not None
+        else lexical_sources
+    )
     compiler = ContextCompilerService(
         workspace.object_store,
         workspace.catalog,
         Utf8ByteEstimator(),
-        (
-            TextLexicalCandidateSource(workspace.object_store, workspace.catalog),
-            RichLexicalCandidateSource(
-                workspace.object_store,
-                workspace.catalog,
-                representation_verifier=verifier,
-            ),
-        ),
+        candidate_sources,
+        relevance_policy=relevance_policy,
     )
     return ProductWorkspace(
         compiler=compiler,
@@ -275,7 +293,14 @@ def _selected_rows(
     return selected
 
 
-def _execute_rows(inputs: SemanticInputs, product: ProductWorkspace) -> list[dict[str, Any]]:
+def _execute_rows(
+    inputs: SemanticInputs,
+    product: ProductWorkspace,
+    *,
+    include_context_audit: bool = False,
+    question_ids: frozenset[str] | None = None,
+    treatments: tuple[str, ...] = PRODUCT_TREATMENTS,
+) -> list[dict[str, Any]]:
     context = inputs.protocol["context"]
     limits = ContextCompileLimits(
         max_scopes=context["max_scopes"],
@@ -287,7 +312,9 @@ def _execute_rows(inputs: SemanticInputs, product: ProductWorkspace) -> list[dic
     )
     rows: list[dict[str, Any]] = []
     for question in inputs.by_id.values():
-        for treatment in PRODUCT_TREATMENTS:
+        if question_ids is not None and question["question_id"] not in question_ids:
+            continue
+        for treatment in treatments:
             if question["answerable"] and "csv" in question["required_formats"]:
                 rows.append(
                     make_observation(
@@ -328,6 +355,16 @@ def _execute_rows(inputs: SemanticInputs, product: ProductWorkspace) -> list[dic
                     wall_ns=time.perf_counter_ns() - started,
                     cpu_ns=time.process_time_ns() - cpu_started,
                 )
+                if include_context_audit:
+                    rejected_reasons = Counter(
+                        decision.reason_code for decision in result.receipt.rejected
+                    )
+                    row["context_audit"] = {
+                        "algorithm": result.receipt.algorithm.model_dump(mode="json"),
+                        "notices": [notice.code for notice in result.receipt.notices],
+                        "rejected_reason_counts": dict(sorted(rejected_reasons.items())),
+                        "warnings": [warning.code for warning in result.bundle.warnings],
+                    }
             except Exception:
                 row = make_observation(
                     question,

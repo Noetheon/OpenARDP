@@ -496,6 +496,18 @@ executions and two cost estimates are byte-identical. The dated baseline/model a
 [`docs/18_CI_COST_AND_QUALITY.md`](docs/18_CI_COST_AND_QUALITY.md). Final full-suite, private PR, branch-protection and
 post-merge evidence remain in the F019 implementation notes until remote convergence is complete.
 
+## Feature 026 relevance and abstention evidence
+
+Feature `026-relevance-abstention` adds no dependency, network default, migration or public-schema change. Focused pure,
+contract, adapter, integration, CLI and security tests verify integer score boundaries, CAS re-verification, trust/limit
+distinctions, fixed-point accounting, policy-bound replay and body-free audit output.
+
+The committed two-workspace comparison is independently valid as `RELEVANCE_ABSTENTION_READY`. The exact F025 corpus,
+question-set, protocol and baseline-run identities remain unchanged. All six prior successful direct questions retain
+full support and complete citations; Q17/Q18 now select zero evidence and expose both abstention notices. Exact values,
+limitations and reproduction commands are in [the F026 record](docs/25_RELEVANCE_AND_ABSTENTION.md). Full repository,
+build, pre-commit and remote CI evidence is recorded in the implementation notes.
+
 ## Corrective environment verification
 
 On the current macOS/Python combination, a conventional `.venv` below `Documents` was asynchronously marked hidden

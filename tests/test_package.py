@@ -34,6 +34,7 @@ DOMAIN_MODULES = {
     "common",
     "context",
     "context_compilation",
+    "context_relevance",
     "derivation",
     "derivation_lifecycle",
     "evidence",
@@ -70,6 +71,7 @@ ADAPTER_MODULES = {
     "compact_objects",
     "context_candidates",
     "context_estimators",
+    "context_relevance",
     "docling_bundle",
     "docling_bundle_archive",
     "docling_bundle_provisioning",
@@ -99,6 +101,7 @@ ADAPTER_MODULES = {
 }
 SERVICE_MODULES = {
     "context_compiler",
+    "context_relevance",
     "document_query",
     "derivations",
     "graph_sync",
@@ -118,7 +121,13 @@ SERVICE_MODULES = {
     "visual_interpretation",
     "watcher",
 }
-INTERFACE_MODULES = {"cli", "cli_query_arguments", "mcp_protocol", "mcp_server"}
+INTERFACE_MODULES = {
+    "cli",
+    "cli_query_arguments",
+    "context_composition",
+    "mcp_protocol",
+    "mcp_server",
+}
 
 
 def _project_metadata(repository_root: Path) -> dict[str, Any]:
@@ -159,11 +168,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_024(
+def test_module_surface_is_bounded_to_feature_026(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F024 product modules."""
+    """Expose exactly the reviewed F002-F026 product modules."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

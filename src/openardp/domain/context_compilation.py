@@ -36,6 +36,7 @@ from openardp.domain.context import (
     EvidenceRepresentation,
     VersionScope,
 )
+from openardp.domain.context_relevance import CandidateRelevance
 from openardp.domain.identity import (
     context_bundle_id,
     context_compilation_fingerprint,
@@ -349,6 +350,7 @@ class ContextCandidate(DomainModel):
     occurrences: int = Field(strict=True, ge=0, le=MAX_SAFE_INTEGER)
     reason_code: MachineCode
     high_value: bool
+    relevance: CandidateRelevance | None = None
 
     @model_validator(mode="after")
     def _identity_and_scope_match_provenance(self) -> Self:

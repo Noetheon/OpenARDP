@@ -18,11 +18,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, JsonValue
 
 from openardp.adapters.bagit_interchange import LocalAssetSource
-from openardp.adapters.context_candidates import (
-    RichLexicalCandidateSource,
-    TextLexicalCandidateSource,
-    VisualContextCandidateSource,
-)
 from openardp.adapters.context_estimators import (
     ConservativeTokenEstimator,
     UnicodeCharacterEstimator,
@@ -82,6 +77,7 @@ from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
 from openardp.interfaces.cli_query_arguments import add_query_arguments
+from openardp.interfaces.context_composition import local_context_compiler
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
@@ -144,7 +140,10 @@ from openardp.ports.watcher import (
     WatchRootOverlap,
     WatchRootUnsupported,
 )
-from openardp.services.context_compiler import ContextCompilerService
+from openardp.services.context_compiler import (
+    ContextCompilerService,
+    context_algorithm_identity,
+)
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.ingestion import IngestionService
 from openardp.services.interchange import InterchangeService
@@ -588,22 +587,16 @@ def _estimator_for(unit: str) -> ContextEstimator:
 def _context_compiler(
     workspace: LocalWorkspace,
     estimator: ContextEstimator,
+    *,
+    minimum_relevance: bool = True,
 ) -> ContextCompilerService:
     """Compose the provider-free compiler over the open local workspace."""
     rich_ingestion, _evidence = _rich_services(workspace)
-    return ContextCompilerService(
-        workspace.object_store,
-        workspace.catalog,
+    return local_context_compiler(
+        workspace,
         estimator,
-        (
-            TextLexicalCandidateSource(workspace.object_store, workspace.catalog),
-            RichLexicalCandidateSource(
-                workspace.object_store,
-                workspace.catalog,
-                representation_verifier=rich_ingestion.verify_ready_representation,
-            ),
-            VisualContextCandidateSource(workspace.object_store, workspace.catalog),
-        ),
+        rich_ingestion.verify_ready_representation,
+        minimum_relevance=minimum_relevance,
     )
 
 
@@ -671,7 +664,11 @@ def _context_compile(workspace: LocalWorkspace, arguments: argparse.Namespace) -
     if arguments.replay is not None:
         if arguments.document or arguments.budget is not None or arguments.mode is not None:
             raise _UsageError("replay accepts only task, unit, receipt and store options")
-        result = compiler.replay(task, _receipt_identity(str(arguments.replay)))
+        receipt_id = _receipt_identity(str(arguments.replay))
+        loaded = compiler.load_verified(receipt_id)
+        if loaded.receipt.algorithm == context_algorithm_identity():
+            compiler = _context_compiler(workspace, estimator, minimum_relevance=False)
+        result = compiler.replay(task, receipt_id)
         return _context_summary(
             result,
             replayed=True,

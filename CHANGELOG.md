@@ -5,6 +5,18 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 026 — minimum relevance and explicit abstention
+
+- Added deterministic, integer-only exact signal coverage over CAS-reverified text/rich evidence, including explicit
+  identifier weighting and conjunctive live-time/calendar-year constraints.
+- Added exhaustive `insufficient_relevance` receipt decisions plus genuine bundle/receipt `no_relevant_evidence`
+  abstention while retaining integrity, trust, freshness, cancellation and budget outcomes as distinct states.
+- Added a policy-bound algorithm identity, body-free audit extensions, default CLI composition and explicit legacy
+  replay selection without changing schemas, workspace format, dependencies or original/evidence identities.
+- The independently validated two-workspace F025 slice is `RELEVANCE_ABSTENTION_READY`: all six prior direct successes
+  retain full support/citation integrity, Q17/Q18 move from 64 irrelevant selections each to zero-evidence abstention,
+  and four positive questions shrink to 7–16 selections. Q03 still selects 64 and remains an explicit F027 target.
+
 ### Feature 025 — semantic end-to-end source evaluation
 
 - Added nineteen frozen, human-reviewed English/German questions with exact support atoms, source roles, temporal scope

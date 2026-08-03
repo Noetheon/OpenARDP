@@ -12,6 +12,7 @@ from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from pydantic import ValidationError
 
 from openardp.domain.common import validate_json
+from openardp.domain.identity import selection_receipt_id
 from scripts.generate_schemas import (
     CONTEXT_ROOT_CONTRACTS,
     DRAFT_2020_12,
@@ -111,6 +112,32 @@ def test_selection_receipt_schema_is_body_free_by_shape() -> None:
     fixture_text = (FIXTURES / "selection-receipt.json").read_text(encoding="utf-8")
     assert "Explain exact evidence" not in fixture_text
     assert '"body"' not in fixture_text
+
+
+def test_selection_receipt_accepts_namespaced_body_free_relevance_audit() -> None:
+    """Keep F026 audit additive inside the existing extension point."""
+    contract = CONTEXT_ROOT_CONTRACTS["selection-receipt.schema.json"]
+    instance = _instance("selection-receipt.schema.json")
+    extension = {
+        "matched_signals": 2,
+        "matched_weight": 5,
+        "meets_minimum": True,
+        "policy_id": "sha256:" + "a" * 64,
+        "score_millionths": 500_000,
+        "total_signals": 4,
+        "total_weight": 10,
+        "volatile_time_matched": True,
+    }
+    instance["selected"][0]["extensions"] = {
+        "https://openardp.example/ns/context-relevance/v1": extension
+    }
+    instance["receipt_id"] = selection_receipt_id(
+        {key: value for key, value in instance.items() if key != "receipt_id"}
+    )
+
+    Draft202012Validator(build_schemas()["selection-receipt.schema.json"]).validate(instance)
+    record = validate_json(contract.model, json.dumps(instance))
+    assert record.selected[0].extensions == instance["selected"][0]["extensions"]
 
 
 def test_context_bundle_020_trust_role_is_data_in_schema_and_model() -> None:

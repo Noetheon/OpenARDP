@@ -1,40 +1,40 @@
 {
-  "decision_id": "sha256:13bb88e3a5f22ee26e75420bf80ace31685e894fcc3d3ae8aedbdbeb8966b333",
+  "decision_id": "sha256:8814b3b4ac438f3b4e20bab273492e624d53f583baa926ab6adc66aae6c117f6",
   "files": [
     {
       "byte_length": 885,
       "path": "artifacts.json",
-      "sha256": "sha256:fa780cf3b8ddf7866b2c97e45709997945e95267ce8272f0d2dbbac91ed48f00"
+      "sha256": "sha256:56e74db76f2ef9bea58186f6f9380a3760f062646bc3243260042f7b4f0e2f3f"
     },
     {
       "byte_length": 1196,
       "path": "checksums.json",
-      "sha256": "sha256:22e348c1031f6816059dbb7be632f6f4e6134079f759279db4226df6f74e5953"
+      "sha256": "sha256:b49c4113d686b6375c83dd29e5125cad3655bb0ff02fecbe5993ed3eb265eb92"
     },
     {
       "byte_length": 346,
       "path": "claim-map.json",
-      "sha256": "sha256:53237e64b42a1f688e1e7ab74390845b905d90b1eb0ddc7482c0e2173f467464"
+      "sha256": "sha256:35c68863f11426b658eb9c2c4d0779971a7429619738d95042969e4dc1dc6203"
     },
     {
       "byte_length": 3438,
       "path": "decision.json",
-      "sha256": "sha256:aa345a42d8076585d7cf18f005009acc8b7371042def452d3a1fdb3a7beba163"
+      "sha256": "sha256:13a6765a5b8f411ab16969450fea27b1f1e8c9cf570a2865e8b330355c6bac24"
     },
     {
-      "byte_length": 4167151,
+      "byte_length": 4167213,
       "path": "platform-evidence.json",
-      "sha256": "sha256:c7bdb2e78485cbf12a545f8989c0885b10b0bfc1f5e775d69fad4bccd2d94e38"
+      "sha256": "sha256:dac7cdb316df801d95c903c2578ebd23437b613c0f0c0ab3f89525d45c677270"
     },
     {
-      "byte_length": 4172573,
+      "byte_length": 4172635,
       "path": "release-evidence.json",
-      "sha256": "sha256:3a79a32b8adeb955b51539a0f1a521a1ad6e9889c873a5e501124ebc9a222758"
+      "sha256": "sha256:07ded2a9f650e0a70bbee2cb98a5a55ab324375f271afb0f7609ee3e96439890"
     },
     {
       "byte_length": 2606,
       "path": "report.md",
-      "sha256": "sha256:e2558159d63653ba17a68a4ff858a5dadc15b3b7d1be91867dcc855e7266cc8e"
+      "sha256": "sha256:5ac30f036496c4d47820e9d3102a202bca428b11df822b4bb5c01d53a62fc04f"
     },
     {
       "byte_length": 56271,
@@ -43,5 +43,5 @@
     }
   ],
   "schema_version": "0.1.0",
-  "source_tree_id": "sha256:06cd35de5dfb2c56f53e2727d1a40aec3184eaa64fcffe2a1e8546d620f9df3d"
+  "source_tree_id": "sha256:4d96d8363e16b8037ae80c55d16999cecf34275469c0594fc4b72bc56bcefc5a"
 }

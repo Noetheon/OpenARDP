@@ -46,7 +46,7 @@ from openardp.ports.context import (
 from openardp.ports.object_store import ObjectStoreError
 
 PROTOCOL_REVISION = "2025-06-18"
-MCP_INTERFACE_VERSION = "0.1.0"
+MCP_INTERFACE_VERSION = "0.2.0"
 MCP_ERROR_VERSION = 1
 SERVER_NAME = "openardp-mcp"
 MAX_LINE_BYTES = 65_536
@@ -336,6 +336,10 @@ TOOL_DESCRIPTORS: tuple[ToolDescriptor, ...] = (
                 "unit": {"type": "string", "enum": ["bytes", "characters", "tokens"]},
                 "mode": {"type": "string", "maxLength": 32},
                 "include_bundle": {"type": "boolean"},
+                "retrieval_profile": {
+                    "type": "string",
+                    "enum": ["lexical", "semantic"],
+                },
             },
             ("task", "document_ids", "budget_limit", "unit"),
         ),

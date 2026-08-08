@@ -54,7 +54,8 @@ refine those decisions but may not silently contradict them.
 | `026-relevance-abstention` | Minimum lexical relevance and explicit deterministic abstention | Converged, merged and remotely verified |
 | `027-lexical-ranking-diversity` | Deterministic lexical ranking, deduplication, diversity and source quotas | Converged, merged and remotely verified |
 | `028-csv-ingestion` | Stable lossless logical CSV ingestion, retrieval and frozen Q15/Q16 evidence | Converged, merged and remotely verified; `CSV_INGESTION_READY` |
-| `029-provider-neutral-multilingual-retrieval` | Optional offline semantic provider, hybrid retrieval and frozen multilingual comparison | Converged; v0.3 `PROVIDER_RETRIEVAL_READY`, publication pending |
+| `029-provider-neutral-multilingual-retrieval` | Optional offline semantic provider, hybrid retrieval and frozen multilingual comparison | Converged, merged and remotely verified; v0.3 `PROVIDER_RETRIEVAL_READY` |
+| `030-semantic-retrieval-product-surface` | Opt-in CLI/MCP semantic retrieval, exact replay and frozen cold/warm operational evidence | Converged; `SEMANTIC_SURFACE_READY`, publication pending |
 
 ## Release evidence registry
 

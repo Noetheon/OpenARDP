@@ -5,6 +5,21 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+### Feature 030 — semantic retrieval product surface
+
+- Added an explicit `lexical|semantic` retrieval profile to `openardp context` while preserving lexical omission as the
+  provider-free default; semantic compile/replay requires an all-or-none verified bundle/source-lock pair and rejects
+  provider-recipe, algorithm and requested-profile drift.
+- Evolved the experimental MCP interface additively to `0.2.0`: `compile_context` may select a process-authorized
+  semantic capability, but clients receive no path, provider, model, policy or limit authority and unavailable semantic
+  requests fail closed without lexical fallback.
+- Added exact provider lifecycle cleanup, model-free selection/replay/privacy tests and a frozen two-run operational
+  benchmark with stdlib-only validation for cold/warm latency, cache reuse, peak worker RSS and projection identity.
+- The macOS arm64 result is `SEMANTIC_SURFACE_READY`: timing-free projections are identical, warm cache reuse is 100%,
+  warm wall time is 27.48% below cold and peak provider-worker RSS is 1,500,725,248 bytes.
+- No vectors, embeddings or provider-native model state are persisted; no answer generator, vector database, cloud
+  dependency, schema/catalog migration or new retrieval policy is introduced.
+
 ### Feature 029 — provider-neutral multilingual retrieval
 
 - Added an optional provider-neutral fixed-point scoring port and exact local `intfloat/multilingual-e5-small` adapter

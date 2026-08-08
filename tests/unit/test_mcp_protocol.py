@@ -406,6 +406,11 @@ def test_require_tool_returns_descriptor_or_stable_unknown_category() -> None:
     """Resolve known tools and fail unknown names with one stable category."""
     descriptor = require_tool("compile_context")
     assert descriptor.name == "compile_context"
+    assert descriptor.interface_version == "0.2.0"
+    assert descriptor.input_schema["properties"]["retrieval_profile"] == {
+        "type": "string",
+        "enum": ["lexical", "semantic"],
+    }
     with pytest.raises(McpFailure) as captured:
         require_tool("delete_document")
     assert captured.value.category is McpErrorCategory.UNKNOWN_TOOL

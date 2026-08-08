@@ -18,11 +18,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, JsonValue
 
 from openardp.adapters.bagit_interchange import LocalAssetSource
-from openardp.adapters.context_estimators import (
-    ConservativeTokenEstimator,
-    UnicodeCharacterEstimator,
-    Utf8ByteEstimator,
-)
 from openardp.adapters.isolated_docling import IsolatedDoclingAdapter
 from openardp.adapters.isolated_visual import IsolatedVisualRenderer
 from openardp.adapters.local_source import (
@@ -47,13 +42,10 @@ from openardp.adapters.release_benchmarks import (
 )
 from openardp.adapters.release_evidence import LocalReleaseEvidenceStore
 from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
-from openardp.domain.common import SCHEMA_VERSION, Sensitivity
+from openardp.domain.common import SCHEMA_VERSION
 from openardp.domain.context import ContextMode
 from openardp.domain.context_compilation import (
     AlgorithmIdentity,
-    ContextCompilationResult,
-    ContextCompileRequest,
-    ContextSelectionPolicy,
 )
 from openardp.domain.identity import canonical_json_bytes
 from openardp.domain.ingestion import RichMediaType, StatusMode, TextMediaType
@@ -77,9 +69,28 @@ from openardp.domain.search import SearchOutcome, SearchQueryRejected
 from openardp.domain.storage import Job, JobState
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
 from openardp.interfaces.cli_query_arguments import add_query_arguments
+from openardp.interfaces.context_cli import (
+    ContextCommandUsageError,
+    compile_context_command,
+)
+from openardp.interfaces.context_cli import (
+    context_summary as _context_summary,  # noqa: F401 - retained test/adapter seam
+)
+from openardp.interfaces.context_cli import (
+    estimator_for as _estimator_for,
+)
+from openardp.interfaces.context_cli import (
+    open_semantic_provider as _open_semantic_provider,
+)
+from openardp.interfaces.context_cli import (
+    receipt_identity as _receipt_identity,
+)
+from openardp.interfaces.context_cli import (
+    semantic_configuration as _semantic_configuration,
+)
 from openardp.interfaces.context_composition import (
-    local_context_compiler,
-    local_context_compiler_for_algorithm,
+    RetrievalProfile,
+    local_context_compiler_for_profile,
 )
 from openardp.interfaces.ingestion_composition import local_text_ingestion
 from openardp.interfaces.mcp_protocol import SessionLimits
@@ -128,6 +139,10 @@ from openardp.ports.maintenance import InsufficientSpace, MaintenanceError
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
 from openardp.ports.release import ReleaseEvidenceConflict, ReleaseEvidenceStoreError
+from openardp.ports.semantic_retrieval import (
+    SemanticRetrievalFailure,
+    SemanticRetrievalProvider,
+)
 from openardp.ports.visual import (
     UnsupportedVisualMedia,
     VisualConflict,
@@ -217,8 +232,7 @@ _CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
 _CONTEXT_UNITS = ("bytes", "characters", "tokens")
 
 
-class _UsageError(ValueError):
-    """Bounded argparse failure that can use the stable JSON envelope."""
+_UsageError = ContextCommandUsageError
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -464,6 +478,9 @@ def _parser() -> _ArgumentParser:
     context.add_argument("--mode", choices=_CONTEXT_MODES)
     context.add_argument("--include-bundle", action="store_true", dest="include_bundle")
     context.add_argument("--replay")
+    context.add_argument("--retrieval-profile", choices=tuple(RetrievalProfile))
+    context.add_argument("--semantic-bundle", type=Path)
+    context.add_argument("--semantic-source-lock", type=Path, dest="semantic_source_lock")
     _common_options(context)
 
     context_receipt = subparsers.add_parser(
@@ -501,6 +518,8 @@ def _parser() -> _ArgumentParser:
         default=1_048_576,
         dest="response_cap_bytes",
     )
+    mcp.add_argument("--semantic-bundle", type=Path)
+    mcp.add_argument("--semantic-source-lock", type=Path, dest="semantic_source_lock")
     return parser
 
 
@@ -572,27 +591,27 @@ def _rich_services(
     return ingestion, evidence
 
 
-def _estimator_for(unit: str) -> ContextEstimator:
-    """Resolve one exact built-in estimator for the bounded CLI unit name."""
-    if unit == "characters":
-        return UnicodeCharacterEstimator()
-    if unit == "tokens":
-        return ConservativeTokenEstimator()
-    return Utf8ByteEstimator()
-
-
 def _context_compiler(
     workspace: LocalWorkspace,
     estimator: ContextEstimator,
     *,
     algorithm: AlgorithmIdentity | None = None,
+    profile: RetrievalProfile = RetrievalProfile.LEXICAL,
+    provider: SemanticRetrievalProvider | None = None,
 ) -> ContextCompilerService:
-    """Compose the provider-free compiler over the open local workspace."""
+    """Compose one explicit retrieval profile over the open local workspace."""
+    text_ingestion = local_text_ingestion(workspace)
     rich_ingestion, _evidence = _rich_services(workspace)
     verifier = rich_ingestion.verify_ready_representation
-    if algorithm is not None:
-        return local_context_compiler_for_algorithm(workspace, estimator, verifier, algorithm)
-    return local_context_compiler(workspace, estimator, verifier)
+    return local_context_compiler_for_profile(
+        workspace,
+        estimator,
+        text_ingestion.verify_ready_representation,
+        verifier,
+        profile,
+        provider=provider,
+        algorithm=algorithm,
+    )
 
 
 def _visual_service(workspace: LocalWorkspace) -> VisualEvidenceService:
@@ -605,92 +624,13 @@ def _visual_service(workspace: LocalWorkspace) -> VisualEvidenceService:
     )
 
 
-def _receipt_identity(value: str) -> str:
-    """Validate one exact selection-receipt identity without inspecting state."""
-    digest = value.removeprefix("sha256:")
-    if (
-        len(digest) != 64
-        or len(value) != 71
-        or any(character not in "0123456789abcdef" for character in digest)
-    ):
-        raise _UsageError("receipt identifier is invalid")
-    return value
-
-
-def _context_summary(
-    result: ContextCompilationResult,
-    *,
-    replayed: bool,
-    include_bundle: bool,
-) -> dict[str, object]:
-    """Project one compile/replay result into bounded handles and accounting."""
-    receipt = result.receipt
-    summary: dict[str, object] = {
-        "bundle_id": str(result.bundle.bundle_id),
-        "receipt_id": receipt.receipt_id,
-        "persisted": True,
-        "replayed": replayed,
-        "created_at": receipt.model_dump(mode="json")["created_at"],
-        "mode": receipt.policy.mode.value,
-        "estimator": receipt.estimator,
-        "scopes": receipt.corpus_snapshot,
-        "budget": receipt.budget,
-        "counts": {
-            "selected": len(receipt.selected),
-            "omitted": len(receipt.omitted),
-            "rejected": len(receipt.rejected),
-            "stale": len(receipt.stale),
-        },
-        "truncated": receipt.truncated,
-        "notices": receipt.notices,
-        "warnings": result.bundle.warnings,
-        "missing_evidence": result.bundle.missing_evidence,
-    }
-    if include_bundle:
-        summary["bundle"] = result.bundle
-    return summary
-
-
 def _context_compile(workspace: LocalWorkspace, arguments: argparse.Namespace) -> object:
-    """Compile or replay bounded context and persist it atomically."""
-    estimator = _estimator_for(str(arguments.unit or "bytes"))
-    compiler = _context_compiler(workspace, estimator)
-    task = str(arguments.task)
-    if arguments.replay is not None:
-        if arguments.document or arguments.budget is not None or arguments.mode is not None:
-            raise _UsageError("replay accepts only task, unit, receipt and store options")
-        receipt_id = _receipt_identity(str(arguments.replay))
-        loaded = compiler.load_verified(receipt_id)
-        compiler = _context_compiler(workspace, estimator, algorithm=loaded.receipt.algorithm)
-        result = compiler.replay(task, receipt_id)
-        return _context_summary(
-            result,
-            replayed=True,
-            include_bundle=bool(arguments.include_bundle),
-        )
-    if not arguments.document:
-        raise _UsageError("at least one document is required")
-    if arguments.budget is None:
-        raise _UsageError("a budget is required")
-    document_ids = tuple(sorted({_parse_uuid(str(value)) for value in arguments.document}, key=str))
-    request = ContextCompileRequest(
-        task=task,
-        document_ids=document_ids,
-        budget_limit=int(arguments.budget),
-        estimator=estimator.identity,
-        # The local CLI admits every sensitivity of the owner's own corpus and
-        # records the classified trust body-free; instruction execution stays
-        # disabled structurally for every selected body.
-        policy=ContextSelectionPolicy(
-            mode=ContextMode(str(arguments.mode or "mixed")),
-            maximum_sensitivity=Sensitivity.UNKNOWN,
-        ),
-    )
-    persisted = compiler.compile_and_persist(request)
-    return _context_summary(
-        persisted.result,
-        replayed=False,
-        include_bundle=bool(arguments.include_bundle),
+    """Delegate bounded context behavior to its cohesive interface module."""
+    return compile_context_command(
+        workspace,
+        arguments,
+        _context_compiler,
+        provider_factory=_open_semantic_provider,
     )
 
 
@@ -701,7 +641,12 @@ def _context_receipt(workspace: LocalWorkspace, arguments: argparse.Namespace) -
     return result.receipt
 
 
-def _mcp_server(workspace: LocalWorkspace, limits: SessionLimits) -> McpServer:
+def _mcp_server(
+    workspace: LocalWorkspace,
+    limits: SessionLimits,
+    *,
+    semantic_provider: SemanticRetrievalProvider | None = None,
+) -> McpServer:
     """Compose MCP only from verified query, search, evidence and compiler services."""
     _ingestion, query, search = _services(workspace)
     _rich_ingestion, evidence = _rich_services(workspace)
@@ -710,6 +655,18 @@ def _mcp_server(workspace: LocalWorkspace, limits: SessionLimits) -> McpServer:
         evidence,
         search=search,
         compiler_factory=lambda estimator: _context_compiler(workspace, estimator),
+        semantic_compiler_factory=(
+            (
+                lambda estimator: _context_compiler(
+                    workspace,
+                    estimator,
+                    profile=RetrievalProfile.SEMANTIC,
+                    provider=semantic_provider,
+                )
+            )
+            if semantic_provider is not None
+            else None
+        ),
         limits=limits,
     )
 
@@ -731,7 +688,16 @@ def _serve_mcp(
         raise WorkspaceIncompatible("workspace is incompatible") from None
     selected_source = cast(BinaryIO, sys.stdin.buffer) if source is None else source
     selected_sink = cast(BinaryIO, sys.stdout.buffer) if sink is None else sink
-    return _mcp_server(workspace, limits).serve(selected_source, selected_sink)
+    configuration = _semantic_configuration(arguments)
+    provider = _open_semantic_provider(configuration) if configuration is not None else None
+    try:
+        return _mcp_server(workspace, limits, semantic_provider=provider).serve(
+            selected_source,
+            selected_sink,
+        )
+    finally:
+        if provider is not None:
+            provider.close()
 
 
 def _load_model_manifest(path: Path) -> ModelBundleManifest:
@@ -1817,6 +1783,8 @@ def _classification(error: Exception) -> tuple[int, str, str]:
         return 4, "rejected_input", "input was rejected"
     if isinstance(error, (ContextConfigurationMismatch, ContextCompilationCancelled)):
         return 5, "conflict", "operation conflicts with current state"
+    if isinstance(error, SemanticRetrievalFailure):
+        return 5, "semantic_provider_rejected", "semantic provider is unavailable or rejected"
     if isinstance(error, ContextIntegrityFailure):
         return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"
     if isinstance(

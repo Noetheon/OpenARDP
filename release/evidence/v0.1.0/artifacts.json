@@ -2,20 +2,20 @@
   "artifacts": [
     {
       "artifact_type": "wheel",
-      "byte_length": 429967,
+      "byte_length": 430780,
       "filename": "openardp-0.1.0rc1-py3-none-any.whl",
-      "member_count": 114,
-      "member_inventory_id": "sha256:f327803c4bc7e12ef3235620d2f2e1578c3d4a9c3176ad5a374f62506178ddd3",
-      "sha256": "sha256:1d322aeef0a69ecad31c435f859e8f8d5e993fdfa475d7c971ae9a7f34a8629f",
+      "member_count": 113,
+      "member_inventory_id": "sha256:ec950a53588ce345d9012848b86052e5be98b0da555387803e79f72ab1a66c4b",
+      "sha256": "sha256:e4a9d1bdac6af90d776d72fb14209971663d4421429fe6a201b4cddb967df99e",
       "status": "passed"
     },
     {
       "artifact_type": "sdist",
-      "byte_length": 368890,
+      "byte_length": 372019,
       "filename": "openardp-0.1.0rc1.tar.gz",
-      "member_count": 135,
-      "member_inventory_id": "sha256:ac4ad39e1791482c36ceadca7e2c129f1c473677c59d64aed316914bf8b3d807",
-      "sha256": "sha256:bfe1c176fb3e9a94a90304fca2ce203f921382dbb8e985904ee49a23b012c97d",
+      "member_count": 136,
+      "member_inventory_id": "sha256:dc93748a9d1bf3ed49f8b608f66d357f242251e557d77464504f9cf462aefe7b",
+      "sha256": "sha256:7e8d5dd4d336e35b3d4ce14d6c87cdc7f57878789f3a54f6ca2c5137fbd8dc1a",
       "status": "passed"
     }
   ],

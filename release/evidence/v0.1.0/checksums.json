@@ -3,32 +3,32 @@
     {
       "byte_length": 885,
       "path": "artifacts.json",
-      "sha256": "sha256:fa780cf3b8ddf7866b2c97e45709997945e95267ce8272f0d2dbbac91ed48f00"
+      "sha256": "sha256:56e74db76f2ef9bea58186f6f9380a3760f062646bc3243260042f7b4f0e2f3f"
     },
     {
       "byte_length": 346,
       "path": "claim-map.json",
-      "sha256": "sha256:53237e64b42a1f688e1e7ab74390845b905d90b1eb0ddc7482c0e2173f467464"
+      "sha256": "sha256:35c68863f11426b658eb9c2c4d0779971a7429619738d95042969e4dc1dc6203"
     },
     {
       "byte_length": 3438,
       "path": "decision.json",
-      "sha256": "sha256:aa345a42d8076585d7cf18f005009acc8b7371042def452d3a1fdb3a7beba163"
+      "sha256": "sha256:13a6765a5b8f411ab16969450fea27b1f1e8c9cf570a2865e8b330355c6bac24"
     },
     {
-      "byte_length": 4167151,
+      "byte_length": 4167213,
       "path": "platform-evidence.json",
-      "sha256": "sha256:c7bdb2e78485cbf12a545f8989c0885b10b0bfc1f5e775d69fad4bccd2d94e38"
+      "sha256": "sha256:dac7cdb316df801d95c903c2578ebd23437b613c0f0c0ab3f89525d45c677270"
     },
     {
-      "byte_length": 4172573,
+      "byte_length": 4172635,
       "path": "release-evidence.json",
-      "sha256": "sha256:3a79a32b8adeb955b51539a0f1a521a1ad6e9889c873a5e501124ebc9a222758"
+      "sha256": "sha256:07ded2a9f650e0a70bbee2cb98a5a55ab324375f271afb0f7609ee3e96439890"
     },
     {
       "byte_length": 2606,
       "path": "report.md",
-      "sha256": "sha256:e2558159d63653ba17a68a4ff858a5dadc15b3b7d1be91867dcc855e7266cc8e"
+      "sha256": "sha256:5ac30f036496c4d47820e9d3102a202bca428b11df822b4bb5c01d53a62fc04f"
     },
     {
       "byte_length": 56271,

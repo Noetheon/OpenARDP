@@ -64,7 +64,9 @@ and source-quality evaluation in
 in [`026-relevance-abstention`](specs/026-relevance-abstention/spec.md), lexical allocation in
 [`027-lexical-ranking-diversity`](specs/027-lexical-ranking-diversity/spec.md), and stable CSV ingestion in
 [`028-csv-ingestion`](specs/028-csv-ingestion/spec.md), followed by optional provider-neutral multilingual retrieval in
-[`029-provider-neutral-multilingual-retrieval`](specs/029-provider-neutral-multilingual-retrieval/spec.md):
+[`029-provider-neutral-multilingual-retrieval`](specs/029-provider-neutral-multilingual-retrieval/spec.md), and its
+opt-in CLI/MCP product surface in
+[`030-semantic-retrieval-product-surface`](specs/030-semantic-retrieval-product-surface/spec.md):
 
 The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
 parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
@@ -105,6 +107,16 @@ precedence without changing the frozen questions, 0.80 floor or model. F029 cost
 1.23 GB peak worker RSS in the reference workload, so exact lexical retrieval remains the lightweight default. See the
 [`F029 report`](benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/report.md).
 
+F030 makes that exact F029 profile usable through `openardp context --retrieval-profile semantic` and the optional MCP
+`compile_context.retrieval_profile` selector. Bundle paths remain trusted local CLI/server-start configuration, MCP
+clients receive no filesystem or provider-policy authority, and replay rejects any provider-recipe or algorithm drift.
+Lexical behavior remains the zero-model default; vectors stay disposable in the provider worker and no answer generator
+or vector database is added. The two-run macOS arm64 reference result is `SEMANTIC_SURFACE_READY`: timing-free output is
+identical, warm cache reuse is 100%, warm query wall time is 252.88 versus 348.70 seconds cold (27.48% lower), and peak
+worker RSS is 1,500,725,248 bytes. See the
+[`F030 report`](benchmarks/semantic-surface/v0.1.0/results/reference-macos-arm64/report.md) and
+[`product guide`](docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md).
+
 - Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
 - least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
 - strict Pydantic v2 domain models, five F002 JSON Schema roots, and four independently
@@ -138,11 +150,13 @@ precedence without changing the frozen questions, 0.80 floor or model. F029 cost
   selection, omission, rejection, stale item and unit of budget;
 - checksummed catalog revision 6 with atomic immutable compilation rows, exact scope
   pinning and byte-identical task-supplied replay after later head changes;
-- provider-free `context` and `context-receipt` CLI commands with stable JSON and
+- lexical-by-default `context` and `context-receipt` CLI commands with stable JSON and
   human envelopes, closed failure taxonomy and body-free operational logs;
+- an explicit optional semantic CLI profile bound to the exact verified F029 provider recipe, with fail-closed replay;
 - a dependency-free read-only MCP stdio server with nine fixed object-scoped tools,
   pinned protocol revision `2025-06-18`, bounded messages/responses/deadlines,
-  cooperative cancellation, canonical descriptors and versioned body-free errors.
+  cooperative cancellation, canonical descriptors and versioned body-free errors; experimental interface `0.2.0`
+  permits only a path-free lexical/semantic selector when the operator authorizes a semantic provider at process start.
 - checksummed catalog revision 7 with conservative block lineages, exact
   lineage/content evidence bindings and canonical `same_logical_block_as` roots;
 - a provider-neutral derivation DAG over ordered evidence, object and producer inputs

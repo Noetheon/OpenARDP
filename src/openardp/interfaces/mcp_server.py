@@ -282,6 +282,7 @@ class McpServer:
         *,
         search: SearchService,
         compiler_factory: CompilerFactory,
+        semantic_compiler_factory: CompilerFactory | None = None,
         limits: SessionLimits | None = None,
         caps: ServerCaps | None = None,
         clock: Callable[[], float] = time.monotonic,
@@ -292,6 +293,7 @@ class McpServer:
         self._rich_evidence = rich_evidence
         self._search = search
         self._compiler_factory = compiler_factory
+        self._semantic_compiler_factory = semantic_compiler_factory
         self._limits = limits if limits is not None else SessionLimits()
         self._caps = caps if caps is not None else ServerCaps()
         self._clock = clock
@@ -675,7 +677,13 @@ class McpServer:
                 maximum_sensitivity=Sensitivity.UNKNOWN,
             ),
         )
-        compiler = self._compiler_factory(estimator)
+        retrieval_profile = _optional_str(arguments, "retrieval_profile") or "lexical"
+        if retrieval_profile == "lexical":
+            compiler = self._compiler_factory(estimator)
+        elif retrieval_profile == "semantic" and self._semantic_compiler_factory is not None:
+            compiler = self._semantic_compiler_factory(estimator)
+        else:
+            raise McpFailure(McpErrorCategory.INVALID_PARAMS)
         persisted = compiler.compile_and_persist(request, cancel=cancel)
         result = persisted.result
         receipt = result.receipt

@@ -1,5 +1,47 @@
 # Codebase hygiene and maintainability baseline
 
+## Feature 031 measured refresh
+
+Feature 031 extends the historical F018 baseline after F030. It addresses a concrete local synchronization failure mode
+and four measured function hotspots without changing public behavior, storage, schemas, identities or dependencies.
+
+The read-only [`scripts/audit_repository_hygiene.py`](../scripts/audit_repository_hygiene.py) begins with Git ownership
+facts. It inspects only untracked numbered conflict-copy names and explicitly scoped inactive Git index/loose-ref copies,
+compares safe regular files with SHA-256 and emits relative metadata without bodies. It has no deletion flag. Tracked
+numbered filenames and unrelated untracked files are ignored; missing canonical files, divergent content, links and
+unsafe objects fail closed for review.
+
+The 2026-08-08 recovery found 151 worktree copies with tracked canonical counterparts: 146 byte-identical and five older
+Spec-Kit states. Four `.git/index N` conflict copies were inactive. After exact-path preview and removal, the active index
+hash was unchanged, the audit reported zero findings and `git fsck --full --no-dangling` passed. This evidence does not
+authorize deleting future matches without a fresh review.
+
+### Preventing recurrence
+
+- Exclude active development repositories, especially their hidden `.git` directories, from file synchronization. The
+  most robust option is a non-synchronized development root; moving this repository remains an explicit user operation.
+- Run `uv run python scripts/audit_repository_hygiene.py --root .` before trusting a suspicious worktree and as part of
+  normal repository validation.
+- If a finding is `divergent`, `missing_canonical` or `unsafe`, preserve it. Compare it with Git history/canonical content
+  and quarantine unique work outside the repository before any repair.
+- Never repair invalid refs with a broad glob, `git clean -fdx`, reset or automatic deletion. Identify the exact inactive
+  path, preserve the active index/ref, preview exact candidates and finish with the audit plus `git fsck`.
+
+### F031 maintainability result
+
+| Original hotspot seam | Baseline span | Final owner span | Reduction |
+|---|---:|---:|---:|
+| CLI `_parser` | 270 | 18 | 93.33% |
+| CLI `_success` | 166 | 22 | 86.75% |
+| `TextParserAdapter._parse_markdown` | 173 | 6 | 96.53% |
+| `LocalWatchScanner.scan` | 118 | 32 | 72.88% |
+| **Combined** | **727** | **78** | **89.27%** |
+
+CLI grammar and output now have bounded interface-owned modules; Markdown and scanning stay inside their adapters with
+explicit transition/traversal helpers. All four function exceptions were removed. `interfaces/cli.py` fell from 1,896
+to 1,380 lines and its allowance tightened accordingly. The remaining five module exceptions and other reviewed function
+exceptions are retained debt, not hidden by the F031 score.
+
 ## Scope and claim boundary
 
 Feature 018 is a behavior-preserving maintenance slice based on merged commit
@@ -80,10 +122,10 @@ branch-coverage threshold.
 
 The five production modules above the 1,000-line default remain explicit policy
 exceptions. In particular, `src/openardp/adapters/sqlite_catalog.py` remains a large
-transactional facade, and `src/openardp/interfaces/cli.py` still contains the complete
-stable argument and projection grammar. Splitting either into inheritance mixins or a
-framework was rejected here because that would relocate coupling without a second
-implementation or a behavior benefit.
+transactional facade, and `src/openardp/interfaces/cli.py` remains a large execution and
+composition facade after its argument and output grammar moved to bounded helpers.
+Splitting SQLite or adding inheritance/framework machinery remains unjustified without
+a second implementation or a demonstrated behavior benefit.
 
 An optional, non-gating Ruff sweep for cyclomatic complexity, branch count and statement
 count reported 184 findings on the initial repository. F018 does not claim those are all

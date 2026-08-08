@@ -213,7 +213,7 @@ def test_f028_governance_and_prior_contracts_are_present_and_frozen(
 ) -> None:
     """Require retained CSV governance, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/030-semantic-retrieval-product-surface"
+    assert active["feature_directory"] == "specs/031-repository-hygiene"
     feature = repository_root / "specs/028-csv-ingestion"
     assert {path.name for path in feature.iterdir()} >= {
         "spec.md",
@@ -270,6 +270,7 @@ def test_f028_governance_and_prior_contracts_are_present_and_frozen(
     ).is_file()
     assert (repository_root / "spec-kit/feature-prompts/026-relevance-abstention.md").is_file()
     assert (repository_root / "spec-kit/feature-prompts/027-lexical-ranking-diversity.md").is_file()
+    assert (repository_root / "spec-kit/feature-prompts/031-repository-hygiene.md").is_file()
     assert (
         repository_root / "benchmarks/relevance/v0.1.0/results/reference-macos-arm64/result.json"
     ).is_file()
@@ -288,6 +289,7 @@ def test_f028_governance_and_prior_contracts_are_present_and_frozen(
     assert (repository_root / "benchmarks/pdf-bundle/v0.1.0/protocol.json").is_file()
     assert (repository_root / "quality/maintainability-policy.json").is_file()
     assert (repository_root / "scripts/audit_maintainability.py").is_file()
+    assert (repository_root / "scripts/audit_repository_hygiene.py").is_file()
     assert (repository_root / "quality/ci-policy.json").is_file()
     assert (repository_root / "quality/ci-cost-baseline-2026-08-01.json").is_file()
     assert (repository_root / "scripts/audit_ci.py").is_file()

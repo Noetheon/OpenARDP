@@ -70,6 +70,203 @@ class _BlockBuilder:
         return len(self.blocks) - 1
 
 
+class _MarkdownParser:
+    """Consume the reviewed Markdown subset through explicit bounded transitions."""
+
+    def __init__(self, *, max_blocks: int) -> None:
+        self._builder = _BlockBuilder(max_blocks=max_blocks)
+        self._warnings: set[str] = set()
+        self._heading_by_level: dict[int, int] = {}
+        self._active_heading: int | None = None
+        self._previous_heading_level = 0
+        self._paragraph: list[tuple[int, str]] = []
+
+    def parse(self, lines: Sequence[tuple[int, str]]) -> tuple[list[ParsedBlock], set[str]]:
+        """Return exact blocks and warnings for one normalized line sequence."""
+        index = 0
+        while index < len(lines):
+            line_number, line = lines[index]
+            if not line.strip():
+                self._flush_paragraph()
+                index += 1
+            elif (next_index := self._consume_fence(lines, index)) is not None:
+                index = next_index
+            elif self._consume_atx(line_number, line):
+                index += 1
+            else:
+                next_index = self._consume_compound(lines, index)
+                if next_index is None:
+                    self._paragraph.append((line_number, line))
+                    index += 1
+                else:
+                    index = next_index
+        self._flush_paragraph()
+        return self._builder.blocks, self._warnings
+
+    def _consume_compound(self, lines: Sequence[tuple[int, str]], index: int) -> int | None:
+        for consumer in (self._consume_setext, self._consume_list, self._consume_quote):
+            if (next_index := consumer(lines, index)) is not None:
+                return next_index
+        return None
+
+    def _consume_fence(self, lines: Sequence[tuple[int, str]], index: int) -> int | None:
+        line_number, line = lines[index]
+        fence = _FENCE_OPEN.match(line)
+        if fence is None:
+            return None
+        self._flush_paragraph()
+        marker = fence.group(1)
+        closing = re.compile(rf"^ {{0,3}}{re.escape(marker[0])}{{{len(marker)},}}[ \t]*$")
+        body: list[str] = []
+        end_line = line_number
+        index += 1
+        while index < len(lines):
+            current_number, current = lines[index]
+            end_line = current_number
+            if closing.match(current):
+                index += 1
+                break
+            body.append(current)
+            index += 1
+        else:
+            self._warnings.add("unclosed_fence")
+        self._builder.add(
+            kind=BlockKind.CODE,
+            text="\n".join(body),
+            parent_index=self._active_heading,
+            line_start=line_number,
+            line_end=end_line,
+        )
+        return index
+
+    def _consume_atx(self, line_number: int, line: str) -> bool:
+        atx = _ATX_HEADING.match(line)
+        if atx is None:
+            return False
+        self._flush_paragraph()
+        text = _strip_atx_closing(atx.group(2) or "")
+        if text:
+            self._add_heading(
+                text,
+                level=len(atx.group(1)),
+                start=line_number,
+                end=line_number,
+            )
+        else:
+            self._warnings.add("empty_heading_ignored")
+        return True
+
+    def _consume_setext(self, lines: Sequence[tuple[int, str]], index: int) -> int | None:
+        if index + 1 >= len(lines):
+            return None
+        line_number, line = lines[index]
+        next_number, next_line = lines[index + 1]
+        setext = _SETEXT_HEADING.match(next_line)
+        if setext is None or not line.strip():
+            return None
+        self._flush_paragraph()
+        self._add_heading(
+            line,
+            level=1 if setext.group(1).startswith("=") else 2,
+            start=line_number,
+            end=next_number,
+        )
+        return index + 2
+
+    def _consume_list(self, lines: Sequence[tuple[int, str]], index: int) -> int | None:
+        first = _LIST_ITEM.match(lines[index][1])
+        if first is None:
+            return None
+        self._flush_paragraph()
+        ordered = first.group(1)[0].isdigit()
+        members: list[tuple[int, str, str]] = []
+        while index < len(lines):
+            line_number, line = lines[index]
+            item = _LIST_ITEM.match(line)
+            if item is None or item.group(1)[0].isdigit() != ordered:
+                break
+            if item.group(2):
+                members.append((line_number, line, item.group(2)))
+            else:
+                self._warnings.add("empty_list_item_ignored")
+            index += 1
+        self._add_list_members(members)
+        return index
+
+    def _add_list_members(self, members: Sequence[tuple[int, str, str]]) -> None:
+        if not members:
+            return
+        list_index = self._builder.add(
+            kind=BlockKind.LIST,
+            text="\n".join(raw for _, raw, _ in members),
+            parent_index=self._active_heading,
+            line_start=members[0][0],
+            line_end=members[-1][0],
+        )
+        for line_number, _, text in members:
+            self._builder.add(
+                kind=BlockKind.LIST_ITEM,
+                text=text,
+                parent_index=list_index,
+                line_start=line_number,
+                line_end=line_number,
+            )
+
+    def _consume_quote(self, lines: Sequence[tuple[int, str]], index: int) -> int | None:
+        if _BLOCK_QUOTE.match(lines[index][1]) is None:
+            return None
+        self._flush_paragraph()
+        quoted: list[tuple[int, str]] = []
+        while index < len(lines):
+            line_number, line = lines[index]
+            quote = _BLOCK_QUOTE.match(line)
+            if quote is None:
+                break
+            quoted.append((line_number, quote.group(1)))
+            index += 1
+        text = "\n".join(value for _, value in quoted)
+        if text.strip():
+            self._builder.add(
+                kind=BlockKind.NOTE,
+                text=text,
+                parent_index=self._active_heading,
+                line_start=quoted[0][0],
+                line_end=quoted[-1][0],
+            )
+        else:
+            self._warnings.add("empty_block_quote_ignored")
+        return index
+
+    def _add_heading(self, text: str, *, level: int, start: int, end: int) -> None:
+        if self._previous_heading_level and level > self._previous_heading_level + 1:
+            self._warnings.add("heading_level_jump")
+        candidates = [item for item in self._heading_by_level if item < level]
+        parent = self._heading_by_level[max(candidates)] if candidates else None
+        self._active_heading = self._builder.add(
+            kind=BlockKind.HEADING,
+            text=text,
+            parent_index=parent,
+            line_start=start,
+            line_end=end,
+        )
+        self._heading_by_level[level] = self._active_heading
+        for stale_level in [item for item in self._heading_by_level if item > level]:
+            del self._heading_by_level[stale_level]
+        self._previous_heading_level = level
+
+    def _flush_paragraph(self) -> None:
+        if not self._paragraph:
+            return
+        self._builder.add(
+            kind=BlockKind.PARAGRAPH,
+            text="\n".join(text for _, text in self._paragraph),
+            parent_index=self._active_heading,
+            line_start=self._paragraph[0][0],
+            line_end=self._paragraph[-1][0],
+        )
+        self._paragraph.clear()
+
+
 class TextParserAdapter:
     """Pure deterministic parser used directly only by tests and isolated workers."""
 
@@ -254,175 +451,8 @@ class TextParserAdapter:
         self,
         lines: Sequence[tuple[int, str]],
     ) -> tuple[list[ParsedBlock], set[str]]:
-        builder = _BlockBuilder(max_blocks=self._max_blocks)
-        warnings: set[str] = set()
-        heading_by_level: dict[int, int] = {}
-        active_heading: int | None = None
-        previous_heading_level = 0
-        paragraph: list[tuple[int, str]] = []
-
-        def parent_for_heading(level: int) -> int | None:
-            candidates = [candidate for candidate in heading_by_level if candidate < level]
-            return heading_by_level[max(candidates)] if candidates else None
-
-        def add_heading(text: str, *, level: int, start: int, end: int) -> None:
-            nonlocal active_heading, previous_heading_level
-            if previous_heading_level and level > previous_heading_level + 1:
-                warnings.add("heading_level_jump")
-            parent = parent_for_heading(level)
-            active_heading = builder.add(
-                kind=BlockKind.HEADING,
-                text=text,
-                parent_index=parent,
-                line_start=start,
-                line_end=end,
-            )
-            heading_by_level[level] = active_heading
-            for stale_level in [item for item in heading_by_level if item > level]:
-                del heading_by_level[stale_level]
-            previous_heading_level = level
-
-        def flush_paragraph() -> None:
-            if not paragraph:
-                return
-            builder.add(
-                kind=BlockKind.PARAGRAPH,
-                text="\n".join(text for _, text in paragraph),
-                parent_index=active_heading,
-                line_start=paragraph[0][0],
-                line_end=paragraph[-1][0],
-            )
-            paragraph.clear()
-
-        index = 0
-        while index < len(lines):
-            line_number, line = lines[index]
-            if not line.strip():
-                flush_paragraph()
-                index += 1
-                continue
-
-            fence = _FENCE_OPEN.match(line)
-            if fence is not None:
-                flush_paragraph()
-                marker = fence.group(1)
-                body: list[str] = []
-                end_line = line_number
-                index += 1
-                closed = False
-                closing = re.compile(rf"^ {{0,3}}{re.escape(marker[0])}{{{len(marker)},}}[ \t]*$")
-                while index < len(lines):
-                    current_number, current = lines[index]
-                    end_line = current_number
-                    if closing.match(current):
-                        closed = True
-                        index += 1
-                        break
-                    body.append(current)
-                    index += 1
-                if not closed:
-                    warnings.add("unclosed_fence")
-                builder.add(
-                    kind=BlockKind.CODE,
-                    text="\n".join(body),
-                    parent_index=active_heading,
-                    line_start=line_number,
-                    line_end=end_line,
-                )
-                continue
-
-            atx = _ATX_HEADING.match(line)
-            if atx is not None:
-                flush_paragraph()
-                heading_text = _strip_atx_closing(atx.group(2) or "")
-                if heading_text:
-                    add_heading(
-                        heading_text,
-                        level=len(atx.group(1)),
-                        start=line_number,
-                        end=line_number,
-                    )
-                else:
-                    warnings.add("empty_heading_ignored")
-                index += 1
-                continue
-
-            if index + 1 < len(lines):
-                next_number, next_line = lines[index + 1]
-                setext = _SETEXT_HEADING.match(next_line)
-                if setext is not None and line.strip():
-                    flush_paragraph()
-                    add_heading(
-                        line,
-                        level=1 if setext.group(1).startswith("=") else 2,
-                        start=line_number,
-                        end=next_number,
-                    )
-                    index += 2
-                    continue
-
-            list_item = _LIST_ITEM.match(line)
-            if list_item is not None:
-                flush_paragraph()
-                ordered = list_item.group(1)[0].isdigit()
-                members: list[tuple[int, str, str]] = []
-                while index < len(lines):
-                    current_number, current = lines[index]
-                    match = _LIST_ITEM.match(current)
-                    if match is None or match.group(1)[0].isdigit() != ordered:
-                        break
-                    if not match.group(2):
-                        warnings.add("empty_list_item_ignored")
-                    else:
-                        members.append((current_number, current, match.group(2)))
-                    index += 1
-                if members:
-                    list_index = builder.add(
-                        kind=BlockKind.LIST,
-                        text="\n".join(raw for _, raw, _ in members),
-                        parent_index=active_heading,
-                        line_start=members[0][0],
-                        line_end=members[-1][0],
-                    )
-                    for member_number, _, member_text in members:
-                        builder.add(
-                            kind=BlockKind.LIST_ITEM,
-                            text=member_text,
-                            parent_index=list_index,
-                            line_start=member_number,
-                            line_end=member_number,
-                        )
-                continue
-
-            quote = _BLOCK_QUOTE.match(line)
-            if quote is not None:
-                flush_paragraph()
-                quoted: list[tuple[int, str]] = []
-                while index < len(lines):
-                    current_number, current = lines[index]
-                    match = _BLOCK_QUOTE.match(current)
-                    if match is None:
-                        break
-                    quoted.append((current_number, match.group(1)))
-                    index += 1
-                quoted_text = "\n".join(text for _, text in quoted)
-                if quoted_text.strip():
-                    builder.add(
-                        kind=BlockKind.NOTE,
-                        text=quoted_text,
-                        parent_index=active_heading,
-                        line_start=quoted[0][0],
-                        line_end=quoted[-1][0],
-                    )
-                else:
-                    warnings.add("empty_block_quote_ignored")
-                continue
-
-            paragraph.append((line_number, line))
-            index += 1
-
-        flush_paragraph()
-        return builder.blocks, warnings
+        """Parse the reviewed Markdown subset through bounded transitions."""
+        return _MarkdownParser(max_blocks=self._max_blocks).parse(lines)
 
 
 def _next_newline(value: str, start: int) -> tuple[int, int] | None:

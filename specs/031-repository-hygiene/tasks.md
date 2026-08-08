@@ -118,8 +118,8 @@ finding causes the relevant gate to fail.
 - [x] T040 [US3] Run the full pytest suite with branch coverage at or above 85 percent and record SC-006
 - [x] T041 [US3] Run repository, generated-artifact, pre-commit and package-build gates and record SC-007
 - [x] T042 [US3] Run Spec Kit convergence and record zero unresolved critical/high findings
-- [ ] T043 [US3] Push only after local convergence, open one PR, trigger one ready three-platform matrix and record exact check URLs/results for SC-008
-- [ ] T044 [US3] Merge normally, synchronize `main`, prune the F031 branches and record SC-010
+- [x] T043 [US3] Push only after local convergence, open one PR, trigger one ready three-platform matrix and record exact check URLs/results for SC-008
+- [x] T044 [US3] Merge normally, synchronize `main`, prune the F031 branches and record SC-010
 
 **Checkpoint**: SC-001–SC-010 all pass; otherwise the result is not reported as 10/10.
 

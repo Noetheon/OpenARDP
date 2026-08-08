@@ -74,7 +74,7 @@ complete; no unresolved critical/high finding and no ADR trigger.
 - Local-watch scanning now separates bounded tree traversal, single-directory enumeration and entry projection while
   preserving immediate overflow, fresh-stat, race, link and all-or-nothing semantics.
 - Focused evidence: 83 CLI/MCP tests, 42 parser/ingestion/search/semantic tests and 55 watcher contract/integration tests
-  passed with `--no-cov`; the authoritative coverage result remains the pending full-suite gate.
+  passed with `--no-cov`; the later authoritative full-suite gate passed with 85.47 percent branch coverage.
 
 ### Maintainability result
 
@@ -126,6 +126,22 @@ pytest emitted `KeyboardInterrupt` only when the workflow deadline cancelled it.
 test assertion. F031 therefore raises only the Windows job cap to 25 minutes, preserves the complete `--no-cov` suite
 and all required checks, and requires a fresh exact-head matrix before SC-008 may pass. No failed gate is waived.
 
+## Publication evidence
+
+- Implementation PR [#39](https://github.com/Noetheon/OpenARDP/pull/39) tested exact head
+  `ab77579bc81d81413fd504197c324675b75d148a` and merged normally at `2026-08-08T15:43:30Z` as
+  `a48b44c411cef3cb02f93cfe1fc63f2c2dde859a`.
+- CI run [31264518467](https://github.com/Noetheon/OpenARDP/actions/runs/31264518467) passed Preflight and the complete
+  Ubuntu, macOS and Windows quality suites in 45 seconds, 10 minutes, 3 minutes 46 seconds and 13 minutes 53 seconds.
+- Release Evidence run
+  [31264518463](https://github.com/Noetheon/OpenARDP/actions/runs/31264518463) passed Linux, macOS, Windows and the
+  aggregate release gate in 54 seconds, 46 seconds, 1 minute 44 seconds and 24 seconds.
+- Post-merge `main` CI run
+  [31265176436](https://github.com/Noetheon/OpenARDP/actions/runs/31265176436) passed the intended cost-controlled
+  Preflight in 42 seconds; the three PR-only quality jobs were correctly skipped.
+- Local `main` and `origin/main` were synchronized at the merge commit. The local and remote
+  `codex/f031-repository-hygiene` branches were deleted; the remote branch inventory contained only `main`.
+
 ## Ten-gate scorecard
 
 | Score | Criterion | Status | Evidence |
@@ -137,12 +153,12 @@ and all required checks, and requires a fresh exact-head matrix before SC-008 ma
 | 5 | Static quality (SC-005) | PASS | Ruff, format, strict mypy and policy audits passed |
 | 6 | Full offline tests and coverage (SC-006) | PASS | 1,729 passed; 85.47% branch coverage |
 | 7 | Reproducible validation/build/drift (SC-007) | PASS | Validator, `uv build` and pre-commit passed |
-| 8 | Linux/macOS/Windows CI (SC-008) | PENDING | — |
+| 8 | Linux/macOS/Windows CI (SC-008) | PASS | Exact head `ab77579`; CI and Release Evidence all green |
 | 9 | Documentation truth (SC-009) | PASS | Architecture, hygiene, roadmap, changelog and evidence agree |
-| 10 | Merge and branch hygiene (SC-010) | PENDING | — |
+| 10 | Merge and branch hygiene (SC-010) | PASS | PR #39 merged as `a48b44c`; feature branches pruned |
 
-**Current score**: 8/10 locally. The feature must not claim 10/10 until exact-SHA cross-platform CI and normal merge/branch
-cleanup supply gates 8 and 10.
+**Final score**: 10/10 for the ten named F031 gates. This is a bounded feature result, not a claim that the mature
+repository contains no residual technical debt.
 
 ## Tradeoffs and residual risks
 

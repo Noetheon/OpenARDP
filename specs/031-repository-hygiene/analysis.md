@@ -54,7 +54,8 @@ failure to characterize a selected behavior reopens this gate and blocks mutatio
 
 ## Convergence review — 2026-08-08
 
-**Local result**: PASS — zero unresolved critical/high findings; remote publication remains pending.
+**Final result**: PASS — zero unresolved critical/high findings; exact-head remote publication and merge hygiene are
+verified in `implementation-notes.md`.
 
 - All FR-001–FR-020 behaviors and SC-001–SC-007/SC-009 local evidence are implemented and verified.
 - The audit is read-only, body-free and standard-library-only; cleanup remained a separately reviewed exact-path action.
@@ -62,5 +63,6 @@ failure to characterize a selected behavior reopens this gate and blocks mutatio
 - No schema, migration, persisted identity, dependency, provider, runtime authority or architecture direction changed.
 - Ruff, formatting, strict mypy, 1,729 tests, 85.47 percent branch coverage, repository validation, build and pre-commit
   pass. The four skips are existing explicit optional/platform cases, not F031 acceptance omissions.
-- SC-008 and SC-010 intentionally remain open until the exact committed SHA passes required Linux/macOS/Windows checks,
-  merges normally and obsolete branches are pruned. They do not block commit/push; they block the final 10/10 claim.
+- SC-008 and SC-010 passed on the published implementation: the exact-head private PR passed all required checks,
+  merged normally, and both local and remote feature branches were pruned. The evidence-only closeout does not alter
+  the reviewed implementation.

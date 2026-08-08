@@ -1,0 +1,21 @@
+{
+  "benchmark_version": "0.1.0",
+  "binding_runs": 2,
+  "workspaces_per_run": 2,
+  "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+  "question_set_id": "sha256:e251354b95bcd59d68604cd4a1cf0a5e2300dabdf8145844e2e2a0bb5703bdce",
+  "source_protocol_id": "sha256:5d8d927e9f9675508257a6054fe6ad5bc93ff5b93fd71274ae0ab4e8e1306582",
+  "question_count": 19,
+  "retrieval_profile": "semantic",
+  "model_bundle_id": "sha256:1d1242c4f405989f1c134ad2fc4557afaa75bcf2d5bca58990c70a54b39c4b02",
+  "gates": {
+    "cache_reuse_minimum_millionths": 900000,
+    "peak_worker_rss_max_bytes": 1610612736,
+    "warm_not_slower_than_cold": true,
+    "within_run_projection_identity": true,
+    "across_run_projection_identity": true,
+    "offline": true
+  },
+  "result_max_bytes": 1048576,
+  "protocol_id": "sha256:1e7d7470bb3916cc0794fceb14401a9e0be265d0fdd1bc21fd0c825a6a25b536"
+}

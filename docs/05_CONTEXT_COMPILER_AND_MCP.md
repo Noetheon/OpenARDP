@@ -3,7 +3,8 @@
 **Status:** Feature 008 delivered the deterministic context compiler, the public
 `ContextBundle 0.2.0`, the experimental `SelectionReceipt 0.1.0` and the `context` /
 `context-receipt` CLI verbs documented below. Feature 009 delivers the bounded
-read-only stdio MCP interface documented here. Feature 011 adds explicit visual
+read-only stdio MCP interface documented here. Feature 030 adds an explicit optional
+semantic retrieval profile to both surfaces while preserving lexical defaults. Feature 011 adds explicit visual
 materialization and verified handle-only context candidates; HTTP remains later.
 
 ## 1. Context compiler objective
@@ -69,14 +70,18 @@ Delivered context verbs (stable JSON envelopes; human output may change):
 
 ```text
 openardp context TASK --document ID [--document ID ...] --budget N \
-    [--unit bytes|characters|tokens] [--mode MODE] [--include-bundle]
-openardp context TASK --replay RECEIPT_ID [--unit UNIT]
+    [--unit bytes|characters|tokens] [--mode MODE] [--include-bundle] \
+    [--retrieval-profile lexical|semantic]
+openardp context TASK --replay RECEIPT_ID [--unit UNIT] [--retrieval-profile PROFILE]
 openardp context-receipt RECEIPT_ID
-openardp mcp --store PATH [--deadline-ms N] [--response-cap-bytes N]
+openardp mcp --store PATH [--deadline-ms N] [--response-cap-bytes N] \
+    [--semantic-bundle PATH --semantic-source-lock PATH]
 ```
 
 Replay accepts only task, unit and receipt: the recorded snapshot, policy and budget
-are authoritative. Default output is body-free handles plus accounting; only
+are authoritative. New compilation remains lexical unless `semantic` is explicit. Semantic compile/replay additionally
+requires the exact verified external bundle and source lock; replay infers the persisted profile when the option is
+omitted and rejects provider/algorithm drift. Default output is body-free handles plus accounting; only
 `--include-bundle` returns the digest-checked untrusted-data payload. Ordinary commands
 support `--json`; `mcp` reserves stdout for newline-delimited JSON-RPC and accepts no
 CLI JSON envelope switch. Watch, export, import, verification, garbage collection,
@@ -85,7 +90,7 @@ mutations outside MCP and accept only registered identifiers.
 
 ## 7. Delivered MCP tools — read-only stdio
 
-The interface is experimental `0.1.0`, pins MCP protocol revision `2025-06-18` and
+The interface is experimental `0.2.0`, pins MCP protocol revision `2025-06-18` and
 publishes exactly these tools in fixture-pinned order:
 
 1. `list_documents` — body-free summaries, at most 256.
@@ -95,7 +100,8 @@ publishes exactly these tools in fixture-pinned order:
 5. `search_document` — verified lexical results, at most 100 enveloped snippets.
 6. `list_evidence` — at most 256 body-free rich projections.
 7. `get_evidence` — one verified rich retrieval body.
-8. `compile_context` — exact F008 compile-and-persist, handle-first by default.
+8. `compile_context` — exact compile-and-persist, handle-first and lexical by default; optional `retrieval_profile`
+   selects a process-authorized semantic capability without accepting paths or provider settings.
 9. `get_context_receipt` — fully verified body-free F008 receipt.
 
 Descriptors, parameter schemas, bounds and error fixtures live under
@@ -109,6 +115,8 @@ Descriptors, parameter schemas, bounds and error fixtures live under
   derived bundle/receipt objects through the exact F008 atomic path.
 - Tool descriptions explicitly state document text is untrusted data.
 - Clients supply stored identifiers, never paths or workspace roots.
+- Semantic bundle/source-lock paths are trusted server-start arguments only. A client requesting `semantic` from an
+  unconfigured server receives `invalid_params`; the server never falls back to lexical retrieval.
 - Inbound lines are fixed at 64 KiB; complete responses default to 1 MiB and may be
   configured only from 64 KiB through 4 MiB at launch.
 - Deadlines default to 30 seconds (allowed 1–120 seconds); cancellation is cooperative
@@ -125,3 +133,7 @@ body tools. Visual evidence is not an MCP tool. F011 lets the unchanged
 `compile_context` tool select a pre-materialized exact descriptor-object handle through
 the existing bundle shape; it still reports `visual_evidence_required` when no current
 record exists and never grants MCP rendering authority.
+
+To authorize semantic retrieval for that process, add both `--semantic-bundle` and
+`--semantic-source-lock` at server start. The client may then send only
+`"retrieval_profile":"semantic"`; model selection, paths, limits and policies remain outside MCP authority.

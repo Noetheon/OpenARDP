@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from enum import StrEnum
 from typing import Any
 
 from openardp.adapters.context_candidates import (
@@ -27,7 +28,39 @@ from openardp.ports.context import (
 )
 from openardp.ports.semantic_retrieval import SemanticRetrievalProvider
 from openardp.services.context_compiler import ContextCompilerService, context_algorithm_identity
-from openardp.services.semantic_retrieval import semantic_algorithm_identity
+from openardp.services.context_relevance import (
+    RANKING_ALGORITHM_NAME,
+    RELEVANCE_ALGORITHM_NAME,
+)
+from openardp.services.semantic_retrieval import (
+    SEMANTIC_ALGORITHM_NAME,
+    semantic_algorithm_identity,
+)
+
+
+class RetrievalProfile(StrEnum):
+    """Closed product-surface choices for context candidate retrieval."""
+
+    LEXICAL = "lexical"
+    SEMANTIC = "semantic"
+
+
+_LEXICAL_ALGORITHM_NAMES = frozenset(
+    {
+        context_algorithm_identity().name,
+        RELEVANCE_ALGORITHM_NAME,
+        RANKING_ALGORITHM_NAME,
+    }
+)
+
+
+def retrieval_profile_for_algorithm(algorithm: AlgorithmIdentity) -> RetrievalProfile:
+    """Classify one persisted supported algorithm without weakening exact replay."""
+    if algorithm.name in _LEXICAL_ALGORITHM_NAMES:
+        return RetrievalProfile.LEXICAL
+    if algorithm.name == SEMANTIC_ALGORITHM_NAME:
+        return RetrievalProfile.SEMANTIC
+    raise ContextConfigurationMismatch("algorithm_mismatch")
 
 
 def local_context_compiler(
@@ -173,8 +206,68 @@ def local_semantic_context_compiler(
     )
 
 
+def local_context_compiler_for_profile(
+    workspace: LocalWorkspace,
+    estimator: ContextEstimator,
+    text_verifier: Callable[[Any], None],
+    rich_verifier: Callable[[Any], None],
+    profile: RetrievalProfile,
+    *,
+    provider: SemanticRetrievalProvider | None = None,
+    algorithm: AlgorithmIdentity | None = None,
+) -> ContextCompilerService:
+    """Compose one product profile and reject profile, provider or replay drift."""
+    if algorithm is not None and retrieval_profile_for_algorithm(algorithm) is not profile:
+        raise ContextConfigurationMismatch("retrieval_profile_mismatch")
+    if profile is RetrievalProfile.LEXICAL:
+        if algorithm is not None:
+            return local_context_compiler_for_algorithm(
+                workspace,
+                estimator,
+                rich_verifier,
+                algorithm,
+            )
+        return local_context_compiler(workspace, estimator, rich_verifier)
+    if provider is None:
+        raise ContextConfigurationMismatch("semantic_provider_unavailable")
+    policy = SemanticRetrievalPolicy()
+    limits = SemanticRetrievalLimits()
+    allocation = LexicalAllocationPolicy()
+    expected = semantic_algorithm_identity(
+        provider.recipe,
+        policy,
+        limits,
+        allocation,
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        semantic_max_per_document=32,
+        semantic_ranked_prefix=4,
+        rich_first=True,
+    )
+    if algorithm is not None and algorithm != expected:
+        raise ContextConfigurationMismatch("algorithm_mismatch")
+    return local_semantic_context_compiler(
+        workspace,
+        estimator,
+        text_verifier,
+        rich_verifier,
+        provider,
+        policy=policy,
+        provider_limits=limits,
+        allocation_policy=allocation,
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        semantic_max_per_document=32,
+        semantic_ranked_prefix=4,
+        rich_first=True,
+    )
+
+
 __all__ = [
+    "RetrievalProfile",
     "local_context_compiler",
     "local_context_compiler_for_algorithm",
+    "local_context_compiler_for_profile",
     "local_semantic_context_compiler",
+    "retrieval_profile_for_algorithm",
 ]

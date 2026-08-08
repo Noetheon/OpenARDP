@@ -118,6 +118,14 @@ branch coverage was 85.47 percent in 181.17 seconds; sdist/wheel build and every
 and object-graph checks passed. An exploratory `uv run python -m build` correctly failed because the undeclared `build`
 package is absent; the repository-authoritative `uv build` command then passed and is the documented command.
 
+## Remote gate correction
+
+The first exact-head CI attempt (`31263385719`) proved Preflight, Ubuntu and macOS but GitHub cancelled Windows at the
+20-minute job cap. Its log showed 1,719 passing tests, seven skips and 99 percent completion after 19 minutes 19 seconds;
+pytest emitted `KeyboardInterrupt` only when the workflow deadline cancelled it. This was a CI-capacity failure, not a
+test assertion. F031 therefore raises only the Windows job cap to 25 minutes, preserves the complete `--no-cov` suite
+and all required checks, and requires a fresh exact-head matrix before SC-008 may pass. No failed gate is waived.
+
 ## Ten-gate scorecard
 
 | Score | Criterion | Status | Evidence |

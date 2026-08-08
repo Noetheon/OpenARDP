@@ -5,6 +5,9 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+- Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
+  was cancelled by the former 20-minute job limit.
+
 ### Feature 031 — repository hygiene and bounded refactoring
 
 - Added a deterministic, standard-library, Git-aware sync-artifact audit that classifies worktree and Git-metadata

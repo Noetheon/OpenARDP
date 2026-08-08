@@ -27,6 +27,11 @@ and Windows each run the same complete test inventory with `--no-cov`; only cove
 same-checkout measurement ran 1,381 tests in 141.64 seconds with coverage and 93.71 seconds without it, reducing that
 test phase by 33.8 percent.
 
+The Windows job has a 25-minute cap while the Ubuntu and macOS jobs retain 20-minute caps. This is an evidence-based
+platform allowance, not a larger test boundary: on 2026-08-08 the hosted Windows runner passed 1,719 tests and reached
+99 percent in 19 minutes 19 seconds before the former 20-minute job cap interrupted pytest during the final tests. Five
+additional bounded minutes cover completion and cache cleanup without weakening, splitting or retrying the suite.
+
 ## Dated cost evidence
 
 [`ci-cost-baseline-2026-08-01.json`](../quality/ci-cost-baseline-2026-08-01.json) stores only aggregate observations:
@@ -112,6 +117,8 @@ pushes or draft PRs. This changes scheduling only; committed evidence and the re
 - GitHub runner images, prices, cache implementation and billing policies are external and can change.
 - Static marker auditing complements rather than replaces GitHub's workflow parser; the final private PR is the
   authoritative cross-platform execution proof.
+- Hosted Windows performance can approach the bounded 25-minute cap as the complete inventory grows; future additions
+  should measure platform duration and optimize proven hotspots before increasing the cap again.
 - Governance-only classification deliberately spends a Linux Preflight job to guarantee a concluded required check and
   fail-closed policy evaluation.
 - Release-owned path filters require review when F015 files move or a new release component is added.

@@ -170,7 +170,9 @@ jobs:
     permissions:
       contents: read
     needs: preflight
-    timeout-minutes: 20
+    # The complete suite reached 99% after 19m19s on the 2026-08-08 hosted
+    # Windows image. Keep a bounded five-minute completion/cleanup margin.
+    timeout-minutes: 25
     runs-on: windows-latest
 
     steps:

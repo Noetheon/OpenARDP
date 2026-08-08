@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import stat
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -34,6 +35,141 @@ _MEDIA_BY_SUFFIX = {
     ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ".txt": "text/plain",
 }
+
+
+@dataclass(frozen=True, slots=True)
+class _DirectoryResult:
+    """One stable directory observation or a fail-closed scan reason."""
+
+    entries: tuple[WatchScanEntry, ...]
+    directories: tuple[Path, ...]
+    enumerated_count: int
+    reason: WatchScanReason | None = None
+
+
+def _scan_tree(
+    root: AdmittedWatchRoot,
+    base: Path,
+) -> tuple[list[WatchScanEntry], WatchScanReason | None]:
+    entries: list[WatchScanEntry] = []
+    enumerated_count = 0
+    stack: list[tuple[Path, int]] = [(base, 0)]
+    while stack:
+        directory, depth = stack.pop()
+        observed = _scan_directory(
+            root,
+            base,
+            directory,
+            depth=depth,
+            enumerated_count=enumerated_count,
+        )
+        if observed.reason is not None:
+            return [], observed.reason
+        enumerated_count = observed.enumerated_count
+        entries.extend(observed.entries)
+        for child in reversed(observed.directories):
+            stack.append((child, depth + 1))
+    return entries, None
+
+
+def _scan_directory(
+    root: AdmittedWatchRoot,
+    base: Path,
+    directory: Path,
+    *,
+    depth: int,
+    enumerated_count: int,
+) -> _DirectoryResult:
+    before = _fresh_stat(directory)
+    if (
+        _is_link_or_junction(directory, before)
+        or not stat.S_ISDIR(before.st_mode)
+        or str(before.st_dev) != root.device_id
+    ):
+        return _DirectoryResult((), (), enumerated_count, WatchScanReason.INCOMPLETE)
+    children, enumerated_count, overflow = _enumerate_children(
+        directory,
+        enumerated_count,
+        max_entries=root.config.max_entries,
+    )
+    if overflow:
+        return _DirectoryResult((), (), enumerated_count, WatchScanReason.OVERFLOW)
+    entries: list[WatchScanEntry] = []
+    directories: list[Path] = []
+    for child in children:
+        child_path = Path(child.path)
+        metadata = _fresh_stat(child_path)
+        if _is_link_or_junction(child_path, metadata):
+            continue
+        if stat.S_ISDIR(metadata.st_mode):
+            if (
+                root.config.recursive
+                and depth < root.config.max_depth
+                and str(metadata.st_dev) == root.device_id
+            ):
+                directories.append(child_path)
+            continue
+        entry = _project_entry(root, base, child_path, metadata)
+        if entry is not None:
+            entries.append(entry)
+    after = _fresh_stat(directory)
+    if (before.st_dev, before.st_ino, before.st_mtime_ns) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_mtime_ns,
+    ):
+        return _DirectoryResult((), (), enumerated_count, WatchScanReason.INCOMPLETE)
+    return _DirectoryResult(tuple(entries), tuple(directories), enumerated_count)
+
+
+def _enumerate_children(
+    directory: Path,
+    enumerated_count: int,
+    *,
+    max_entries: int,
+) -> tuple[list[os.DirEntry[str]], int, bool]:
+    iterator = os.scandir(directory)
+    children: list[os.DirEntry[str]] = []
+    try:
+        for child in iterator:
+            enumerated_count += 1
+            if enumerated_count > max_entries:
+                return children, enumerated_count, True
+            children.append(child)
+    finally:
+        close = getattr(iterator, "close", None)
+        if close is not None:
+            close()
+    children.sort(key=lambda entry: entry.name)
+    return children, enumerated_count, False
+
+
+def _project_entry(
+    root: AdmittedWatchRoot,
+    base: Path,
+    path: Path,
+    metadata: os.stat_result,
+) -> WatchScanEntry | None:
+    if not stat.S_ISREG(metadata.st_mode) or str(metadata.st_dev) != root.device_id:
+        return None
+    media_type = _MEDIA_BY_SUFFIX.get(path.suffix.casefold())
+    if media_type is None:
+        return None
+    relative = path.relative_to(base).as_posix()
+    if _invalid_relative_path(relative):
+        return None
+    return WatchScanEntry(
+        relative_locator=relative,
+        locator_digest=watch_locator_digest(relative),
+        fingerprint=WatchFileFingerprint(
+            device_id=str(metadata.st_dev),
+            file_id=str(metadata.st_ino),
+            byte_length=metadata.st_size,
+            modified_ns=str(metadata.st_mtime_ns),
+            mode=metadata.st_mode,
+        ),
+        media_type=media_type,
+    )
 
 
 class LocalWatchScanner:
@@ -89,101 +225,15 @@ class LocalWatchScanner:
         base = Path(root.root_path)
         try:
             before = _fresh_stat(base)
-            if _is_link_or_junction(base, before) or not stat.S_ISDIR(before.st_mode):
+            if (
+                _is_link_or_junction(base, before)
+                or not stat.S_ISDIR(before.st_mode)
+                or (str(before.st_dev), str(before.st_ino)) != (root.device_id, root.file_id)
+            ):
                 return _incomplete(root, started_at, completed_at, WatchScanReason.ROOT_CHANGED)
-            if (str(before.st_dev), str(before.st_ino)) != (root.device_id, root.file_id):
-                return _incomplete(root, started_at, completed_at, WatchScanReason.ROOT_CHANGED)
-            entries: list[WatchScanEntry] = []
-            enumerated_count = 0
-            stack: list[tuple[Path, int]] = [(base, 0)]
-            while stack:
-                directory, depth = stack.pop()
-                directory_before = _fresh_stat(directory)
-                if (
-                    _is_link_or_junction(directory, directory_before)
-                    or not stat.S_ISDIR(directory_before.st_mode)
-                    or str(directory_before.st_dev) != root.device_id
-                ):
-                    return _incomplete(
-                        root,
-                        started_at,
-                        completed_at,
-                        WatchScanReason.INCOMPLETE,
-                    )
-                iterator = os.scandir(directory)
-                children: list[os.DirEntry[str]] = []
-                try:
-                    for child in iterator:
-                        enumerated_count += 1
-                        if enumerated_count > root.config.max_entries:
-                            return _incomplete(
-                                root,
-                                started_at,
-                                completed_at,
-                                WatchScanReason.OVERFLOW,
-                            )
-                        children.append(child)
-                finally:
-                    close = getattr(iterator, "close", None)
-                    if close is not None:
-                        close()
-                children.sort(key=lambda entry: entry.name)
-                directories: list[Path] = []
-                for child in children:
-                    child_path = Path(child.path)
-                    metadata = _fresh_stat(child_path)
-                    if _is_link_or_junction(child_path, metadata):
-                        continue
-                    if stat.S_ISDIR(metadata.st_mode):
-                        if (
-                            root.config.recursive
-                            and depth < root.config.max_depth
-                            and str(metadata.st_dev) == root.device_id
-                        ):
-                            directories.append(child_path)
-                        continue
-                    if not stat.S_ISREG(metadata.st_mode):
-                        continue
-                    if str(metadata.st_dev) != root.device_id:
-                        continue
-                    media_type = _MEDIA_BY_SUFFIX.get(child_path.suffix.casefold())
-                    if media_type is None:
-                        continue
-                    relative = child_path.relative_to(base).as_posix()
-                    if _invalid_relative_path(relative):
-                        continue
-                    entries.append(
-                        WatchScanEntry(
-                            relative_locator=relative,
-                            locator_digest=watch_locator_digest(relative),
-                            fingerprint=WatchFileFingerprint(
-                                device_id=str(metadata.st_dev),
-                                file_id=str(metadata.st_ino),
-                                byte_length=metadata.st_size,
-                                modified_ns=str(metadata.st_mtime_ns),
-                                mode=metadata.st_mode,
-                            ),
-                            media_type=media_type,
-                        )
-                    )
-                for child_directory in reversed(directories):
-                    stack.append((child_directory, depth + 1))
-                directory_after = _fresh_stat(directory)
-                if (
-                    directory_before.st_dev,
-                    directory_before.st_ino,
-                    directory_before.st_mtime_ns,
-                ) != (
-                    directory_after.st_dev,
-                    directory_after.st_ino,
-                    directory_after.st_mtime_ns,
-                ):
-                    return _incomplete(
-                        root,
-                        started_at,
-                        completed_at,
-                        WatchScanReason.INCOMPLETE,
-                    )
+            entries, reason = _scan_tree(root, base)
+            if reason is not None:
+                return _incomplete(root, started_at, completed_at, reason)
             after = _fresh_stat(base)
             if (str(after.st_dev), str(after.st_ino)) != (root.device_id, root.file_id):
                 return _incomplete(root, started_at, completed_at, WatchScanReason.ROOT_CHANGED)

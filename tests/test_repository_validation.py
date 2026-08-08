@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+import scripts.validate_repository as repository_validation
+from scripts.audit_repository_hygiene import FindingKind, HygieneFinding, HygieneReport
 from scripts.validate_repository import (
     Diagnostic,
     validate_governance,
@@ -164,3 +166,36 @@ def test_f005a_governance_rejects_drift_and_source_package(tmp_path: Path) -> No
 def test_real_repository_contract_is_clean(repository_root: Path) -> None:
     """Validate all real Markdown and governance contracts offline."""
     assert validate_repository(repository_root) == []
+
+
+def test_repository_hygiene_finding_is_projected_without_body(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compose audit metadata into one stable body-free repository diagnostic."""
+    report = HygieneReport(
+        version=1,
+        checked_scopes=("worktree", "git_metadata"),
+        findings=(
+            HygieneFinding(
+                kind=FindingKind.DIVERGENT,
+                scope="worktree",
+                candidate="docs/spec 2.md",
+                canonical="docs/spec.md",
+                candidate_sha256="a" * 64,
+                canonical_sha256="b" * 64,
+            ),
+        ),
+    )
+    monkeypatch.setattr(repository_validation, "audit_repository_hygiene", lambda root: report)
+
+    diagnostics = repository_validation._validate_repository_hygiene(tmp_path)
+
+    assert [(item.code, item.target, item.message) for item in diagnostics] == [
+        (
+            "HYG004",
+            "worktree:divergent",
+            "repository sync-conflict artifact requires review",
+        )
+    ]
+    assert "a" * 64 not in diagnostics[0].render(tmp_path)

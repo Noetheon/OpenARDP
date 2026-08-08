@@ -185,6 +185,8 @@ Output: immutable `ContextBundle` containing selected representations, provenanc
 ### Interfaces
 
 - CLI is authoritative for local behavior and test automation.
+- CLI argument grammar and body-safe result rendering are isolated in bounded interface-owned helpers; command execution
+  remains in the stable composition root and no product behavior lives in maintainer tooling.
 - The delivered read-only MCP stdio interface wraps the same query, search, evidence
   and context-compiler services; it contains no business logic or path resolver.
 - HTTP API follows the same use cases after contracts stabilize.

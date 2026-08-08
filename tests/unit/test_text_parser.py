@@ -145,6 +145,25 @@ def test_empty_markdown_block_quote_is_ignored_with_bounded_warning(payload: byt
     assert result.warnings == ("empty_block_quote_ignored",)
 
 
+def test_empty_markdown_constructs_and_list_kind_transition_are_stable() -> None:
+    """Retain warning and grouping behavior at empty and mixed-list boundaries."""
+    result = _parse(
+        b"#\n\n- \n- kept\n1. ordered\n\n>\n",
+        media_type=TextMediaType.MARKDOWN.value,
+    )
+    assert [(block.kind, block.text) for block in result.blocks] == [
+        (BlockKind.LIST, "- kept"),
+        (BlockKind.LIST_ITEM, "kept"),
+        (BlockKind.LIST, "1. ordered"),
+        (BlockKind.LIST_ITEM, "ordered"),
+    ]
+    assert result.warnings == (
+        "empty_block_quote_ignored",
+        "empty_heading_ignored",
+        "empty_list_item_ignored",
+    )
+
+
 def test_recipe_is_stable_and_changes_with_reviewed_limits() -> None:
     """Pin all behavior-affecting parser configuration in the recipe hash."""
     default = TextParserAdapter().recipe

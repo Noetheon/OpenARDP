@@ -17,8 +17,8 @@
       "reason": "Append-only reviewed SQL migration history through workspace revision 11, including the durable storage-optimizer operation kind."
     },
     "src/openardp/interfaces/cli.py": {
-      "maximum_lines": 1934,
-      "reason": "Reviewed F022 storage optimizer command and counted JSON projection plus legacy command definitions and stable compatibility."
+      "maximum_lines": 1380,
+      "reason": "Reviewed F031 composition and execution facade after bounded argument-grammar and output-renderer extraction."
     },
     "src/openardp/services/context_compiler.py": {
       "maximum_lines": 1115,
@@ -37,10 +37,6 @@
     "src/openardp/adapters/filesystem_maintenance.py:backup_workspace": {
       "maximum_lines": 139,
       "reason": "Atomic backup orchestration with explicit verification stages."
-    },
-    "src/openardp/adapters/local_watch.py:LocalWatchScanner.scan": {
-      "maximum_lines": 118,
-      "reason": "Bounded cross-platform filesystem scan compatibility path."
     },
     "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog._load_reconciliation": {
       "maximum_lines": 143,
@@ -62,10 +58,6 @@
       "maximum_lines": 145,
       "reason": "Atomic derivation lifecycle publication transaction."
     },
-    "src/openardp/adapters/text_parser.py:TextParserAdapter._parse_markdown": {
-      "maximum_lines": 173,
-      "reason": "Deterministic Markdown block state machine."
-    },
     "src/openardp/adapters/visual_pdfium.py:PdfiumVisualRenderer.render_page": {
       "maximum_lines": 103,
       "reason": "Bounded optional renderer conversion and validation boundary."
@@ -73,14 +65,6 @@
     "src/openardp/domain/reconciliation.py:reconcile_blocks": {
       "maximum_lines": 219,
       "reason": "Deterministic multi-phase conservative matching algorithm."
-    },
-    "src/openardp/interfaces/cli.py:_parser": {
-      "maximum_lines": 292,
-      "reason": "Stable complete argparse command grammar."
-    },
-    "src/openardp/interfaces/cli.py:_success": {
-      "maximum_lines": 166,
-      "reason": "Stable command-specific human output compatibility including the reviewed body-free F022 optimizer summary."
     },
     "src/openardp/services/context_compiler.py:ContextCompilerService._compile_with_snapshot": {
       "maximum_lines": 138,

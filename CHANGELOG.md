@@ -5,6 +5,21 @@ semantic versioning once the public package lifecycle begins.
 
 ## Unreleased
 
+- Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
+  was cancelled by the former 20-minute job limit.
+
+### Feature 031 — repository hygiene and bounded refactoring
+
+- Added a deterministic, standard-library, Git-aware sync-artifact audit that classifies worktree and Git-metadata
+  conflict copies using body-free SHA-256 evidence, never mutates automatically and fails closed on ambiguous paths.
+- Removed 151 verified worktree conflict copies and four inactive Git-index copies after proving 146 byte-identical and
+  five older than canonical tracked artifacts; the active index, canonical files and Git object graph remained intact.
+- Decomposed CLI grammar/output, Markdown transitions and local-watch traversal behind existing seams. The four selected
+  function spans fell from a combined 727 to 78 lines (89.27%), all four exceptions were removed and the CLI module
+  ceiling tightened from 1,934 to 1,380 lines.
+- Preserved application/workspace/schema/provider/export versions, persisted identities, SQLite/CAS behavior and all
+  CLI/MCP results; no runtime dependency, network authority or automatic cleanup was introduced.
+
 ### Feature 030 — semantic retrieval product surface
 
 - Added an explicit `lexical|semantic` retrieval profile to `openardp context` while preserving lexical omission as the

@@ -34,6 +34,12 @@ if __package__:
     from scripts.audit_maintainability import (
         load_policy as load_maintainability_policy,
     )
+    from scripts.audit_repository_hygiene import (
+        AuditError as RepositoryHygieneError,
+    )
+    from scripts.audit_repository_hygiene import (
+        audit_repository as audit_repository_hygiene,
+    )
 else:
     from audit_ci import CIAuditError
     from audit_ci import audit_repository as audit_ci
@@ -47,6 +53,8 @@ else:
     from audit_maintainability import (
         load_policy as load_maintainability_policy,
     )
+    from audit_repository_hygiene import AuditError as RepositoryHygieneError
+    from audit_repository_hygiene import audit_repository as audit_repository_hygiene
 
 _EXCLUDED_DIRECTORIES = {
     ".git",
@@ -432,6 +440,26 @@ _F029_REQUIRED_FILES = (
     "tests/unit/test_embedding_bundle.py",
     "tests/unit/test_provider_retrieval_benchmark.py",
     "tests/unit/test_semantic_retrieval.py",
+)
+
+_F031_REQUIRED_FILES = (
+    "docs/17_CODEBASE_HYGIENE.md",
+    "scripts/audit_repository_hygiene.py",
+    "spec-kit/feature-prompts/031-repository-hygiene.md",
+    "specs/031-repository-hygiene/analysis.md",
+    "specs/031-repository-hygiene/checklists/maintainability.md",
+    "specs/031-repository-hygiene/checklists/requirements.md",
+    "specs/031-repository-hygiene/contracts/repository-hygiene-audit.md",
+    "specs/031-repository-hygiene/data-model.md",
+    "specs/031-repository-hygiene/implementation-notes.md",
+    "specs/031-repository-hygiene/plan.md",
+    "specs/031-repository-hygiene/quickstart.md",
+    "specs/031-repository-hygiene/research.md",
+    "specs/031-repository-hygiene/spec.md",
+    "specs/031-repository-hygiene/tasks.md",
+    "src/openardp/interfaces/cli_arguments.py",
+    "src/openardp/interfaces/cli_output.py",
+    "tests/unit/test_repository_hygiene.py",
 )
 
 
@@ -1093,6 +1121,20 @@ def _validate_f029_semantic_retrieval(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f031_repository_hygiene(root: Path) -> list[Diagnostic]:
+    """Require the complete F031 hygiene and bounded-refactoring evidence."""
+    return [
+        _governance_finding(
+            root,
+            "GOV026",
+            relative,
+            "required F031 repository-hygiene artifact is missing",
+        )
+        for relative in _F031_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1186,6 +1228,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f027_ranking(root))
     diagnostics.extend(_validate_f028_csv(root))
     diagnostics.extend(_validate_f029_semantic_retrieval(root))
+    diagnostics.extend(_validate_f031_repository_hygiene(root))
     return _sort_diagnostics(root, diagnostics)
 
 
@@ -1198,6 +1241,7 @@ def validate_repository(root: Path) -> list[Diagnostic]:
             *validate_markdown(root),
             *validate_governance(root),
             *_validate_maintainability(root),
+            *_validate_repository_hygiene(root),
             *_validate_ci(root),
         ],
     )
@@ -1230,6 +1274,32 @@ def _validate_maintainability(root: Path) -> list[Diagnostic]:
             ),
         )
         for finding in findings
+    ]
+
+
+def _validate_repository_hygiene(root: Path) -> list[Diagnostic]:
+    """Project read-only sync-artifact findings into repository diagnostics."""
+    try:
+        report = audit_repository_hygiene(root)
+    except RepositoryHygieneError as error:
+        return [
+            Diagnostic(
+                path=root,
+                line=1,
+                code="HYG003",
+                target="repository-hygiene",
+                message=str(error),
+            )
+        ]
+    return [
+        Diagnostic(
+            path=root / finding.candidate,
+            line=1,
+            code="HYG004",
+            target=f"{finding.scope}:{finding.kind.value}",
+            message="repository sync-conflict artifact requires review",
+        )
+        for finding in report.findings
     ]
 
 

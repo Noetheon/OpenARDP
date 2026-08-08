@@ -12,7 +12,7 @@ import tempfile
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import BinaryIO, NoReturn, cast
+from typing import BinaryIO, cast
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, JsonValue
@@ -43,7 +43,6 @@ from openardp.adapters.release_benchmarks import (
 from openardp.adapters.release_evidence import LocalReleaseEvidenceStore
 from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
 from openardp.domain.common import SCHEMA_VERSION
-from openardp.domain.context import ContextMode
 from openardp.domain.context_compilation import (
     AlgorithmIdentity,
 )
@@ -54,7 +53,6 @@ from openardp.domain.maintenance import (
     InventoryLimits,
     ReclamationPlan,
     RetentionPolicy,
-    StorageOptimizationReport,
 )
 from openardp.domain.release import (
     EvidenceCheck,
@@ -65,12 +63,17 @@ from openardp.domain.release import (
     SuiteName,
 )
 from openardp.domain.rich_ingestion import ModelBundleManifest
-from openardp.domain.search import SearchOutcome, SearchQueryRejected
-from openardp.domain.storage import Job, JobState
+from openardp.domain.search import SearchQueryRejected
+from openardp.domain.storage import Job
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
-from openardp.interfaces.cli_query_arguments import add_query_arguments
+from openardp.interfaces.cli_arguments import ContextCommandUsageError as _UsageError
+from openardp.interfaces.cli_arguments import parser as _parser
+from openardp.interfaces.cli_output import (
+    json_value as _json_value,  # noqa: F401 - retained test/adapter seam
+)
+from openardp.interfaces.cli_output import success as _success
+from openardp.interfaces.cli_output import write_json as _write_json
 from openardp.interfaces.context_cli import (
-    ContextCommandUsageError,
     compile_context_command,
 )
 from openardp.interfaces.context_cli import (
@@ -228,19 +231,6 @@ _COMMANDS = {
     "release-report",
 }
 
-_CONTEXT_MODES = tuple(mode.value for mode in ContextMode)
-_CONTEXT_UNITS = ("bytes", "characters", "tokens")
-
-
-_UsageError = ContextCommandUsageError
-
-
-class _ArgumentParser(argparse.ArgumentParser):
-    def error(self, message: str) -> NoReturn:
-        """Raise a body-free usage classification instead of exiting."""
-        del message
-        raise _UsageError("invalid command usage")
-
 
 class _PackageExportRequest(BaseModel):
     """Trusted local request envelope whose paths never enter package metadata."""
@@ -249,295 +239,6 @@ class _PackageExportRequest(BaseModel):
 
     package: InterchangePackage
     asset_sources: dict[str, str]
-
-
-def _parser() -> _ArgumentParser:
-    parser = _ArgumentParser(
-        prog="openardp",
-        description="Local-first immutable document intelligence",
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    init = subparsers.add_parser("init", help="initialize an explicit local workspace")
-    _common_options(init)
-
-    ingest = subparsers.add_parser("ingest", help="ingest one supported local document")
-    ingest.add_argument("path", type=Path)
-    ingest.add_argument("--profile")
-    ingest.add_argument("--force", action="store_true")
-    ingest.add_argument("--docling-model-root", type=Path)
-    ingest.add_argument("--docling-model-manifest", type=Path)
-    _common_options(ingest)
-
-    watch = subparsers.add_parser("watch", help="watch one explicit local root in foreground")
-    watch.add_argument("root", type=Path)
-    watch.add_argument("--once", action="store_true")
-    watch.add_argument("--non-recursive", action="store_true", dest="non_recursive")
-    watch.add_argument("--max-depth", type=int, default=32, dest="max_depth")
-    watch.add_argument("--stability-ms", type=int, default=5_000, dest="stability_ms")
-    watch.add_argument("--poll-ms", type=int, default=2_000, dest="poll_ms")
-    watch.add_argument("--max-entries", type=int, default=10_000, dest="max_entries")
-    watch.add_argument("--max-active-jobs", type=int, default=1_000, dest="max_active_jobs")
-    watch.add_argument("--max-jobs-per-cycle", type=int, default=1, dest="max_jobs_per_cycle")
-    watch.add_argument("--max-attempts", type=int, default=3, dest="max_attempts")
-    watch.add_argument("--retry-base-ms", type=int, default=1_000, dest="retry_base_ms")
-    watch.add_argument("--retry-max-ms", type=int, default=60_000, dest="retry_max_ms")
-    watch.add_argument("--profile")
-    watch.add_argument("--rich-profile")
-    watch.add_argument("--docling-model-root", type=Path)
-    watch.add_argument("--docling-model-manifest", type=Path)
-    _common_options(watch)
-
-    jobs = subparsers.add_parser("jobs", help="list body-free durable job state")
-    jobs.add_argument("--state", choices=tuple(state.value for state in JobState))
-    jobs.add_argument("--kind")
-    jobs.add_argument("--limit", type=int, default=100)
-    _common_options(jobs)
-
-    job_cancel = subparsers.add_parser("job-cancel", help="cancel one durable local job")
-    job_cancel.add_argument("job_id")
-    _common_options(job_cancel)
-
-    for name, help_text in (
-        ("storage-inventory", "explain bounded local retention state"),
-        ("storage-plan", "create a read-only exact reclamation plan"),
-    ):
-        maintenance = subparsers.add_parser(name, help=help_text)
-        maintenance.add_argument("--max-entries", type=int, default=100_000)
-        maintenance.add_argument("--max-bytes", type=int, default=1_099_511_627_776)
-        maintenance.add_argument("--candidate-min-age-hours", type=int, default=24)
-        maintenance.add_argument("--quarantine-grace-hours", type=int, default=168)
-        maintenance.add_argument("--reserve-bytes", type=int, default=67_108_864)
-        _common_options(maintenance)
-
-    storage_hold = subparsers.add_parser(
-        "storage-hold",
-        help="protect one exact managed object",
-    )
-    storage_hold.add_argument("object_id")
-    storage_hold.add_argument("--reason", default="operator_hold")
-    storage_hold.add_argument("--expires-hours", type=int)
-    _common_options(storage_hold)
-
-    storage_hold_release = subparsers.add_parser(
-        "storage-hold-release",
-        help="release one exact retention hold",
-    )
-    storage_hold_release.add_argument("hold_id")
-    _common_options(storage_hold_release)
-
-    storage_quarantine = subparsers.add_parser(
-        "storage-quarantine",
-        help="quarantine one exact supplied reclamation plan",
-    )
-    storage_quarantine.add_argument("--plan", type=Path, required=True)
-    _common_options(storage_quarantine)
-
-    storage_restore = subparsers.add_parser(
-        "storage-restore",
-        help="restore one named quarantine batch",
-    )
-    storage_restore.add_argument("--batch", required=True)
-    _common_options(storage_restore)
-
-    storage_recover = subparsers.add_parser(
-        "storage-recover",
-        help="recover one already-persisted maintenance intent",
-    )
-    _common_options(storage_recover)
-
-    storage_commit = subparsers.add_parser(
-        "storage-commit",
-        help="irreversibly commit one expired named quarantine batch",
-    )
-    storage_commit.add_argument("--batch", required=True)
-    storage_commit.add_argument(
-        "--acknowledge-irreversible-removal",
-        action="store_true",
-        dest="acknowledge_irreversible_removal",
-    )
-    _common_options(storage_commit)
-
-    for name, help_text in (
-        ("storage-diagnostics", "report exact local storage and reserve facts"),
-        ("index-rebuild", "atomically rebuild the complete disposable lexical index"),
-    ):
-        operation = subparsers.add_parser(name, help=help_text)
-        operation.add_argument("--reserve-bytes", type=int, default=67_108_864)
-        _common_options(operation)
-
-    storage_optimize = subparsers.add_parser(
-        "storage-optimize",
-        help="explicitly compact eligible derived blocks and reclaim catalog pages",
-    )
-    _common_options(storage_optimize)
-
-    workspace_backup = subparsers.add_parser(
-        "workspace-backup",
-        help="create one verified internal workspace backup",
-    )
-    workspace_backup.add_argument("--destination", type=Path, required=True)
-    _common_options(workspace_backup)
-
-    workspace_restore = subparsers.add_parser(
-        "workspace-restore",
-        help="restore one verified backup to a fresh workspace",
-    )
-    workspace_restore.add_argument("--backup", type=Path, required=True)
-    workspace_restore.add_argument("--destination", type=Path, required=True)
-    workspace_restore.add_argument("--json", action="store_true", dest="json_output")
-
-    workspace_migrate = subparsers.add_parser(
-        "workspace-migrate",
-        help="back up then explicitly migrate one supported older workspace",
-    )
-    workspace_migrate.add_argument("--backup-destination", type=Path, required=True)
-    _common_options(workspace_migrate)
-
-    package_export = subparsers.add_parser(
-        "package-export",
-        help="create one experimental deterministic BagIt package",
-    )
-    package_export.add_argument("--request", type=Path, required=True)
-    package_export.add_argument("--destination", type=Path, required=True)
-    package_export.add_argument("--json", action="store_true", dest="json_output")
-
-    package_verify = subparsers.add_parser(
-        "package-verify",
-        help="verify one experimental BagIt package without extraction",
-    )
-    package_verify.add_argument("--package", type=Path, required=True)
-    _interchange_limit_options(package_verify)
-    package_verify.add_argument("--json", action="store_true", dest="json_output")
-
-    package_import = subparsers.add_parser(
-        "package-import",
-        help="publish one verified package as a fresh immutable snapshot",
-    )
-    package_import.add_argument("--package", type=Path, required=True)
-    package_import.add_argument("--destination", type=Path, required=True)
-    _interchange_limit_options(package_import)
-    package_import.add_argument("--json", action="store_true", dest="json_output")
-
-    release_evidence = subparsers.add_parser(
-        "release-evidence",
-        help="generate one immutable body-free platform evidence bundle",
-    )
-    release_evidence.add_argument("--corpus", type=Path, required=True)
-    release_evidence.add_argument("--output", type=Path, required=True)
-    release_evidence.add_argument("--source-root", type=Path, required=True)
-    release_evidence.add_argument("--suite-results", type=Path)
-    release_evidence.add_argument("--reference-timing", action="store_true")
-    release_evidence.add_argument("--json", action="store_true", dest="json_output")
-
-    release_gate = subparsers.add_parser(
-        "release-gate",
-        help="evaluate all frozen release clauses without waivers",
-    )
-    release_gate.add_argument("--policy", type=Path, required=True)
-    release_gate.add_argument("--evidence", type=Path, action="append", required=True)
-    release_gate.add_argument("--output", type=Path, required=True)
-    release_gate.add_argument("--decision-at", required=True)
-    release_gate.add_argument("--json", action="store_true", dest="json_output")
-
-    release_report = subparsers.add_parser(
-        "release-report",
-        help="write or drift-check human and claim projections",
-    )
-    release_report.add_argument("--decision", type=Path, required=True)
-    release_report.add_argument("--output", type=Path, required=True)
-    release_report.add_argument("--check", action="store_true")
-    release_report.add_argument("--json", action="store_true", dest="json_output")
-
-    add_query_arguments(subparsers, common_options=_common_options)
-
-    evidence = subparsers.add_parser(
-        "evidence",
-        help="list body-free accepted rich evidence",
-    )
-    evidence.add_argument("document_id")
-    evidence.add_argument("--version")
-    _common_options(evidence)
-
-    get_evidence = subparsers.add_parser(
-        "get-evidence",
-        help="retrieve one exact accepted rich evidence body",
-    )
-    get_evidence.add_argument("projection_id")
-    get_evidence.add_argument("--document")
-    _common_options(get_evidence)
-
-    context = subparsers.add_parser(
-        "context",
-        help="compile bounded evidence context with a body-free receipt",
-    )
-    context.add_argument("task")
-    context.add_argument("--document", action="append", default=[])
-    context.add_argument("--budget", type=int)
-    context.add_argument("--unit", choices=_CONTEXT_UNITS)
-    context.add_argument("--mode", choices=_CONTEXT_MODES)
-    context.add_argument("--include-bundle", action="store_true", dest="include_bundle")
-    context.add_argument("--replay")
-    context.add_argument("--retrieval-profile", choices=tuple(RetrievalProfile))
-    context.add_argument("--semantic-bundle", type=Path)
-    context.add_argument("--semantic-source-lock", type=Path, dest="semantic_source_lock")
-    _common_options(context)
-
-    context_receipt = subparsers.add_parser(
-        "context-receipt",
-        help="inspect one exact verified body-free selection receipt",
-    )
-    context_receipt.add_argument("receipt_id")
-    _common_options(context_receipt)
-
-    visual_materialize = subparsers.add_parser(
-        "visual-materialize",
-        help="materialize one accepted evidence projection as exact visual evidence",
-    )
-    visual_materialize.add_argument("document_id")
-    visual_materialize.add_argument("projection_id")
-    visual_materialize.add_argument("--version")
-    _common_options(visual_materialize)
-
-    visual_evidence = subparsers.add_parser(
-        "visual-evidence",
-        help="inspect one exact verified visual evidence descriptor",
-    )
-    visual_evidence.add_argument("visual_evidence_id")
-    _common_options(visual_evidence)
-
-    mcp = subparsers.add_parser(
-        "mcp",
-        help="serve the bounded read-only MCP interface over stdio",
-    )
-    mcp.add_argument("--store", type=Path, default=Path.cwd() / ".openardp")
-    mcp.add_argument("--deadline-ms", type=int, default=30_000, dest="deadline_ms")
-    mcp.add_argument(
-        "--response-cap-bytes",
-        type=int,
-        default=1_048_576,
-        dest="response_cap_bytes",
-    )
-    mcp.add_argument("--semantic-bundle", type=Path)
-    mcp.add_argument("--semantic-source-lock", type=Path, dest="semantic_source_lock")
-    return parser
-
-
-def _common_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--store", type=Path, default=Path.cwd() / ".openardp")
-    parser.add_argument("--json", action="store_true", dest="json_output")
-
-
-def _interchange_limit_options(parser: argparse.ArgumentParser) -> None:
-    defaults = InterchangeLimits()
-    parser.add_argument("--max-archive-bytes", type=int, default=defaults.max_archive_bytes)
-    parser.add_argument("--max-expanded-bytes", type=int, default=defaults.max_expanded_bytes)
-    parser.add_argument("--max-entry-count", type=int, default=defaults.max_entry_count)
-    parser.add_argument("--max-entry-bytes", type=int, default=defaults.max_entry_bytes)
-    parser.add_argument("--max-metadata-bytes", type=int, default=defaults.max_metadata_bytes)
-    parser.add_argument("--max-path-bytes", type=int, default=defaults.max_path_bytes)
-    parser.add_argument("--max-path-depth", type=int, default=defaults.max_path_depth)
-    parser.add_argument("--max-relationships", type=int, default=defaults.max_relationships)
 
 
 def _utc_now() -> datetime:
@@ -1533,223 +1234,6 @@ def _parse_uuid(value: str) -> UUID:
         return UUID(value)
     except ValueError as error:
         raise _UsageError("identifier must be a UUID") from error
-
-
-def _json_value(value: object) -> object:
-    if isinstance(value, StorageOptimizationReport):
-        payload = value.model_dump(mode="json")
-        payload.update(
-            {
-                "completed_count": value.completed_count,
-                "eligible_count": value.eligible_count,
-                "failed_count": value.failed_count,
-                "stored_bytes_saved": value.stored_bytes_saved,
-            }
-        )
-        return payload
-    if isinstance(value, BaseModel):
-        return value.model_dump(mode="json")
-    if isinstance(value, tuple):
-        return [_json_value(item) for item in value]
-    if isinstance(value, list):
-        return [_json_value(item) for item in value]
-    if isinstance(value, dict):
-        return {str(key): _json_value(item) for key, item in value.items()}
-    return value
-
-
-def _write_json(payload: dict[str, object]) -> None:
-    sys.stdout.write(
-        json.dumps(
-            payload,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        + "\n"
-    )
-
-
-def _print_storage_optimization_summary(report: StorageOptimizationReport) -> None:
-    """Render one body-free explicit optimization summary line."""
-    print(
-        f"eligible={report.eligible_count} completed={report.completed_count} "
-        f"failed={report.failed_count} saved={report.stored_bytes_saved} bytes"
-    )
-
-
-def _success(command: str, data: object, *, json_output: bool) -> None:
-    converted = _json_value(data)
-    if json_output:
-        _write_json(
-            {
-                "command": command,
-                "data": converted,
-                "ok": True,
-                "schema_version": SCHEMA_VERSION,
-            }
-        )
-        return
-    if command == "init":
-        assert isinstance(converted, dict)
-        print(f"Initialized OpenARDP workspace: {converted['root']}")
-    elif command == "ingest":
-        assert isinstance(converted, dict)
-        scope = converted["scope"]
-        assert isinstance(scope, dict)
-        if "evidence_count" in converted:
-            print(
-                "Ingested "
-                f"{scope['document_id']} "
-                f"({converted['disposition']}, {converted['evidence_count']} evidence items)"
-            )
-        else:
-            print(
-                "Ingested "
-                f"{scope['document_id']} "
-                f"({converted['disposition']}, {converted['block_count']} blocks)"
-            )
-    elif command == "list":
-        assert isinstance(converted, list)
-        for item in converted:
-            assert isinstance(item, dict)
-            source = item["source_key"]
-            assert isinstance(source, dict)
-            print(f"{item['document_id']}\t{source['locator']}\t{item['state'] or 'UNPREPARED'}")
-    elif command == "status":
-        assert isinstance(converted, dict)
-        print(f"{converted['freshness']}\t{converted['integrity_coverage']}")
-    elif command == "storage-optimize":
-        assert isinstance(data, StorageOptimizationReport)
-        _print_storage_optimization_summary(data)
-    elif command == "outline":
-        assert isinstance(converted, list)
-        for item in converted:
-            assert isinstance(item, dict)
-            print(f"{'  ' * int(item['depth'])}{item['kind']}\t{_safe_text(str(item['label']))}")
-    elif command == "search":
-        assert isinstance(data, SearchOutcome)
-        for hit in data.hits:
-            print(
-                f"{hit.scope.document_id}\t{hit.block_id}\t{hit.kind.value}\t"
-                f"{hit.line_start}-{hit.line_end}\t{_safe_text(hit.snippet)}"
-            )
-        print(f"returned={data.returned} available={data.available} truncated={data.truncated}")
-    elif command == "reindex":
-        assert isinstance(converted, dict)
-        scopes = converted["scopes"]
-        assert isinstance(scopes, list)
-        for item in scopes:
-            assert isinstance(item, dict)
-            scope = item["scope"]
-            assert isinstance(scope, dict)
-            print(f"{scope['document_id']}\t{item['outcome']}\tentries={item['entry_count']}")
-    elif command == "evidence":
-        assert isinstance(converted, list)
-        for item in converted:
-            assert isinstance(item, dict)
-            retrieval = item["retrieval"]
-            assert isinstance(retrieval, dict)
-            print(
-                f"{item['evidence_projection_id']}\t"
-                f"{retrieval['media_type']}\t{retrieval['byte_length']} bytes"
-            )
-    elif command == "get-evidence":
-        assert isinstance(converted, dict)
-        projection = converted["projection"]
-        assert isinstance(projection, dict)
-        print(f"{projection['evidence_projection_id']}\t{_safe_text(str(converted['body']))}")
-    elif command == "context":
-        assert isinstance(converted, dict)
-        counts = converted["counts"]
-        assert isinstance(counts, dict)
-        budget = converted["budget"]
-        assert isinstance(budget, dict)
-        print(f"receipt={converted['receipt_id']}")
-        print(f"bundle={converted['bundle_id']}")
-        print(
-            f"selected={counts['selected']} omitted={counts['omitted']} "
-            f"rejected={counts['rejected']} stale={counts['stale']} "
-            f"truncated={str(converted['truncated']).lower()}"
-        )
-        print(
-            f"budget={budget['bundle_used']}/{budget['bundle_ceiling']} "
-            f"{budget['unit']} limit={budget['limit']}"
-        )
-        warnings = converted["warnings"]
-        assert isinstance(warnings, list)
-        for warning in warnings:
-            assert isinstance(warning, dict)
-            print(f"warning {warning['code']}: {_safe_text(str(warning['message']))}")
-        missing = converted["missing_evidence"]
-        assert isinstance(missing, list)
-        for entry in missing:
-            assert isinstance(entry, dict)
-            print(f"missing {entry['evidence_type']} ({entry['reason_code']})")
-    elif command == "context-receipt":
-        assert isinstance(converted, dict)
-        policy = converted["policy"]
-        assert isinstance(policy, dict)
-        budget = converted["budget"]
-        assert isinstance(budget, dict)
-        print(f"receipt={converted['receipt_id']}")
-        print(f"created={converted['created_at']}")
-        print(f"task_digest={converted['task_digest']}")
-        print(f"mode={policy['mode']}")
-        print(
-            f"budget={budget['bundle_used']}/{budget['bundle_ceiling']} "
-            f"{budget['unit']} limit={budget['limit']}"
-        )
-        print(
-            f"scopes={len(converted['corpus_snapshot'])} "
-            f"selected={len(converted['selected'])} omitted={len(converted['omitted'])} "
-            f"rejected={len(converted['rejected'])} stale={len(converted['stale'])} "
-            f"truncated={str(converted['truncated']).lower()}"
-        )
-    elif command in {"visual-materialize", "visual-evidence"}:
-        assert isinstance(converted, dict)
-        crop = converted["crop_object"]
-        assert isinstance(crop, dict)
-        policy = converted["usage_policy"]
-        assert isinstance(policy, dict)
-        print(f"visual={converted['visual_evidence_id']}")
-        print(f"projection={converted['evidence_projection_id']}")
-        print(f"crop={crop['object_id']} ({crop['byte_length']} bytes)")
-        print(f"usage={policy['scope']} export={str(policy['export_allowed']).lower()}")
-    elif command == "watch":
-        assert isinstance(converted, dict)
-        counts = converted["counts"]
-        assert isinstance(counts, dict)
-        print(
-            f"root={converted['root_id']} generation={converted['generation']} "
-            f"complete={str(converted['complete']).lower()} "
-            f"rescan={str(converted['rescan_required']).lower()}"
-        )
-        print(
-            f"entries={counts['entries']} candidates={counts['candidates']} "
-            f"stable={counts['stable']} scheduled={counts['scheduled']} "
-            f"succeeded={counts['succeeded']} retried={counts['retried']} "
-            f"failed={counts['failed']} cancelled={counts['cancelled']}"
-        )
-    elif command == "jobs":
-        assert isinstance(converted, list)
-        for item in converted:
-            assert isinstance(item, dict)
-            print(
-                f"{item['job_id']}\t{item['kind']}\t{item['state']}\t"
-                f"attempts={item['attempt_count']}/{item['max_attempts']}"
-            )
-    elif command == "job-cancel":
-        assert isinstance(converted, dict)
-        print(f"{converted['job_id']}\t{converted['state']}")
-    else:
-        print(json.dumps(converted, ensure_ascii=False, indent=2, sort_keys=True))
-
-
-def _safe_text(value: str) -> str:
-    """Escape terminal control characters in human-oriented document labels."""
-    encoded = json.dumps(value, ensure_ascii=False)
-    return encoded[1:-1]
 
 
 def _classification(error: Exception) -> tuple[int, str, str]:

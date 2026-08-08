@@ -47,6 +47,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 28 | `028-csv-ingestion` | Ingest bounded RFC 4180 CSV as stable source-backed evidence without conversion or body loss. |
 | 29 | `029-provider-neutral-multilingual-retrieval` | Evaluate optional provider-neutral multilingual retrieval against the unchanged F025 benchmark. |
 | 30 | `030-semantic-retrieval-product-surface` | Expose the validated optional hybrid semantic profile through bounded CLI and MCP product surfaces with exact replay and operational measurements. |
+| 31 | `031-repository-hygiene` | Detect and remove synchronization artifacts and reduce measured parser, scanner and CLI hotspots without contract or storage change. |
 
 ## Dependency rule
 
@@ -64,6 +65,8 @@ at which the unchanged F025 benchmark is rerun as a comparative multilingual pro
 Feature 030 productizes only the F029 profile through explicit local CLI/MCP composition and measures its cold/warm
 operational cost. It does not add answer generation, persistent embeddings, a vector database, cloud egress or a new
 retrieval policy.
+Feature 031 is a behavior-preserving maintenance slice after F030. It adds a read-only repository integrity guard and
+bounded private refactoring only; it does not change retrieval policy, product contracts, persistence or providers.
 
 ## Scope rule
 

@@ -1,411 +1,231 @@
 # OpenARDP
 
-> **Working title.** Ownership, employer-IP, public naming and trademark checks remain required before public release.
+**Local-first evidence infrastructure for reusable, provenance-rich documents.**
 
-OpenARDP is an implementation-first, local-first open-source reference platform for persistent, verifiable and reusable
-document evidence in AI-agent systems. It combines immutable source/version identity, content-addressed storage,
-provenance, trust-aware retrieval and progressive context delivery above document-intelligence providers such as
-Docling.
+> [!NOTE]
+> OpenARDP is an implementation-first open-source reference platform and a working title.
+> Its public contracts are experimental interoperability candidates, not an adopted standard.
+> Public naming, trademark, ownership, and employer-IP checks remain required before release.
 
-OpenARDP is not an adopted, official, universal or consensus standard. Its public contracts are experimental
-interoperability candidates until external use, an independent implementation, conformance evidence and migration
-practice justify stabilization.
+OpenARDP prepares a document once and makes its evidence available to many AI-assisted
+workflows without turning a lossy summary, embedding, or search index into the source of truth.
+It preserves immutable originals, provider-native artifacts, provenance, and verifiable
+citations while keeping the default runtime local and provider-independent.
 
-## Product thesis
+**Compress access, not truth.**
 
-> Compress access, not truth.
+## Why OpenARDP?
 
-Original source bytes remain authoritative. Complete provider-native parser representations remain available as immutable
-derived artifacts. OpenARDP projects only the thin provider-neutral evidence needed for identity, navigation, retrieval,
-trust and lifecycle; it does not create a second full document representation.
+Document systems often repeat the same expensive and error-prone work: parse a file, split it
+into chunks, discard parser-specific structure, and rebuild an index for every application.
+This makes provenance difficult to audit and derived data easy to mistake for authoritative
+evidence.
 
-Summaries, OCR, captions, embeddings, projections and indexes are reproducible derived artifacts. Lexical and future
-vector indexes are non-authoritative accelerators: returned content and security-sensitive metadata must be verified
-against authoritative content-addressed objects and catalog facts.
+OpenARDP separates those concerns:
 
-## Implemented status
+1. Original bytes remain authoritative and content-addressed.
+2. Complete parser-native artifacts are retained without inventing a second universal document
+   representation.
+3. A thin evidence projection supports identity, navigation, retrieval, trust, and lifecycle
+   operations.
+4. Indexes, summaries, OCR output, and embeddings remain reproducible, invalidatable
+   accelerators.
+5. Retrieved content is verified against authoritative storage before it is returned.
 
-The repository has completed the bounded runtime work through
-[`005-lexical-search`](specs/005-lexical-search/spec.md), the documentation/governance
-realignment in [`005A-strategic-realignment`](specs/005A-strategic-realignment/spec.md),
-and the experimental contract foundation in
-[`006-evidence-contract-foundation`](specs/006-evidence-contract-foundation/spec.md), plus
-the bounded provider adapter in
-[`007-docling-native-adapter`](specs/007-docling-native-adapter/spec.md) and the
-deterministic context compiler in
-[`008-context-compiler-receipts`](specs/008-context-compiler-receipts/spec.md), plus
-the least-privilege stdio interface in
-[`009-read-only-mcp`](specs/009-read-only-mcp/spec.md) and the provider-free lifecycle in
-[`010-reconciliation-derivation-dag`](specs/010-reconciliation-derivation-dag/spec.md),
-plus explicit visual escalation in
-[`011-visual-evidence-escalation`](specs/011-visual-evidence-escalation/spec.md) and the
-foreground local watcher in
-[`012-local-watcher-and-jobs`](specs/012-local-watcher-and-jobs/spec.md), followed by
-verified retention and recovery in
-[`013-retention-recovery-migrations`](specs/013-retention-recovery-migrations/spec.md),
-and the experimental BagIt exchange profile in
-[`014-export-interchange-experiment`](specs/014-export-interchange-experiment/spec.md),
-followed by the fail-closed evidence gate in
-[`015-benchmark-security-release-gate`](specs/015-benchmark-security-release-gate/spec.md),
-the independent conformance spike in
-[`016-alternate-parser-conformance-spike`](specs/016-alternate-parser-conformance-spike/spec.md),
-the mock-only enterprise-connector design in
-[`017-microsoft-graph-design-spike`](specs/017-microsoft-graph-design-spike/spec.md),
-the behavior-preserving maintenance pass in
-[`018-repository-hygiene`](specs/018-repository-hygiene/spec.md), and the CI cost/latency optimization in
-[`019-ci-cost-optimization`](specs/019-ci-cost-optimization/spec.md), the workload-bounded product-value evaluation in
-[`020-product-value-benchmark`](specs/020-product-value-benchmark/spec.md), and the measured status-path correction in
-[`021-incremental-freshness`](specs/021-incremental-freshness/spec.md), the storage-layout correction in
-[`022-storage-amplification`](specs/022-storage-amplification/spec.md), and the explicit offline PDF model package in
-[`023-offline-pdf-model-bundle`](specs/023-offline-pdf-model-bundle/spec.md), and the licensed real-world corpus in
-[`024-redistributable-realworld-corpus`](specs/024-redistributable-realworld-corpus/spec.md), and the realistic semantic
-and source-quality evaluation in
-[`025-semantic-e2e-source-evaluation`](specs/025-semantic-e2e-source-evaluation/spec.md), explicit relevance and abstention
-in [`026-relevance-abstention`](specs/026-relevance-abstention/spec.md), lexical allocation in
-[`027-lexical-ranking-diversity`](specs/027-lexical-ranking-diversity/spec.md), and stable CSV ingestion in
-[`028-csv-ingestion`](specs/028-csv-ingestion/spec.md), followed by optional provider-neutral multilingual retrieval in
-[`029-provider-neutral-multilingual-retrieval`](specs/029-provider-neutral-multilingual-retrieval/spec.md), and its
-opt-in CLI/MCP product surface in
-[`030-semantic-retrieval-product-surface`](specs/030-semantic-retrieval-product-surface/spec.md):
+## What is implemented?
 
-The committed F020 macOS arm64 run is `CONDITIONALLY_WORTHWHILE`: exact judged correctness, zero stale incidents and
-parser-free warm reuse support the parse-once thesis; 100,000-block search p95 is 70.200 ms and reference break-even
-against raw reparsing is 32 tasks. It is not unconditional because reference status p95 is 2.087 seconds, PDF lacks the
-explicit offline model bundle and two context budgets cannot hold the safe envelope. See the
-[`reference report`](benchmarks/product-value/v0.1.0/results/reference-macos-arm64/report.md). F015 remains `NO-GO`.
+| Capability | Current implementation |
+| --- | --- |
+| Evidence storage | Immutable filesystem content-addressed storage with a transactional SQLite catalog |
+| Ingestion | TXT, Markdown, and CSV in the core; optional Docling adapters for PDF, DOCX, and PPTX |
+| Retrieval | Verified lexical search by default; optional offline multilingual semantic and hybrid retrieval |
+| Context assembly | Deterministic, budgeted context bundles with source diversity, abstention, and replayable receipts |
+| Agent access | Read-only local MCP server over standard input/output |
+| Visual evidence | Explicit, on-demand PDF page-region materialization |
+| Operations | Incremental freshness checks, retention, quarantine and recovery, backup, restore, and migration |
+| Portability | Experimental BagIt-based package export, verification, and import |
+| Evaluation | Reproducible correctness, retrieval, performance, storage, security, and release-evidence workflows |
 
-F021 resolves the measured status bottleneck without weakening its claim boundary. Default `HEAD` status performs an
-exact source SHA-256 inspection plus one atomic READY-header snapshot; its committed p95 is 2.257 ms at 10,000 blocks and
-9.186 ms at 100,000 blocks, with zero aggregate loads, block reads, parser calls or full-verifier calls. Deliberate
-`FULL` status retains exhaustive native/manifest/projection/block verification at 1.981 s and 25.451 s p95. See the
-[`F021 report`](benchmarks/freshness/v0.1.0/results/reference-macos-arm64/report.md).
+The complete implementation sequence and authoritative status live in the
+[feature map](spec-kit/FEATURE_MAP.md). Benchmark results are documented separately so that
+the README does not become a collection of stale point-in-time measurements.
 
-F022 reduced the F020 text-workspace logical amplification by 64.77–65.21 percent while preserving exact source,
-search, freshness, reuse, edit/revert and context-replay behavior. F023 now provisions the exact five-file Docling PDF
-profile outside Git, transfers it as a deterministic independently verified package and proves actual offline PDF use.
-The committed F023 run is `PDF_OFFLINE_READY`: 384,428,156 model bytes, 2,310 package-overhead bytes, three deterministic
-fresh-worker conversions and 4.169/4.271-second wall p50/p95. F024 now adds a 6,634,970-byte NASA/CISA corpus with exact
-rights/provenance records and a validated `REALWORLD_BASELINE_READY` result across PDF, DOCX, PPTX, CSV, Markdown and
-plain text. Its 12 structural observations are deterministic and offline; one oversized PPTX native pointer is correctly
-retained as bounded. F025 now reports `SEMANTIC_E2E_NOT_READY`: exact citations and supported-format ingestion pass, but
-untouched questions achieve only 35.3% full support, 32.6% atom recall and 1.1% evidence precision. Frozen operator terms
-improve full support to 82.4% but remain manual assistance and miss the 90% atom/source conditional gates. See the
-[`F025 report`](benchmarks/semantic-e2e/v0.1.0/results/reference-macos-arm64/report.md).
+## Trust boundaries
 
-F028 now ingests the frozen 932,085-byte CISA CSV directly through the stable local product path. Its independently
-validated `CSV_INGESTION_READY` result preserves all 1,656 records and 18,216 cells, reuses unchanged work and retrieves
-both frozen operator-query answers at rank 1 with exact citations. Direct natural-language CSV questions still miss under
-exact lexical search and remain an explicit F029 retrieval target. See the
-[`F028 report`](benchmarks/csv-ingestion/v0.1.0/results/reference-macos-arm64/report.md).
+OpenARDP is designed around a few explicit constraints:
 
-F029 adds an explicit offline multilingual E5 profile while retaining F027 as the provider-free default and
-higher-priority exact fallback. The independently validated v0.3 result is `PROVIDER_RETRIEVAL_READY`: direct full
-support improves from 41.18% to 52.94%, atom recall from 34.78% to 50.00% and source recall from 44.44% to 72.22%; both
-German questions move from zero to complete support, with 100% citation integrity, unsupported abstention and fresh-run
-determinism. The two earlier negative runs remain committed and drove source-balanced admission and Rich-first evidence
-precedence without changing the frozen questions, 0.80 floor or model. F029 costs about 2.65x summed query wall time and
-1.23 GB peak worker RSS in the reference workload, so exact lexical retrieval remains the lightweight default. See the
-[`F029 report`](benchmarks/provider-retrieval/v0.3.0/results/reference-macos-arm64/report.md).
+- **Originals are authoritative.** Source files are never overwritten or silently modified.
+- **Document content is untrusted data.** Embedded instructions cannot initiate tools or other
+  side effects.
+- **Derived data is disposable.** Every accelerator must be reproducible and invalidatable.
+- **The core is provider-neutral.** Parsers, OCR, embedding models, and storage integrations sit
+  behind bounded interfaces.
+- **Local-first means local by default.** The default install enables no cloud service, external
+  model call, user tracking, or telemetry.
+- **Embeddings are optional.** There is no mandatory embedding model, universal vector claim, or
+  persisted universal vector database.
+- **Evidence retrieval is not answer generation.** The current product assembles verifiable
+  evidence and context; it does not generate an answer on the user's behalf.
+- **Agent access is read-only.** The current MCP surface retrieves evidence but cannot mutate the
+  workspace.
 
-F030 makes that exact F029 profile usable through `openardp context --retrieval-profile semantic` and the optional MCP
-`compile_context.retrieval_profile` selector. Bundle paths remain trusted local CLI/server-start configuration, MCP
-clients receive no filesystem or provider-policy authority, and replay rejects any provider-recipe or algorithm drift.
-Lexical behavior remains the zero-model default; vectors stay disposable in the provider worker and no answer generator
-or vector database is added. The two-run macOS arm64 reference result is `SEMANTIC_SURFACE_READY`: timing-free output is
-identical, warm cache reuse is 100%, warm query wall time is 252.88 versus 348.70 seconds cold (27.48% lower), and peak
-worker RSS is 1,500,725,248 bytes. See the
-[`F030 report`](benchmarks/semantic-surface/v0.1.0/results/reference-macos-arm64/report.md) and
-[`product guide`](docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md).
+See the [architecture](docs/02_ARCHITECTURE.md), [security model](docs/06_SECURITY_MODEL_V2.md),
+and [non-goals](docs/03_NON_GOALS.md) for the full boundaries.
 
-- Python 3.12, locked `uv` environment, Ruff, formatting, strict mypy, offline pytest/coverage and pre-commit gates;
-- least-privilege GitHub Actions on Ubuntu, macOS and Windows with commit-pinned actions;
-- strict Pydantic v2 domain models, five F002 JSON Schema roots, and four independently
-  versioned experimental evidence contract roots;
-- RFC 8785 canonical JSON and versioned SHA-256 identity projections;
-- immutable streaming filesystem CAS with verified reads and atomic same-filesystem publication;
-- checksummed transactional SQLite migrations, exact source/version facts and fenced job transitions;
-- explicit local workspace plus an installable `openardp` command;
-- read-only, race-detecting ingestion of regular UTF-8 `.txt`, `.md`, `.markdown` and `.csv` files;
-- an opt-in provider-neutral semantic score port and exact six-file multilingual E5 bundle with local-only SafeTensors
-  loading, socket-denied spawned inference, integer scores and disposable in-memory passage vectors;
-- a bounded spawned parser worker with denied socket creation and documented residual platform risk;
-- deterministic prepared manifests/blocks, unchanged-source cache reuse and immutable version history;
-- body-minimizing `list`, exact bounded `status`, explicit `status --full-integrity`, `outline` and exact persisted `get`
-  navigation with truthful `NONE`/`HEAD`/`FULL` assurance coverage;
-- exact term/phrase lexical search with deterministic filters, verified bounded snippets and fail-closed index coverage;
-- idempotent `reindex` from verified READY evidence;
-- an exact optional `docling==2.114.0` extra for offline, spawned DOCX/PPTX conversion
-  and explicitly provisioned PDF conversion;
-- complete immutable Docling JSON, strict F006 thin evidence and checksummed catalog
-  revision 5 with accepted plus append-only converged/diverged attempts;
-- fully verified rich cache reuse and provider-free `evidence`/`get-evidence`
-  inspection;
-- deterministic budgeted context compilation over verified text and rich evidence with
-  an exact corpus snapshot, a documented total order and greedy byte-exact admission
-  under a versioned estimator budget with ten-percent response reserve;
-- explicit hybrid multilingual context composition that preserves minimum-relevant lexical candidates, prefers accepted
-  RichEvidence, balances semantic candidates across documents and reuses F027 exact deduplication/source quotas;
-- the public `ContextBundle 0.2.0` handoff with structurally delimited untrusted-data
-  envelopes and the body-free experimental `SelectionReceipt 0.1.0` recording every
-  selection, omission, rejection, stale item and unit of budget;
-- checksummed catalog revision 6 with atomic immutable compilation rows, exact scope
-  pinning and byte-identical task-supplied replay after later head changes;
-- lexical-by-default `context` and `context-receipt` CLI commands with stable JSON and
-  human envelopes, closed failure taxonomy and body-free operational logs;
-- an explicit optional semantic CLI profile bound to the exact verified F029 provider recipe, with fail-closed replay;
-- a dependency-free read-only MCP stdio server with nine fixed object-scoped tools,
-  pinned protocol revision `2025-06-18`, bounded messages/responses/deadlines,
-  cooperative cancellation, canonical descriptors and versioned body-free errors; experimental interface `0.2.0`
-  permits only a path-free lexical/semantic selector when the operator authorizes a semantic provider at process start.
-- checksummed catalog revision 7 with conservative block lineages, exact
-  lineage/content evidence bindings and canonical `same_logical_block_as` roots;
-- a provider-neutral derivation DAG over ordered evidence, object and producer inputs
-  with transactional `CURRENT`, `STALE`, `FAILED` and `SUPERSEDED` workspace state,
-  deterministic slot replacement and exact A→B→A reactivation;
-- CAS-first reconciliation/derivation services with bounded matching, cycle rejection,
-  zero-false-reuse enforcement and no model or provider invocation.
-- experimental `VisualEvidenceDescriptor 0.1.0`, deterministic visual/raster identities
-  and checksummed catalog revision 8 with atomic page-raster reuse and reachability;
-- an exact optional `visual` extra (`pypdfium2==5.12.1`, `Pillow==12.3.0`) for bounded,
-  spawned, offline PDF page rendering and canonical single-frame RGB PNG crops;
-- explicit `visual-materialize` / `visual-evidence` CLI operations and verified
-  handle-only VISUAL context candidates; compilation never invokes the renderer;
-- provider-neutral OCR/caption orchestration with no default provider; accepted output
-  remains model-derived untrusted data and depends exactly on the retained crop.
-- checksummed workspace revision 9 with persisted watcher roots/observations/targets,
-  job eligibility, delayed retry and terminal fenced cancellation;
-- explicit disjoint-root polling with bounded complete rescans, metadata stability,
-  path-addressed tombstones, redacted rename hints and deterministic backpressure;
-- foreground `watch`, body-free `jobs` and fenced `job-cancel` CLI operations that
-  reuse the existing text/rich ingestion services and open no listener.
-- checksummed workspace revision 10 with complete retention roots, operator holds,
-  content-identified dry runs, reversible quarantine, explicit grace-gated commit and
-  restart-persistent maintenance intent;
-- paired verified internal backup, fresh disjoint restore and explicit revision-9 to
-  revision-10 migration with a recorded pre-upgrade manifest;
-- body-free storage diagnostics, exact reserve admission and an all-or-prior global
-  lexical-index rebuild derived from verified READY evidence.
-- checksummed workspace revision 11 with normalized representation scope/search
-  projections and transparent bounded compact storage for canonical derived text blocks;
-- explicit backup-first revision-10 migration and idempotent `storage-optimize`, while
-  ordinary open remains non-mutating and source/provider-native objects remain ordinary;
-- a retained offline reference/migration/scale benchmark reducing logical amplification
-  from about 37.9x to 13.20–13.35x without changing exact search, context, replay or history.
-- experimental BagIt profile `0.1.0` with deterministic stored-ZIP export, hostile
-  package verification, fresh read-only snapshot import and no custom `.ardp` suffix;
-- a strict public interchange schema and offline deterministic valid/invalid vector
-  corpus covering integrity, paths, resource bounds, compatibility and trust.
-- candidate `0.1.0rc1`, a frozen five-baseline synthetic benchmark protocol, exact
-  mechanical judgments, deterministic bootstrap statistics and immutable platform
-  evidence identities;
-- closed `release-evidence`, `release-gate` and `release-report` CLI operations, a
-  strict public release-evidence schema, security/privacy control manifest and bounded
-  wheel/sdist inspection;
-- a normalized CycloneDX 1.5 SBOM with all locked components, explicit per-component
-  license review state, three-platform CI evidence jobs and one aggregate no-waiver gate.
-- an isolated standard-library consumer plus non-Docling TXT/CSV producer proving the
-  scoped F006 evidence-contract neutrality claim without adding a runtime adapter;
-- mock-only tenant-scoped Graph delta, permission, tombstone, retry and notification
-  contracts; production Microsoft Graph access remains explicitly unauthorized;
-- deterministic maintainability auditing with monotonic legacy-hotspot ceilings,
-  independently runnable focused tests and characterized release, CLI and watcher
-  orchestration refactors.
-- fail-closed changed-path classification, Draft-to-Ready execution, one authoritative
-  Linux coverage lane, complete no-coverage macOS/Windows final suites and a separately
-  bounded all-platform release-evidence workflow.
+## Quick start
 
-The core installation still supports strict UTF-8 text without Docling. Rich parsing is
-an explicit optional extra and remains local/offline by default. F012 watching is a
-foreground polling process over one explicitly supplied local root; it is not a daemon,
-does not guarantee remote/network filesystems and adds no MCP mutation. F013 never
-deletes automatically: irreversible removal requires a named expired quarantine batch
-and a separate acknowledgement. There is no cloud connector, scheduled garbage
-collection, HTTP transport or stable/universal custom export format. F014 is an
-explicitly experimental BagIt profile and does not merge into a live workspace. PDF is
-the only concrete F011 visual renderer; DOCX/PPTX page rendering,
-built-in OCR/caption models and automatic materialization remain unsupported. F010 also
-does not schedule reconciliation or execute generators; callers explicitly supply two
-READY scopes and already-generated output bytes. Feature 015 does not authorize a
-release: the committed candidate decision is `NO-GO` because required evidence remains
-incomplete. Feature 017 likewise does not authorize a production Microsoft Graph
-connector. Feature 018 changes no product contract, dependency, persisted identity,
-workspace revision or release decision. Feature 019 changes only repository automation and its enforcement evidence;
-it does not reduce the final three-platform test inventory or alter product/release contracts. Those boundaries and
-remaining work packages are recorded in the
-[authoritative feature map](spec-kit/FEATURE_MAP.md).
+### Requirements
 
-## Evidence-backed claim status
+- Python 3.12
+- [uv](https://docs.astral.sh/uv/)
+- Git
 
-The current allowed claim IDs are `local-first`, `evidence-preserving` and
-`experimental-contracts`. They map to the verified
-[`claim-map.json`](release/evidence/v0.1.0/claim-map.json). Performance leadership,
-universal security, three-platform support, third-party reproduction and v0.1 release
-readiness are not claimed; the authoritative
-[`decision.json`](release/evidence/v0.1.0/decision.json) is `NO-GO`.
-The committed local capture contains 4,222 raw observations and verified local
-security/privacy, artifact/install and upgrade/rollback evidence. Remaining blockers
-are three-platform completion, license/current-vulnerability review and the frozen
-bounded-context value threshold.
+Clone the repository, install the locked core environment, and create a local workspace:
 
-Machine mapping: allowed `claim:evidence-preserving`,
-`claim:experimental-contracts`, `claim:local-first`; prohibited
-`claim:enterprise-performance`, `claim:measured-parser-reuse`,
-`claim:third-party-reproduced`, `claim:three-platform-supported`,
-`claim:universal-security`, `claim:v0.1-release-ready`.
+```bash
+uv sync --locked
+uv run openardp init --store .openardp
+```
 
-## Quickstart
+Ingest a supported core document and inspect it:
 
-Prerequisites: Git, `uv` 0.11.31 and Linux, macOS or Windows. The repository selects Python 3.12.
+```bash
+uv run openardp ingest ./notes.md --store .openardp
+uv run openardp list --store .openardp
+uv run openardp status ./notes.md --store .openardp
+```
+
+The ingest command returns stable document and block identifiers. Use those identifiers to
+navigate and retrieve authoritative evidence:
+
+```bash
+uv run openardp outline <document-uuid> --store .openardp
+uv run openardp get <block-uuid> --store .openardp
+uv run openardp search '"exact phrase" evidence' --store .openardp
+```
+
+Build a deterministic context bundle for a specific task:
+
+```bash
+uv run openardp context \
+  "Which exact controls are documented?" \
+  --document <document-uuid> \
+  --budget 12000 \
+  --unit tokens \
+  --mode verification \
+  --store .openardp
+```
+
+For the complete operator workflow, including receipts, replay, MCP, maintenance, and recovery,
+continue with [Start Here](START_HERE.md) and the
+[step-by-step user guide](docs/13_STEP_BY_STEP_USER_GUIDE.md).
+
+## Optional capabilities
+
+Install only the dependency group needed by the deployment:
+
+```bash
+# Rich document parsing
+uv sync --extra docling --locked
+
+# PDF visual evidence
+uv sync --extra visual --locked
+
+# Offline semantic and hybrid retrieval
+uv sync --extra semantic --locked
+
+# Development and full validation
+uv sync --all-extras --locked
+```
+
+PDF parsing is fail-closed when its verified offline model bundle is unavailable; provisioning is
+documented in the [offline PDF model guide](docs/22_OFFLINE_PDF_MODEL_BUNDLE.md). Semantic and
+hybrid retrieval are explicit opt-ins. Lexical search remains the provider-free default, and
+semantic replay binds the exact model-bundle identity. See the
+[semantic retrieval product surface](docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md).
+
+## Current maturity
+
+The repository identifies the current candidate as **0.1.0rc1**. The frozen release-evidence
+decision is **NO-GO**; this repository must not be represented as release-ready or independently
+validated. The decision, its blockers, and the evidence identities are available in the
+[release report](release/evidence/v0.1.0/report.md) and
+[machine-readable decision](release/evidence/v0.1.0/decision.json).
+
+The generated claim map permits only these bounded claims:
+
+- `claim:evidence-preserving`
+- `claim:experimental-contracts`
+- `claim:local-first`
+
+It explicitly prohibits these claims for the frozen candidate:
+
+- `claim:enterprise-performance`
+- `claim:measured-parser-reuse`
+- `claim:third-party-reproduced`
+- `claim:three-platform-supported`
+- `claim:universal-security`
+- `claim:v0.1-release-ready`
+
+This list intentionally mirrors the
+[machine-readable claim map](release/evidence/v0.1.0/claim-map.json) and is validated in CI.
+
+## Architecture
+
+Dependencies point inward, and domain code has no infrastructure dependencies:
+
+```text
+src/openardp/
+├── domain/       Pure models and invariants
+├── ports/        Provider and infrastructure protocols
+├── adapters/     Parsers, stores, connectors, and model providers
+├── services/     Use cases and orchestration
+└── interfaces/   CLI and MCP entry points
+```
+
+The content-addressed filesystem and SQLite catalog are deliberate MVP choices. Replacing them,
+changing persisted identifiers, making embeddings mandatory, or enabling a cloud dependency by
+default requires an accepted architecture decision record. See the
+[ADRs](docs/adr/) and [target architecture](docs/05_TARGET_ARCHITECTURE.md).
+
+## Development and validation
+
+Install the exact locked environment and run the complete local quality gate:
 
 ```bash
 uv sync --all-extras --locked
-
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
 uv run pytest
-uv run python scripts/audit_maintainability.py
 ```
 
-Create a local workspace and prepare text evidence:
+Validate repository governance and build the distribution artifacts:
 
 ```bash
-openardp init --store .openardp
-openardp ingest ./notes.md --store .openardp
-openardp list --store .openardp
-openardp status ./notes.md --store .openardp
-openardp status ./notes.md --full-integrity --store .openardp
-openardp outline <document-uuid> --store .openardp
-openardp get <block-uuid> --store .openardp
-openardp search '"exact phrase" evidence' --store .openardp
-openardp reindex --store .openardp
-openardp ingest ./document.docx --store .openardp
-openardp evidence <document-uuid> --store .openardp
-openardp get-evidence <projection-sha256> --document <document-uuid> --store .openardp
-openardp context "Which exact controls are documented?" \
-  --document <document-uuid> --budget 12000 --unit tokens --mode verification \
-  --store .openardp
-openardp context-receipt <receipt-sha256> --store .openardp
-openardp context "Which exact controls are documented?" \
-  --replay <receipt-sha256> --store .openardp
-openardp visual-materialize <document-uuid> <projection-sha256> --store .openardp
-openardp visual-evidence <visual-evidence-sha256> --store .openardp
-openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
-openardp jobs --store .openardp --limit 50 --json
-openardp job-cancel <job-uuid> --store .openardp --json
-openardp storage-inventory --store .openardp --json
-openardp storage-diagnostics --store .openardp --json
-openardp storage-optimize --store .openardp --json
-openardp workspace-backup --store .openardp --destination ../openardp-backup
-openardp index-rebuild --store .openardp --json
-openardp mcp --store .openardp
-openardp package-export --request ./synthetic-export-request.json \
-  --destination ./synthetic-package.zip --json
-openardp package-verify --package ./synthetic-package.zip --json
-openardp package-import --package ./synthetic-package.zip \
-  --destination ./synthetic-imported-snapshot --json
-openardp release-evidence --corpus benchmarks/release/v0.1.0 \
-  --source-root . --output ../openardp-platform-evidence --json
-openardp release-gate --policy benchmarks/release/v0.1.0/gate-policy.json \
-  --evidence ../openardp-platform-evidence --output ../openardp-decision \
-  --decision-at 2026-08-01T00:00:00Z --json
-openardp release-report --decision ../openardp-decision/decision.json \
-  --output ../openardp-decision --json
-```
-
-PDF additionally requires `--docling-model-root` and
-`--docling-model-manifest` pointing to reviewed local assets; URLs are not accepted.
-Add `--json` to ordinary commands for a versioned machine-readable stdout envelope.
-The `mcp` verb owns stdout for newline-delimited JSON-RPC and therefore has no CLI
-envelope switch. It bounds each inbound line to 64 KiB and pending sequential dispatch
-to 64 non-cancellation frames; overflow unwinds active work and closes the session.
-Only
-`get`, the explicitly selected `get-evidence` and `context --include-bundle` return
-bodies, always inside delimited untrusted-data envelopes. Search returns bounded
-verified snippets. Receipts, default `context` output, logs and error envelopes never
-contain the task string, evidence bodies or source paths. Replay reuses the recorded
-exact snapshot and fails with a stable mismatch error instead of recompiling silently.
-New compilations apply the provider-free combined F026/F027 relevance and allocation profile. Below-floor
-candidates remain auditable receipt rejections; a valid no-match returns explicit
-`no_relevant_evidence` abstention. A four-item ranked prefix preserves early lexical quality,
-then exact-body deduplication, fair document interleaving and a 16-item per-document quota
-bound source dominance. Historical receipts select their recorded legacy or F026-only
-algorithm for replay. See [the measured F027 result](docs/26_LEXICAL_RANKING_AND_DIVERSITY.md).
-Every workspace command except `init` requires an explicitly initialized compatible
-workspace; package commands are intentionally workspace-independent and use only their
-explicit local request/package/destination. Commands do not search parent directories
-or create workspace state implicitly. Package request source paths never enter package
-metadata/results, and included bytes require affirmative redistribution assertions.
-
-## Validation and build
-
-```bash
-uv run pre-commit run --all-files
 uv run python scripts/validate_repository.py
-uv run --locked python scripts/generate_schemas.py --check
-uv run python scripts/generate_release_corpus.py --check
-uv run python scripts/generate_dependency_review.py --check
-uv run python scripts/generate_release_sbom.py --check
-uv run python scripts/generate_release_evidence.py --check
-uv run python scripts/validate_release_evidence.py release/evidence/v0.1.0
 uv build
 ```
 
-The committed lockfile is authoritative. Core tests block network access and use synthetic or redistributable fixtures.
-Performance, quality, cost, security, interoperability and sustainability statements are claims only when accompanied by
-reproducible environment, data, baselines, raw results and limitations.
+Unit tests do not require network access. Test fixtures are synthetic or redistributable, and
+performance or quality claims must be backed by reproducible evidence against declared
+baselines. See [Validation](VALIDATION.md) for the evidence model and
+[CI cost and quality](docs/18_CI_COST_AND_QUALITY.md) for the tiered CI strategy.
 
-## Architecture boundaries
+## Documentation
 
-- `domain/`: pure models and invariants; no I/O.
-- `ports/`: narrow provider-neutral protocols.
-- `adapters/`: parsers, stores, sources and providers.
-- `services/`: use cases and orchestration.
-- `interfaces/`: CLI and the delivered read-only MCP stdio entry point; HTTP is later.
+- [Start Here](START_HERE.md) — installation and first end-to-end workflow
+- [Executive brief](docs/00_EXECUTIVE_BRIEF.md) — concise product and evidence position
+- [Architecture](docs/02_ARCHITECTURE.md) — components, data flow, and trust boundaries
+- [Security model](docs/06_SECURITY_MODEL_V2.md) — threat model and control design
+- [Roadmap and governance](docs/08_ROADMAP_AND_GOVERNANCE.md) — delivery and decision process
+- [Benchmark strategy](docs/07_TEST_AND_BENCHMARK_STRATEGY.md) — reproducible evaluation design
+- [Changelog](CHANGELOG.md) — user-visible changes
 
-Dependencies point inward. Provider-specific semantics remain in native artifacts or explicit profiles. The core remains
-usable locally with no cloud, user tracking, external model call or network egress enabled by default.
+## Contributing, security, and license
 
-## Governance and roadmap
+Contributions are welcome when they preserve the evidence model and architecture boundaries.
+Read [Contributing](CONTRIBUTING.md) before opening a change. Report vulnerabilities through the
+private process in [Security](SECURITY.md), not a public issue.
 
-Project-wide authority follows this order:
-
-1. [Constitution 2.0.0](.specify/memory/constitution.md) and accepted security/legal constraints;
-2. accepted [ADRs](docs/adr/) and public [schemas](schemas/);
-3. canonical project documentation;
-4. the active feature specification and plan;
-5. tasks;
-6. implementation.
-
-Every production-relevant feature follows:
-
-```text
-specify → clarify → plan → checklist → tasks → analyze → implement → converge
-```
-
-Critical/high analysis findings block implementation; critical/high convergence findings block merge. One bounded
-feature is completed and merged before its dependent successor begins. Feature 006
-defines the minimal evidence contracts; Feature 007 implements the Docling adapter only
-after F006 has converged and merged.
-
-## Read next
-
-1. [Start here](START_HERE.md)
-2. [Revised executive brief](docs/00_REVISED_EXECUTIVE_BRIEF.md)
-3. [Vision and positioning](docs/01_VISION_AND_POSITIONING.md)
-4. [Target architecture](docs/05_TARGET_ARCHITECTURE.md)
-5. [Security model](docs/06_SECURITY_MODEL_V2.md)
-6. [Contract lifecycle](docs/09_CONTRACT_LIFECYCLE_AND_COMPATIBILITY.md)
-7. [Operations, privacy and supply chain](docs/10_OPERATIONS_PRIVACY_SUPPLY_CHAIN.md)
-8. [Feature map](spec-kit/FEATURE_MAP.md)
-
-## Project policy
-
-- [License](LICENSE): Apache-2.0; no trademark grant
-- [Contributing](CONTRIBUTING.md)
-- [Security reporting](SECURITY.md)
-- [Validation evidence](VALIDATION.md)
-- [Changelog](CHANGELOG.md)
-- [Prior art and claims discipline](docs/04_PRIOR_ART_AND_DD.md)
-
-The repository and its examples are implementation evidence, not legal, security, standards or performance guarantees.
+OpenARDP is licensed under the [Apache License 2.0](LICENSE).

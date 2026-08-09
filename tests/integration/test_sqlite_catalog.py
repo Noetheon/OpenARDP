@@ -909,3 +909,20 @@ def test_current_migration_definitions_are_contiguous_and_checksummed() -> None:
     )
     assert all(migration.checksum.startswith("sha256:") for migration in MIGRATIONS)
     assert len({migration.checksum for migration in MIGRATIONS}) == CURRENT_SCHEMA_VERSION
+
+
+def test_all_released_migration_checksums_remain_byte_stable() -> None:
+    """Prevent a module-only refactor from rewriting persisted migration history."""
+    assert tuple(migration.checksum for migration in MIGRATIONS) == (
+        "sha256:fea02edce670e0fe2ab878b632620cac13609aeb10446269d9d1f3918193e56e",
+        "sha256:8667312a549e337f0fcf8924a634fb442170bda2c388c71df65e7a0ff2d317a7",
+        "sha256:5d58af92e65da1353a2333fe4066a0b23026f4ce27a8a950681957cc9abf5b02",
+        "sha256:eddec3e081479eeac1f796012f2272bca4e1fd68cd60171412b926dacba97f7e",
+        "sha256:f3f2d369017156fde5a6059b7e1399d332f9524fb91840c1e6941d171c3340b7",
+        "sha256:3a2671caa3555a52b3131c0bb3702b1e37204fd4ba5237bae5069597cc51737e",
+        "sha256:f3ea83e5cc6671b579d05a63984452870553aa74ed81feeb37dd0b48f54671d1",
+        "sha256:40fd396f436933a84727cb1ef05344bfa05665c2c7f29bfda181a7cb91c45700",
+        "sha256:3b825d09a674d87f2d4e20cbcaeb8a1ee7db81835741cbacebcd2a4760610bed",
+        "sha256:8653dbc78ffe3c28e7880533a7928b3f7108dc48331aa0aa2678659f62371a6b",
+        "sha256:0a0324fc2e1df65da3ad972fddf1a42b1a680b59858989b85ee47540d8d8c328",
+    )

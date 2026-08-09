@@ -19,7 +19,9 @@ authorize deleting future matches without a fresh review.
 ### Preventing recurrence
 
 - Exclude active development repositories, especially their hidden `.git` directories, from file synchronization. The
-  most robust option is a non-synchronized development root; moving this repository remains an explicit user operation.
+  reference development checkout was moved to a non-synchronized development root on 2026-08-09 after the external
+  FileProvider blocked an otherwise sub-second source audit. Repository code cannot enforce clone placement, so every
+  operator must apply the same boundary to their own active checkout.
 - Run `uv run python scripts/audit_repository_hygiene.py --root .` before trusting a suspicious worktree and as part of
   normal repository validation.
 - If a finding is `divergent`, `missing_canonical` or `unsafe`, preserve it. Compare it with Git history/canonical content
@@ -39,8 +41,27 @@ authorize deleting future matches without a fresh review.
 
 CLI grammar and output now have bounded interface-owned modules; Markdown and scanning stay inside their adapters with
 explicit transition/traversal helpers. All four function exceptions were removed. `interfaces/cli.py` fell from 1,896
-to 1,380 lines and its allowance tightened accordingly. The remaining five module exceptions and other reviewed function
-exceptions are retained debt, not hidden by the F031 score.
+to 1,380 lines and its allowance tightened accordingly. At F031 closeout, five module exceptions and other reviewed
+function exceptions remained explicit debt rather than being hidden by the score.
+
+### 2026-08-09 module-debt retirement
+
+A later routine, behavior-preserving refactor retired all five module exceptions without changing public imports,
+persisted identifiers, schema revisions, migration statements, transaction semantics or optional dependencies:
+
+| Former exception | Previous lines | Bounded current owners | Largest owner |
+|---|---:|---|---:|
+| `adapters/sqlite_catalog.py` | 7,182 | Public facade plus typed core, representation, rich, visual/context, watcher, job, reconciliation, derivation, maintenance and search modules | 967 |
+| `adapters/sqlite_migrations.py` | 1,666 | Public registry, immutable migration identity and three append-only revision groups | 635 |
+| `interfaces/cli.py` | 1,380 | Composition/execution facade plus bounded local-file and release commands | 998 |
+| `adapters/filesystem_maintenance.py` | 1,301 | Managed-object maintenance plus verified backup/restore | 737 |
+| `services/context_compiler.py` | 1,045 | Deterministic compilation plus verified-evidence helpers | 987 |
+
+`quality/maintainability-policy.json` now has an empty `module_exceptions` map, and a repository contract prevents those
+allowances from silently returning. The SQLite public class remains `openardp.adapters.sqlite_catalog.SQLiteCatalog`;
+its private mixins only divide implementation ownership and do not create another storage implementation. Migration
+objects preserve their exact ordered statements and SHA-256 checksums. Total line count is not claimed as the benefit:
+the benefit is bounded ownership with the same characterized behavior and stronger default enforcement.
 
 ## Scope and claim boundary
 
@@ -120,12 +141,18 @@ branch-coverage threshold.
 
 ## Residual debt and exclusions
 
-The five production modules above the 1,000-line default remain explicit policy
-exceptions. In particular, `src/openardp/adapters/sqlite_catalog.py` remains a large
-transactional facade, and `src/openardp/interfaces/cli.py` remains a large execution and
-composition facade after its argument and output grammar moved to bounded helpers.
-Splitting SQLite or adding inheritance/framework machinery remains unjustified without
-a second implementation or a demonstrated behavior benefit.
+No production module now exceeds the 1,000-line default, and there are no module
+exceptions. Seventeen reviewed function exceptions remain explicit in the policy; they
+cover atomic transaction, provider, reconciliation and orchestration boundaries whose
+behavioral risk is not reduced merely by making them shorter. Their ceilings remain
+ratcheted, and the audit fails if they grow, disappear, move without a policy update or
+become small enough that the exception is stale.
+
+The SQLite decomposition uses narrow private responsibility mixins behind the unchanged
+public facade. This is not a generic persistence framework, a second catalog
+implementation or authorization to change migration and transaction behavior. Future
+work should remove individual function exceptions only when characterization evidence
+shows a real readability or testability gain.
 
 An optional, non-gating Ruff sweep for cyclomatic complexity, branch count and statement
 count reported 184 findings on the initial repository. F018 does not claim those are all

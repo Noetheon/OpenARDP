@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import NoReturn
+from uuid import UUID
 
 from openardp.domain.context import ContextMode
 from openardp.domain.interchange import InterchangeLimits
@@ -293,4 +294,12 @@ def _interchange_limit_options(command: argparse.ArgumentParser) -> None:
     command.add_argument("--max-relationships", type=int, default=defaults.max_relationships)
 
 
-__all__ = ["ArgumentParser", "ContextCommandUsageError", "parser"]
+def parse_uuid(value: str) -> UUID:
+    """Parse one CLI UUID without leaking provider-specific validation detail."""
+    try:
+        return UUID(value)
+    except ValueError as error:
+        raise ContextCommandUsageError("identifier must be a UUID") from error
+
+
+__all__ = ["ArgumentParser", "ContextCommandUsageError", "parse_uuid", "parser"]

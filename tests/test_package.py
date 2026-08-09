@@ -83,6 +83,7 @@ ADAPTER_MODULES = {
     "e5_semantic",
     "embedding_bundle",
     "embedding_bundle_provisioning",
+    "filesystem_backup",
     "filesystem_cas",
     "filesystem_convergence",
     "filesystem_maintenance",
@@ -101,14 +102,32 @@ ADAPTER_MODULES = {
     "release_supply_chain",
     "semantic_candidates",
     "sqlite_catalog",
+    "sqlite_catalog_base",
+    "sqlite_catalog_core",
+    "sqlite_catalog_derivations",
+    "sqlite_catalog_jobs",
+    "sqlite_catalog_maintenance",
+    "sqlite_catalog_reconciliation",
+    "sqlite_catalog_representations",
+    "sqlite_catalog_rich",
+    "sqlite_catalog_search",
+    "sqlite_catalog_support",
+    "sqlite_catalog_visual_context",
+    "sqlite_catalog_watch",
+    "sqlite_catalog_watch_records",
     "sqlite_document_queries",
+    "sqlite_migration",
     "sqlite_migrations",
+    "sqlite_migrations_evidence",
+    "sqlite_migrations_foundation",
+    "sqlite_migrations_operations",
     "text_parser",
     "visual_pdfium",
     "visual_policy",
 }
 SERVICE_MODULES = {
     "context_compiler",
+    "context_evidence",
     "context_ranking",
     "context_relevance",
     "document_query",
@@ -134,6 +153,7 @@ SERVICE_MODULES = {
 INTERFACE_MODULES = {
     "cli",
     "cli_arguments",
+    "cli_file_commands",
     "cli_output",
     "cli_query_arguments",
     "context_cli",
@@ -182,11 +202,11 @@ def test_later_feature_module_is_absent(module_name: str) -> None:
         ("openardp.interfaces", INTERFACE_MODULES),
     ),
 )
-def test_module_surface_is_bounded_to_feature_031(
+def test_module_surface_is_explicit_and_bounded(
     package_name: str,
     expected_modules: set[str],
 ) -> None:
-    """Expose exactly the reviewed F002-F031 product modules."""
+    """Expose exactly the reviewed product modules and no accidental package surface."""
     package = importlib.import_module(package_name)
     discovered = {module.name for module in pkgutil.iter_modules(package.__path__)}
     assert discovered == expected_modules

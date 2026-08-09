@@ -87,3 +87,16 @@ waivers. The F015 release decision remains `NO-GO`.
 
 The authoritative F020 projection is
 [`benchmarks/product-value/v0.1.0/results/reference-macos-arm64/report.md`](../benchmarks/product-value/v0.1.0/results/reference-macos-arm64/report.md).
+
+## Feature 036 downstream utility result
+
+F036 separates retrieval evidence from answer-quality claims by applying a fixed, deterministic evidence-review task to
+the immutable F034/F035 body-free observations. Trusted completion requires all benchmark support atoms and sources in a
+citation-valid selected prefix; unsupported questions require explicit empty abstention. The complete budget curve is
+`1/3/5/10/64`, with budget three frozen on F025 before the F034 evaluation.
+
+The independently validated macOS arm64 result is valid/accepted/positive. F025 preserves `11/19` primary task completion
+while retaining the F035 warm-latency gain. F034 primary completion is 61% lexical versus 76% semantic/F035; the latter
+reaches 81% at the 64-item ceiling. These are bounded evidence-packet results, not measurements of human comprehension or
+generated answers. The authoritative projection is
+[`benchmarks/downstream-utility/v0.1.0/results/reference-macos-arm64/report.md`](../benchmarks/downstream-utility/v0.1.0/results/reference-macos-arm64/report.md).

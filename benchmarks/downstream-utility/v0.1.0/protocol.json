@@ -1,0 +1,54 @@
+{
+  "benchmark_version": "0.1.0",
+  "budgets": [1, 3, 5, 10, 64],
+  "completion": {
+    "answerable": "all_required_atoms_and_sources_from_relevant_citation_valid_prefix_items",
+    "unsupported": "explicit_abstention_and_zero_selected_items"
+  },
+  "development": {
+    "profiles": ["f029_baseline", "f035_candidate"],
+    "runs": [0, 1],
+    "suite": "f025_development",
+    "warm_min_ordinal": 1
+  },
+  "gates": {
+    "holdout_candidate_non_regression_all_budgets": true,
+    "primary_non_regression": [
+      "task_completion",
+      "answerable_completion",
+      "atom_coverage",
+      "source_coverage",
+      "citation_integrity",
+      "source_fitness",
+      "safe_abstention"
+    ],
+    "warm_p50_max_baseline_fraction": [3, 4],
+    "warm_p95_non_regression": true
+  },
+  "holdout": {
+    "baseline_runs": ["f034_reference"],
+    "baseline_treatments": ["f027_lexical_direct", "f029_semantic_direct"],
+    "candidate_profile": "f035_candidate",
+    "candidate_runs": [0, 1],
+    "comparison": "unpaired_timing_free_exact_projection",
+    "suite": "f034_holdout"
+  },
+  "inputs": {
+    "f034": {
+      "corpus_id": "sha256:a5047bbd768cd2927da302da94ded5fa8449a2a3df097ec482f9f6ca708eaca3",
+      "manifest_sha256": "sha256:c0b052af70aeac60a91077c07f217fe1916eafe1c576939872799cd93b693efd",
+      "observations_sha256": "sha256:89829b7fb0dac1b732ebbe38e9fd8a7980a1f8968baaa0c7bc8cf3efe68e4dba",
+      "protocol_id": "sha256:371bfeafc35d80b792aed06cf5394356bcba83cc4fb2510e682ef29cf2f4e91e",
+      "question_set_id": "sha256:5648e59596d1e6bc95cf786f5bdf8a9da8856d8d1f6ee072621014be1b848c61"
+    },
+    "f035": {
+      "manifest_sha256": "sha256:0cd0e278638b7b6a320c845f92e3c0e7f7e1eb7a8ee2d3ae876038e6bc6a6361",
+      "observations_sha256": "sha256:7cfab1f298193b1dc21cd14d7dccdf9e4269b0b1d2b858aa87faf9e262f28c71",
+      "protocol_id": "sha256:825a8f1599352ef69c4987a5da2293a7792045664020961c92eeea0a23721bfd"
+    }
+  },
+  "network": "denied",
+  "primary_budget": 3,
+  "protocol_id": "sha256:58bd259f83d6eeaadca35321ab95c6c62c7d9ad2712f89a0da5413aa3541c133",
+  "result_max_bytes": 16777216
+}

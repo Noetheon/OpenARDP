@@ -89,6 +89,27 @@ Cold samples remain separately disclosed and noisy; no cold-start improvement is
 1,365,327,872 bytes. The unchanged F034 candidate exactly reproduces all frozen F029 quality metrics in two deterministic
 fresh workspaces, so holdout generalization is positive without holdout tuning.
 
+## Downstream evidence-review utility
+
+F036 reuses the immutable body-free F034/F035 observations without rerunning parsers or models. A provider-free reviewer
+checks whether the first `1`, `3`, `5`, `10` or `64` selected evidence items contain every required atom and source in
+relevant citation-valid evidence; unsupported questions succeed only through explicit empty abstention. Budget three was
+frozen from the F025 development plateau before the one-time F034 projection.
+
+At the primary budget, F025 task completion remains `11/19` for both F029 and F035 (`9/17` answerable and `2/2` safely
+abstained), while warm p50/p95 time-to-ready remains 67.94%/85.02% lower. On F034, the lexical baseline completes 61% of
+tasks, while F029 and F035 complete 76%; the semantic result rises to 81% only at the 64-item ceiling. Citations are 100%
+valid and source fitness is 100% on F025 and 90% on F034 for retrieved relevant sources.
+
+```bash
+uv run python scripts/run_downstream_utility_benchmark.py --output /tmp/openardp-f036
+python3 -I -S scripts/validate_downstream_utility_benchmark.py /tmp/openardp-f036
+```
+
+This validates bounded evidence-packet utility and review effort, not human reading time, comprehension, generated-answer
+correctness, domain readiness or a release decision. The next evidentiary boundary is a preregistered blinded human study
+or a fixed answer-generation study whose prompts, model identity and grading policy are frozen before evaluation.
+
 ## Persistence and rollback
 
 No embedding, vector, provider-native model state or universal vector index enters SQLite, CAS, schemas or receipts.

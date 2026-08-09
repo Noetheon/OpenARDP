@@ -66,9 +66,9 @@
 | F008 context vectors | `2e221ba1533ce53db389fffa37a25b633472ef49646e6f9f3be5c68ff752afad` |
 
 The initial Spec Kit analysis covered 27 functional requirements, 12 success criteria,
-four independently testable user stories and 74 planned tasks across two passes; findings and
-resolutions are recorded in `specs/009-read-only-mcp/analysis.md`. The final pass
-found no unresolved critical/high finding and complete requirement coverage.
+four independently testable user stories and 74 planned tasks across two passes. The removed working analysis remains
+recoverable from Git history; its final pass found no unresolved critical/high finding and complete requirement
+coverage.
 
 ## Test-first and phase evidence
 

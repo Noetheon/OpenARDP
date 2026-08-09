@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-03
 
-**Status**: Implemented
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Add a minimum relevance floor and genuine evidence abstention as the first remediation from F025.
 

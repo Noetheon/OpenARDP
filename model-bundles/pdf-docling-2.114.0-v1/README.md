@@ -7,5 +7,5 @@ The supported profile is Docling `2.114.0` with Heron layout and accurate TableF
 external plugins, picture/chart/code/formula enrichment and every unrelated model are excluded.
 
 Provision explicitly with `scripts/provision_pdf_bundle.py`, then verify/package/install with the offline commands in
-`specs/023-offline-pdf-model-bundle/quickstart.md`. Offline verification must always receive this committed
+`docs/22_OFFLINE_PDF_MODEL_BUNDLE.md`. Offline verification must always receive this committed
 `source-lock.json` independently; a self-consistent untrusted package is not its own trust root.

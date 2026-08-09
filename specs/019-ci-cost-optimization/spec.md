@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User description: "Reduce GitHub Actions cost and latency while preserving or improving the current quality standard."
 

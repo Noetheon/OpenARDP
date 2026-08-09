@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-01
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Authoritative Feature 017 prompt
 `spec-kit/feature-prompts/017-microsoft-graph-design-spike.md`, plus the request to

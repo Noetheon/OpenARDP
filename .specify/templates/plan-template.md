@@ -2,9 +2,10 @@
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Input**: High-assurance feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit-plan` command; its definition describes the execution workflow.
+**Note**: This template is required for high-assurance changes and optional for standard changes. Routine changes do not
+create feature artifacts.
 
 ## Summary
 
@@ -50,7 +51,7 @@ restart, recovery, resource-limit and supply-chain effects relevant to this feat
 
 ## Project Structure
 
-### Documentation (this feature)
+### Working documentation (high assurance only)
 
 ```text
 specs/[###-feature]/
@@ -61,6 +62,9 @@ specs/[###-feature]/
 ├── contracts/           # Phase 1 output (/speckit-plan command)
 └── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
 ```
+
+After convergence, retain `spec.md`, `implementation-notes.md` and normative contracts. The remaining working artifacts
+may be removed after durable-content and reference review.
 
 ### Source Code (repository root)
 <!--

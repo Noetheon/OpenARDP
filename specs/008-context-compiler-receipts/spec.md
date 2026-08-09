@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-26
 
-**Status**: Converged and locally verified; local merge to `main` follows
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Compile bounded, version-pinned evidence for a task and emit a
 deterministic, privacy-conscious receipt explaining every selection, omission,

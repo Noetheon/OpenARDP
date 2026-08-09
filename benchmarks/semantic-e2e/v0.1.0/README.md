@@ -12,4 +12,4 @@ CSV is intentionally retained as `unsupported_format`: OpenARDP has no stable CS
 not convert CSV to text or inject its rows into the product workspace. German, unanswerable, current/live and irrelevant-
 selection failures remain decision inputs. Results contain identifiers, counts and booleans, never source bodies.
 
-See `specs/025-semantic-e2e-source-evaluation/quickstart.md` for exact offline execution and validation commands.
+See `docs/24_SEMANTIC_E2E_EVALUATION.md` for exact offline execution and validation commands.

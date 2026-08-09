@@ -1,8 +1,8 @@
 # Contributing to OpenARDP
 
-OpenARDP is built in small, independently testable Spec Kit features. Read [AGENTS.md](AGENTS.md), the
-[Constitution](.specify/memory/constitution.md), the relevant accepted ADRs and the active feature artifacts before making
-a production-relevant change.
+OpenARDP is built through small, independently testable changes with documentation proportional to risk. Read
+[AGENTS.md](AGENTS.md), the [Constitution](.specify/memory/constitution.md), relevant accepted ADRs and any durable active
+feature record before changing behavior or governance.
 
 ## Prerequisites
 
@@ -45,19 +45,17 @@ uv run pre-commit run --all-files
 
 The local hooks call the same locked Ruff, format, mypy and pytest gates; they do not resolve an independent toolchain.
 
-## Spec Kit lifecycle
+## Change classification
 
-Production-relevant features follow the order in [spec-kit/FEATURE_MAP.md](spec-kit/FEATURE_MAP.md):
+Classify work before implementation using [Article XI](.specify/memory/constitution.md):
 
-```text
-specify → clarify → plan → checklist → tasks → analyze → implement → converge
-```
+- Routine changes use a scoped PR and proportionate validation; they do not create feature artifacts.
+- Standard behavior changes retain concise `spec.md` requirements and final `implementation-notes.md` evidence.
+- High-assurance contract, schema, identity, migration, security/trust, provider, dependency, benchmark and release work
+  uses `specify → clarify → plan → checklist → tasks → analyze → implement → converge`.
 
-- Correct conflicts in the highest-level originating artifact.
-- Do not implement while analysis has an unresolved critical or high finding.
-- Work only on the active feature and selected task phase.
-- Add tests before behavior where practical, then mark only completed tasks.
-- Do not start a dependent feature until the current one converges.
+Unknown or mixed scope moves upward. Correct conflicts in the highest-level source, add tests before behavior where
+practical, and do not implement high-assurance work while analysis has unresolved critical/high findings.
 
 ## Pull-request expectations
 

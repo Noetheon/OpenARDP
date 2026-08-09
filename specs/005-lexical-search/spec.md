@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User description: "Implement every remaining feature completely, one after another, with one complete commit
 per feature and with long-term, sustainable best practices. For F005, deliver work package 4 from the feature map:

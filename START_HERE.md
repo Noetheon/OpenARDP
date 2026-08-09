@@ -1,34 +1,17 @@
 # Start here
 
-OpenARDP is built implementation-first, one bounded Spec Kit feature at a time. The
-repository is complete through the Feature 005 lexical-search runtime, Feature 005A
-strategic/governance boundary, Feature 006 experimental evidence contracts, Feature
-007's bounded Docling-native adapter and Feature 008's deterministic context compiler
-with body-free selection receipts, plus Feature 009's dependency-free read-only MCP
-stdio interface and Feature 010's conservative reconciliation plus exact derivation
-DAG lifecycle, followed by Feature 011's explicit bounded PDF visual-evidence
-materialization and handle-only context integration.
-Feature 012 adds explicit bounded local polling, durable stability observations and
-cancellable foreground ingestion jobs without a daemon or MCP write surface.
-Feature 013 adds conservative retention explanation, reversible quarantine, separately
-acknowledged reclamation, paired recovery, explicit migration and atomic index rebuild.
-Feature 014 adds an experimental RFC 8493 BagIt profile for deterministic permitted
-export, offline hostile-package verification and fresh read-only snapshot import. It is
-not a universal format, workspace restore path or authenticity/license guarantee.
-Feature 015 adds the fail-closed release-evidence gate but retains the candidate `NO-GO`.
-Feature 016 proves only bounded evidence-contract neutrality, and Feature 017 remains a
-mock-only Microsoft Graph design with production access at `NO-GO`. Feature 018 is a
-behavior-preserving hygiene pass with a deterministic maintainability guard; it adds no
-runtime capability or release authorization.
+OpenARDP is built implementation-first through bounded, independently testable changes. The authoritative delivered
+sequence and current outcomes live only in the [feature map](spec-kit/FEATURE_MAP.md); feature directories retain accepted
+requirements, final evidence and normative contracts without duplicating the project status registry.
 
 ## 1. Read the authoritative rules
 
-Read [AGENTS.md](AGENTS.md), [Constitution 2.0.0](.specify/memory/constitution.md), the
+Read [AGENTS.md](AGENTS.md), [Constitution 3.0.0](.specify/memory/constitution.md), the
 [feature map](spec-kit/FEATURE_MAP.md), [operating procedure](spec-kit/OPERATING_PROCEDURE.md), accepted
-[ADRs](docs/adr/) and the active feature’s `spec.md`, `plan.md` and `tasks.md`.
+[ADRs](docs/adr/) and the durable active feature record required by its risk tier.
 
-Version-suffixed v3.1 files are preserved adoption sources, not parallel authority. Historical feature specifications
-remain evidence of the merged work they governed.
+Version-suffixed v3.1 files are preserved adoption sources, not parallel authority. Removed transient feature planning is
+recoverable from Git history; retained specifications and implementation notes are the durable merged record.
 
 ## 2. Reproduce the locked environment
 
@@ -130,9 +113,8 @@ or modify a workspace. An export request declares the exact portable scope plus 
 source paths for only those assets whose redistribution is affirmatively asserted. Paths
 are consumed locally and never serialized. Verification and import remain offline;
 successful SHA-256 verification establishes byte integrity, not authenticity, truth,
-ownership, licensing or execution authority. See the
-[F014 quickstart](specs/014-export-interchange-experiment/quickstart.md) for the closed
-request shape and resource-limit options.
+ownership, licensing or execution authority. The durable requirements and contract are in the
+[F014 feature record](specs/014-export-interchange-experiment/spec.md).
 
 The search index is disposable and non-authoritative. Search content and security-sensitive metadata are verified against
 the catalog and CAS. `reindex` rebuilds from verified READY evidence without altering original, representation or CAS
@@ -160,27 +142,12 @@ examples under [`contracts/`](contracts/README.md) remain design guidance unless
 own feature promotes them to reviewed schemas. Feature 007 implements Docling while
 preserving complete provider-native output.
 
-## 6. Find focused evidence
+## 6. Find durable evidence
 
-- [F002 quickstart](specs/002-domain-models-schemas/quickstart.md)
-- [F003 quickstart](specs/003-cas-sqlite-catalog/quickstart.md)
-- [F004 quickstart](specs/004-text-ingestion-slice/quickstart.md)
-- [F005 quickstart](specs/005-lexical-search/quickstart.md)
-- [F005A validation](specs/005A-strategic-realignment/quickstart.md)
-- [F006 validation](specs/006-evidence-contract-foundation/quickstart.md)
-- [F007 quickstart](specs/007-docling-native-adapter/quickstart.md)
-- [F008 quickstart](specs/008-context-compiler-receipts/quickstart.md)
-- [F009 quickstart](specs/009-read-only-mcp/quickstart.md)
-- [F010 quickstart](specs/010-reconciliation-derivation-dag/quickstart.md)
-- [F011 quickstart](specs/011-visual-evidence-escalation/quickstart.md)
-- [F012 quickstart](specs/012-local-watcher-and-jobs/quickstart.md)
-- [F013 quickstart](specs/013-retention-recovery-migrations/quickstart.md)
-- [F014 quickstart](specs/014-export-interchange-experiment/quickstart.md)
-- [F015 quickstart](specs/015-benchmark-security-release-gate/quickstart.md)
-- [F016 quickstart](specs/016-alternate-parser-conformance-spike/quickstart.md)
-- [F017 quickstart](specs/017-microsoft-graph-design-spike/quickstart.md)
-- [F018 quickstart](specs/018-repository-hygiene/quickstart.md)
-- [F018 hygiene record](docs/17_CODEBASE_HYGIENE.md)
+- [Feature status and sequence](spec-kit/FEATURE_MAP.md)
+- [Feature specifications and implementation notes](specs/README.md)
+- [Architecture decisions](docs/adr/)
+- [F018/F031 hygiene record](docs/17_CODEBASE_HYGIENE.md)
 - [Validation record](VALIDATION.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

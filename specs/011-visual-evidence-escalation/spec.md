@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-01
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Retrieve exact page, image, table and deterministic crop evidence while
 keeping OCR and captions optional, provider-neutral, local-first, provenance-rich and

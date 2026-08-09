@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-26
 
-**Status**: Converged, merged and remotely verified
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Define the smallest experimental provider-neutral native-representation,
 evidence-reference, evidence-projection, and trust contracts before any rich-parser

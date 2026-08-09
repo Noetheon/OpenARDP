@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-01
 
-**Status**: Complete — local convergence passed; publication verification pending
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Watch explicitly opted-in local roots and schedule one stable, bounded,
 deduplicated and cancellable ingestion job per meaningful file change, with crash

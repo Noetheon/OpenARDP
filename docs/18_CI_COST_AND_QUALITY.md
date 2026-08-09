@@ -66,8 +66,8 @@ uv run --locked python scripts/audit_ci.py audit
 uv run --locked python scripts/audit_ci.py estimate
 ```
 
-The positive governance allowlist covers exact root governance documents plus `docs/`, `specs/` and
-`spec-kit/feature-prompts/`. An empty, unsafe, unknown or mixed set is `full`. The classifier reads and emits names only;
+The positive governance allowlist covers exact root governance documents plus `docs/` and `specs/`. An empty, unsafe,
+unknown or mixed set is `full`. The classifier reads and emits names only;
 it never opens changed file bodies. CI/workflow, policy, dependency, build, source, test, schema, script and release
 changes are therefore full by default.
 

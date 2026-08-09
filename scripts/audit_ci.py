@@ -30,7 +30,6 @@ _SAFE_GOVERNANCE_EXACT = {
 }
 _SAFE_GOVERNANCE_PREFIXES = {
     "docs/",
-    "spec-kit/feature-prompts/",
     "specs/",
 }
 _ACTION_REFERENCE = re.compile(

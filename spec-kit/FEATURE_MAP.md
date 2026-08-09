@@ -2,7 +2,7 @@
 
 **Status:** Authoritative continuation order
 **Adopted:** 2026-07-26 through Feature 005A
-**Governance:** [Constitution 2.0.0](CONSTITUTION_SOURCE.md) and
+**Governance:** [Constitution 3.0.0](CONSTITUTION_SOURCE.md) and
 [operating procedure](OPERATING_PROCEDURE.md)
 
 ## Delivered foundation
@@ -48,6 +48,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 29 | `029-provider-neutral-multilingual-retrieval` | Evaluate optional provider-neutral multilingual retrieval against the unchanged F025 benchmark. |
 | 30 | `030-semantic-retrieval-product-surface` | Expose the validated optional hybrid semantic profile through bounded CLI and MCP product surfaces with exact replay and operational measurements. |
 | 31 | `031-repository-hygiene` | Detect and remove synchronization artifacts and reduce measured parser, scanner and CLI hotspots without contract or storage change. |
+| 32 | `032-documentation-governance` | Replace universal process overhead with risk-proportionate governance and compact completed feature records without losing contracts or evidence. |
 
 ## Dependency rule
 
@@ -67,10 +68,13 @@ operational cost. It does not add answer generation, persistent embeddings, a ve
 retrieval policy.
 Feature 031 is a behavior-preserving maintenance slice after F030. It adds a read-only repository integrity guard and
 bounded private refactoring only; it does not change retrieval policy, product contracts, persistence or providers.
+Feature 032 is a governance-only transition. It preserves product behavior and normative evidence while establishing
+routine, standard and high-assurance documentation tiers and compacting transient historical planning artifacts.
 
 ## Scope rule
 
-- One feature maps to one branch and one pull request.
-- Complete only the active feature and selected task phase.
+- One bounded change concern maps to one branch and one pull request.
+- High-assurance work follows the mapped feature sequence; routine and standard changes do not require a new roadmap row.
 - Do not implement later-feature runtime behavior as “preparation”.
-- Historical merged specifications stay in place even when future prompts are replaced.
+- Historical requirements, final evidence and normative contracts stay in place. Transient working artifacts remain
+  recoverable from Git history after compaction.

@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+**Governance Tier**: [standard or high-assurance; routine changes do not create this file]
+
 **Input**: User description: "$ARGUMENTS"
 
 ## User Scenarios & Testing *(mandatory)*

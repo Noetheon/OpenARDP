@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-31
 
-**Status**: Converged, merged and remotely verified
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Reuse valid evidence across small edits without false identity reuse and
 invalidate dependent derivatives exactly. Matching is deterministic and conservative,

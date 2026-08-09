@@ -1,9 +1,9 @@
 <!--
 Sync Impact Report
 
-- Version change: 1.0.0 -> 2.0.0
-- Bump rationale: MAJOR because implementation-first positioning and the provider-neutral
-  representation boundary materially redefine project governance.
+- Version change: 2.0.0 -> 3.0.0
+- Bump rationale: MAJOR because universal full-lifecycle governance is replaced by
+  risk-proportionate routine, standard and high-assurance change tiers.
 - Modified principles:
   - Article I Evidence Preservation -> Article I Source Truth and Evidence Preservation
   - Article II Derived Data Is Disposable -> Article II Derived Data and Disposable Accelerators
@@ -15,10 +15,11 @@ Sync Impact Report
   - Article VII Test-First Quality Gates -> Article VIII Test-First Quality Gates
   - Article VIII Measured Claims -> Article IX Fair Evidence and Measured Claims
   - Article IX Simplicity and Incremental Delivery -> Article X Simplicity and Incremental Delivery
-  - Article X Specification and Decision Governance -> Article XII Contract Evolution and Decision Governance
-- Added principles:
-  - Article IV Thin Evidence Projection
-  - Article XI Feature Isolation and Cross-Platform Quality
+  - Article XI Feature Isolation and Cross-Platform Quality -> Article XI Risk-Proportionate Change Governance and
+    Cross-Platform Quality
+  - Article XII Contract Evolution and Decision Governance -> Article XII Durable Records, Contract Evolution and
+    Decision Governance
+- Added principles: none
 - Removed principles: none
 - Dependent artifacts:
   - ✅ .specify/templates/spec-template.md
@@ -26,7 +27,12 @@ Sync Impact Report
   - ✅ .specify/templates/tasks-template.md
   - ✅ spec-kit/CONSTITUTION_SOURCE.md
   - ✅ AGENTS.md
+  - ✅ CONTRIBUTING.md
+  - ✅ START_HERE.md
   - ✅ spec-kit/OPERATING_PROCEDURE.md
+  - ✅ docs/12_SPEC_KIT_INTEGRATION.md
+  - ✅ specs/README.md
+  - ✅ scripts/validate_repository.py and repository tests
 - Deferred follow-up: none
 -->
 
@@ -134,20 +140,38 @@ Sync Impact Report
 6. A custom export format remains an experiment until existing standards and packaging profiles are evaluated with
    evidence.
 
-## Article XI — Feature Isolation and Cross-Platform Quality
+## Article XI — Risk-Proportionate Change Governance and Cross-Platform Quality
 
-1. One bounded Spec Kit feature MUST be delivered per branch and pull request.
-2. The mandatory lifecycle is specify, clarify, plan, checklist, tasks, analyze, implement and converge.
-3. Unresolved critical or high-severity analysis findings block implementation; unresolved critical or high-severity
-   convergence findings block merge.
-4. Linux, macOS and Windows CI, locked dependencies, lint, formatting, strict typing, tests and build are mandatory.
-5. External dependencies require maintenance, license, security, lockfile and supply-chain review.
-6. Generated artifacts require deterministic regeneration and drift validation.
+1. Each branch and pull request MUST contain one bounded change concern.
+2. A change MUST be classified before implementation:
+   - **Routine** changes are documentation, tests, internal refactoring or narrowly bounded fixes with no user-visible
+     behavior, public contract, schema, persistence, identity, migration, security/trust boundary, provider, dependency,
+     benchmark or release impact. They require a scoped pull-request record and proportionate validation, not a Spec Kit
+     feature directory.
+   - **Standard** changes add bounded user-visible behavior without a high-assurance trigger. They require durable
+     requirements in `spec.md`, final evidence in `implementation-notes.md` and proportionate planning; the complete Spec
+     Kit lifecycle is optional.
+   - **High-assurance** changes affect a public contract, schema, persisted identity, migration, security/trust boundary,
+     provider, external dependency, license/supply chain, benchmark methodology, release decision or similarly material
+     compatibility boundary. They MUST use specify, clarify, plan, checklist, tasks, analyze, implement and converge, plus
+     an ADR where Article XII requires one.
+3. An unknown, mixed or disputed classification MUST move upward to the safer tier.
+4. Unresolved critical or high-severity analysis findings block high-assurance implementation; unresolved critical or
+   high-severity convergence findings block its merge.
+5. Executable changes MUST pass the applicable locked lint, formatting, strict typing, test, build and Linux, macOS and
+   Windows checks defined by repository CI policy. Governance-only changes MAY use the reviewed fail-closed preflight path; tier
+   selection MUST NOT weaken executable quality or security gates.
+6. External dependencies require maintenance, license, security, lockfile and supply-chain review. Generated artifacts
+   require deterministic regeneration and drift validation.
+7. After convergence, a completed feature MUST retain accepted `spec.md`, final `implementation-notes.md` and normative
+   contracts. Plans, research, data-model notes, quickstarts, task lists, analyses, checklists and generated prompts MAY be
+   removed from the current tree after unique durable content and references are migrated; exact history remains in Git.
 
-## Article XII — Contract Evolution and Decision Governance
+## Article XII — Durable Records, Contract Evolution and Decision Governance
 
 1. This constitution, `AGENTS.md`, accepted ADRs and public schemas are binding project-level constraints.
-2. Feature `spec.md`, `plan.md` and `tasks.md` MUST trace back to these constraints.
+2. Durable feature requirements and implementation evidence MUST trace back to these constraints. High-assurance
+   `spec.md`, `plan.md` and `tasks.md` MUST remain aligned throughout implementation and convergence.
 3. Conflicts MUST be corrected in the highest-level originating artifact rather than patched only in generated tasks or
    implementation.
 4. Architectural changes require an accepted ADR before implementation.
@@ -158,21 +182,23 @@ Sync Impact Report
    - this constitution and accepted security/legal constraints;
    - accepted ADRs and public schemas;
    - canonical project architecture and product requirements;
-   - active feature specification and plan;
-   - task list;
+   - active durable feature requirements and, when required, the implementation plan;
+   - active task list when the selected tier uses one;
    - implementation.
-8. Historical and superseded artifacts MUST remain discoverable and MUST identify their replacement.
+8. Historical and superseded durable records MUST remain discoverable and MUST identify their replacement. Removed
+   transient planning artifacts MUST remain recoverable from Git history; they need not be duplicated in a live archive.
 
 ## Governance
 
 - **Versioning:** Semantic versioning applies to this constitution.
-- **Current version:** 2.0.0
+- **Current version:** 3.0.0
 - **Ratified:** 2026-07-22
-- **Last amended:** 2026-07-26
+- **Last amended:** 2026-08-09
 - **Amendments:** Every amendment requires rationale, affected artifacts, migration impact, a semantic version increment
   and a Sync Impact Report propagated to dependent guidance and templates.
-- **Compliance:** Every production-relevant feature uses the complete lifecycle in Article XI and records exact commands,
-  results, tradeoffs, residual risks and rollback instructions.
+- **Compliance:** Every change records its Article XI tier and proportionate evidence. High-assurance changes use the
+  complete lifecycle. Standard and high-assurance changes retain exact commands, results, tradeoffs, residual risks and
+  rollback instructions in durable evidence.
 - **Review:** Pull-request review MUST verify constitution alignment, evidence discipline, compatibility impact and feature
   isolation before merge.
 - **Exception process:** Temporary exceptions require an accepted ADR with owner, scope, expiry condition and compensating

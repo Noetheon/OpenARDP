@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Converged
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User description: "Implement F002 completely, deeply, sustainably and according to best practice. Define the canonical OpenARDP domain objects and public JSON contracts so independently implemented components can exchange manifests, blocks, derivations, relations and context bundles deterministically."
 

@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Clarified; planning pending
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Add a licensed, realistic and independently reproducible multi-format corpus for offline OpenARDP evaluation.
 

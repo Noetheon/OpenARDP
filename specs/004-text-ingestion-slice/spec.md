@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Implemented locally; Spec Kit convergence passed; external CI pending
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User description: "Implement every remaining feature completely, one after another, with one complete commit per feature and with long-term, sustainable best practices. For F004, deliver the bounded TXT/Markdown ingestion vertical slice from the feature map."
 

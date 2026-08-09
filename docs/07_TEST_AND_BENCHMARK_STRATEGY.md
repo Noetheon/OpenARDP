@@ -252,3 +252,14 @@ German recall and source fitness use exact integer fractions. Two fresh workspac
 rows. The stdlib-only validator independently recomputes row identities, aggregates, policy, report and manifest hashes.
 The committed `SEMANTIC_E2E_NOT_READY` result is intentionally unfavorable: it proves that exact evidence/citations do
 not by themselves make the current lexical selector ready for realistic semantic use.
+
+## 15. F036 downstream evidence-review protocol
+
+F036 evaluates existing retrieval output as a bounded progressive-disclosure review packet. It freezes budgets
+`1/3/5/10/64`, trusted completion, source-fitness accounting, abstention semantics and time-to-ready gates on F025 before
+one F034 projection. No parser, embedding provider, retrieval provider, network service or answer generator runs.
+
+The producer writes body-free observations, aggregates, decisions and a manifest atomically. A separate Python-standard-
+library validator does not import producer/evaluator code and reconstructs every row and verdict from immutable input
+digests. Its positive holdout verdict means F035 is non-regressing versus F029 across all declared review budgets; it
+does not promote packet coverage to human or generated-answer accuracy.

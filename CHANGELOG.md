@@ -8,6 +8,19 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 036 — downstream evidence utility
+
+- Added a provider-free, answer-generator-free evidence-review benchmark over immutable body-free F034/F035 results.
+  The complete `1/3/5/10/64` progressive-disclosure curve and primary three-item budget were frozen on F025 before the
+  F034 projection.
+- Added atomic bounded publication plus a separate stdlib-only validator that independently reconstructs all 2,380
+  observations, aggregates, verdicts, file identities and the human-readable report without importing producer logic.
+- The validated F025 result preserves task completion at `11/19` (`9/17` answerable plus `2/2` safe abstentions), full
+  citation/source-fitness integrity and the F035 warm p50/p95 reductions of 67.94%/85.02% at the primary budget.
+- On the independent F034 holdout, primary three-item task completion is 61% lexical versus 76% semantic/F035; F035 is
+  non-regressing versus exact F029 at every budget and reaches 81% only at the 64-item ceiling. This is evidence-packet
+  utility, not human comprehension, generated-answer correctness or release readiness.
+
 ### Feature 035 — profiled semantic retrieval optimization
 
 - Added body-free monotonic phase evidence and independent validation across counterbalanced F025 development runs and a

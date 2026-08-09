@@ -52,6 +52,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 33 | `033-product-benchmark-correctness` | Make the F020 rich-format benchmark mutually complete, fail before expensive phases on invalid PDF assets and preserve its body-free command boundary. |
 | 34 | `034-independent-retrieval-holdout` | Freeze and baseline an externally sourced 100-question multilingual retrieval holdout before any further retrieval optimization. |
 | 35 | `035-profiled-retrieval-optimization` | Attribute retrieval cost by phase, then improve F025 quality and warm latency together before one milestone-only F034 validation. |
+| 36 | `036-downstream-evidence-utility` | Measure bounded citation-valid evidence-review completion and time-to-ready on F025, then evaluate the frozen method once on F034. |
 
 ## Dependency rule
 
@@ -82,6 +83,9 @@ behavior. The public F025 set remains the development/control set; F034 is reser
 Feature 035 profiles the unchanged F029 profile on F025 before changing it. Candidate policies and ephemeral-cache behavior
 are selected only against F025, retain the lexical default and exact fail-closed replay, and must improve absolute quality
 and warm latency together. The frozen F034 holdout is evaluated exactly once after the candidate and thresholds are frozen.
+Feature 036 adds no retrieval or answer-generation behavior. It derives a provider-free progressive-disclosure review task
+from immutable body-free F034/F035 evidence, freezes its budgets and decisions on F025, then evaluates F034 once without
+turning evidence coverage into a human- or generated-answer correctness claim.
 
 ## Scope rule
 

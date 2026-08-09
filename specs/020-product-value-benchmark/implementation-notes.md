@@ -81,3 +81,11 @@ The initial complete suite exposed stale F017 package inventory and that placing
 `src/openardp/services` violated the hygiene policy and diluted product coverage. F020 corrected the inventory and moved
 pure benchmark orchestration/evaluation to `scripts/`; the final complete gate then passed without adding a hygiene
 exception or reducing the coverage threshold.
+
+## Corrective maintenance
+
+Feature 033 corrected two harness defects without changing F020 inputs, policy, evidence schemas or historical results.
+Reference/full runs now preflight fixture integrity and construct independent PDF, DOCX and PPTX parser instances before
+the text phase; only PDF receives optional model assets. The CLI now catches the complete public `ParserError` hierarchy,
+emits only `benchmark_execution_failed` with exit code 6 and logs only the safe exception class at debug level. Current
+verification evidence is retained in `specs/033-product-benchmark-correctness/implementation-notes.md`.

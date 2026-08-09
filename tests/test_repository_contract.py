@@ -206,7 +206,7 @@ def test_governance_and_prior_contracts_are_present_and_frozen(
 ) -> None:
     """Require compact feature records, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/032-documentation-governance"
+    assert active["feature_directory"] == "specs/033-product-benchmark-correctness"
     transient = {
         "analysis.md",
         "data-model.md",
@@ -662,6 +662,7 @@ def test_feature_map_has_one_exact_dependency_sequence(
         feature_map.count("A feature begins only after its predecessor converges and merges") == 1
     )
     assert "032-documentation-governance" in feature_map
+    assert "033-product-benchmark-correctness" in feature_map
 
 
 def test_f005a_adrs_preserve_decision_history(repository_root: Path) -> None:

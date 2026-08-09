@@ -25,6 +25,8 @@ from openardp.domain.product_benchmark import (
     ValueOutcome,
     make_observation,
 )
+from openardp.domain.rich_ingestion import ModelBundleManifest
+from openardp.ports.parser import RichParserModelAssetsInvalid
 from scripts.product_benchmark_evaluation import (
     decide_value,
     summarize_timing,
@@ -198,6 +200,102 @@ def test_interrupted_run_never_publishes_partial_evidence(
             output=output,
         )
     assert not output.exists()
+    assert tuple(tmp_path.iterdir()) == ()
+
+
+def test_rich_preflight_binds_pdf_assets_only_to_pdf(
+    repository_root: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Prepare all formats together without granting PDF assets to Office parsers."""
+    from scripts import product_benchmark_runner
+
+    configurations: list[tuple[Path | None, ModelBundleManifest | None]] = []
+
+    class FakeAdapter:
+        def __init__(
+            self,
+            *,
+            model_root: Path | None = None,
+            model_manifest: ModelBundleManifest | None = None,
+        ) -> None:
+            configurations.append((model_root, model_manifest))
+
+    manifest = ModelBundleManifest(bundle_name="test", bundle_version="1", files=())
+    monkeypatch.setattr(product_benchmark_runner, "IsolatedDoclingAdapter", FakeAdapter)
+
+    parsers = product_benchmark_runner._preflight_rich(
+        repository_root,
+        _inputs(repository_root),
+        model_root=tmp_path,
+        model_manifest=manifest,
+    )
+
+    assert configurations == [(None, None), (tmp_path, manifest), (None, None)]
+    assert len({id(parser) for parser in parsers.values()}) == 3
+
+
+def test_invalid_rich_preflight_runs_before_text_and_creates_no_work(
+    repository_root: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reject invalid rich configuration before any costly text phase or staging."""
+    from scripts import product_benchmark_runner
+
+    text_started = False
+
+    def reject(*_args: object, **_kwargs: object) -> None:
+        raise RichParserModelAssetsInvalid("secret /Users/example/private.pdf")
+
+    def observe_text(*_args: object, **_kwargs: object) -> None:
+        nonlocal text_started
+        text_started = True
+
+    monkeypatch.setattr(product_benchmark_runner, "_preflight_rich", reject)
+    monkeypatch.setattr(product_benchmark_runner, "_run_text_profile", observe_text)
+    output = tmp_path / "result"
+
+    with pytest.raises(RichParserModelAssetsInvalid):
+        execute_product_benchmark(
+            repository_root,
+            profile=BenchmarkProfile.REFERENCE,
+            output=output,
+        )
+
+    assert not text_started
+    assert not output.exists()
+    assert tuple(tmp_path.iterdir()) == ()
+
+
+def test_non_rich_profile_skips_rich_preflight(
+    repository_root: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Do not validate optional PDF assets for a profile that has no rich work."""
+    from scripts import product_benchmark_runner
+
+    class TextStarted(RuntimeError):
+        pass
+
+    def reject_preflight(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("rich preflight must not run")
+
+    def stop_at_text(*_args: object, **_kwargs: object) -> None:
+        raise TextStarted
+
+    monkeypatch.setattr(product_benchmark_runner, "_preflight_rich", reject_preflight)
+    monkeypatch.setattr(product_benchmark_runner, "_run_text_profile", stop_at_text)
+
+    with pytest.raises(TextStarted):
+        execute_product_benchmark(
+            repository_root,
+            profile=BenchmarkProfile.SCALE,
+            output=tmp_path / "result",
+        )
+
     assert tuple(tmp_path.iterdir()) == ()
 
 

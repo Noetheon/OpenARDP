@@ -24,6 +24,20 @@ from scripts.product_benchmark_runner import (
 )
 
 
+def _parser_error_types() -> tuple[type[Exception], ...]:
+    from openardp.ports.parser import ParserError
+
+    discovered: set[type[Exception]] = set()
+    pending: list[type[Exception]] = [ParserError]
+    while pending:
+        parent = pending.pop()
+        for child in parent.__subclasses__():
+            if issubclass(child, Exception) and child not in discovered:
+                discovered.add(child)
+                pending.append(child)
+    return tuple(sorted(discovered, key=lambda item: item.__name__))
+
+
 def test_smoke_run_exercises_real_paths_and_publishes_recomputable_evidence(
     repository_root: Path,
     tmp_path: Path,
@@ -149,3 +163,43 @@ def test_maintainer_scripts_use_stable_sanitized_exit_semantics(
     assert invalid.returncode == 6
     assert invalid.stdout.strip() == "benchmark_evidence_invalid"
     assert invalid.stderr == ""
+
+
+@pytest.mark.parametrize("error_type", _parser_error_types(), ids=lambda item: item.__name__)
+def test_runner_cli_sanitizes_every_public_parser_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
+    tmp_path: Path,
+    error_type: type[Exception],
+) -> None:
+    """Map the complete public parser hierarchy without reflecting paths or bodies."""
+    from scripts import product_benchmark_runner
+
+    monkeypatch.setitem(sys.modules, "product_benchmark_runner", product_benchmark_runner)
+    from scripts import run_product_benchmark
+
+    def reject(*_args: object, **_kwargs: object) -> None:
+        raise error_type("secret-body /Users/example/private.pdf")
+
+    monkeypatch.setattr(run_product_benchmark, "execute_product_benchmark", reject)
+    caplog.set_level("DEBUG", logger="scripts.run_product_benchmark")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_product_benchmark.py",
+            "--profile",
+            "reference",
+            "--output",
+            str(tmp_path / "result"),
+        ],
+    )
+
+    assert run_product_benchmark.main() == 6
+    captured = capsys.readouterr()
+    assert captured.out == "benchmark_execution_failed\n"
+    assert captured.err == ""
+    assert error_type.__name__ in caplog.text
+    assert "secret-body" not in caplog.text
+    assert "/Users/example" not in caplog.text

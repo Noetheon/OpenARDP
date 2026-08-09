@@ -50,6 +50,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 31 | `031-repository-hygiene` | Detect and remove synchronization artifacts and reduce measured parser, scanner and CLI hotspots without contract or storage change. |
 | 32 | `032-documentation-governance` | Replace universal process overhead with risk-proportionate governance and compact completed feature records without losing contracts or evidence. |
 | 33 | `033-product-benchmark-correctness` | Make the F020 rich-format benchmark mutually complete, fail before expensive phases on invalid PDF assets and preserve its body-free command boundary. |
+| 34 | `034-independent-retrieval-holdout` | Freeze and baseline an externally sourced 100-question multilingual retrieval holdout before any further retrieval optimization. |
 
 ## Dependency rule
 
@@ -74,6 +75,9 @@ routine, standard and high-assurance documentation tiers and compacting transien
 Feature 033 corrects the existing F020 measurement harness without changing its corpus, value policy, parser behavior or
 published evidence schema. Independent holdout, profiling, retrieval-policy changes and downstream utility evidence remain
 separate successor work packages.
+Feature 034 derives a deterministic CC BY-SA 4.0 evaluation subset from a pinned XQuAD revision. It establishes a new
+20-document, 100-question English/German/Spanish holdout and current lexical/semantic baselines without changing retrieval
+behavior. The public F025 set remains the development/control set; F034 is reserved for milestone validation.
 
 ## Scope rule
 

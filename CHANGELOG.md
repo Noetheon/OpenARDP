@@ -8,6 +8,23 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 035 — profiled semantic retrieval optimization
+
+- Added body-free monotonic phase evidence and independent validation across counterbalanced F025 development runs and a
+  post-freeze F034 milestone, keeping validity, candidate acceptance and holdout generalization as separate verdicts.
+- Added optional process-local semantic corpus preparation with compact warm requests, exact provider/snapshot/limit
+  identity, fail-closed worker lifecycle and unchanged F029 `1.2.0` replay.
+- Added bounded exact-snapshot rich lexical reuse plus a catalog-native accepted-evidence fingerprint; query scores are
+  recomputed, returned matches and selected bodies remain CAS-verified, and no vectors or document bodies are persisted.
+- Replaced repeated full canonical-bundle measurement with an exactly equivalent additive prefix calculation for the
+  three built-in estimators; legacy and unknown-estimator behavior remains fail-closed and unchanged.
+- Retained negative tuning evidence: the hypothesized 25% precision gain required recall loss. The frozen conservative
+  candidate instead requires strict absolute quality improvement, complete protected-metric non-regression and at least
+  25% warm-p50 improvement before acceptance.
+- The independently validated macOS arm64 result is valid/accepted/positive: F025 precision rises from `29/673` to
+  `29/669`, warm p50/p95 fall 67.94%/85.02%, peak provider-worker RSS is 1,365,327,872 bytes, and every frozen F034
+  quality metric remains exactly unchanged across two deterministic fresh workspaces.
+
 ### Feature 032 — risk-proportionate documentation governance
 
 - Replaced universal Spec Kit dossiers with deterministic routine, standard and high-assurance tiers while preserving

@@ -50,6 +50,13 @@ def test_real_e5_provider_is_offline_multilingual_and_reuses_passage_cache() -> 
             limits,
             lambda: False,
         )
+        prepared = provider.prepare(passages, limits, lambda: False)
+        compact = provider.score_prepared(
+            "Welches zusätzliche Robustheitsprinzip nennt NASA?",
+            prepared,
+            limits,
+            lambda: False,
+        )
     by_id = {score.evidence_id: score for score in first}
     assert by_id["relevant"].score_millionths > by_id["unrelated"].score_millionths
     assert by_id["relevant"].score_millionths >= 800_000
@@ -58,3 +65,7 @@ def test_real_e5_provider_is_offline_multilingual_and_reuses_passage_cache() -> 
     assert [score.score_millionths for score in first] == [
         score.score_millionths for score in second
     ]
+    assert [score.score_millionths for score in second] == [
+        score.score_millionths for score in compact
+    ]
+    assert all(score.cache_hit is True for score in compact)

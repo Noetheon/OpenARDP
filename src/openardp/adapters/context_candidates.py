@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from typing import cast
 from uuid import UUID
 
@@ -24,7 +25,8 @@ from openardp.domain.context_compilation import (
     ContextProjectionProvenance,
     CorpusSnapshot,
 )
-from openardp.domain.identity import canonical_json_bytes
+from openardp.domain.context_relevance import RelevancePolicy, evaluate_candidate_relevance
+from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.ingestion import RepresentationScope
 from openardp.domain.rich_ingestion import RichEvidenceRecord, RichRepresentationArtifacts
 from openardp.domain.search import (
@@ -41,6 +43,7 @@ from openardp.domain.visual import VisualEvidenceDescriptor, VisualPageRaster
 from openardp.ports.catalog import (
     Catalog,
     RichCatalog,
+    RichEvidenceAuthorityCatalog,
     SearchIndexDrifted,
     SearchIndexIncomplete,
     VisualCatalog,
@@ -55,6 +58,15 @@ from openardp.ports.object_store import ObjectStore, ObjectStoreError
 
 TEXT_MATCH_REASON = "fts_lexical_match"
 RICH_MATCH_REASON = "rich_lexical_scan"
+_MAX_PREPARED_LEXICAL_TEXT_BYTES = 67_108_864
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedRichLexicalCorpus:
+    cache_key: str
+    authority_by_scope: dict[tuple[str, str, str], str | None]
+    entries: tuple[tuple[ContextCandidate, str], ...]
+    total_text_bytes: int
 
 
 def lexical_query_items(task: str) -> tuple[str, ...]:
@@ -254,11 +266,16 @@ class RichLexicalCandidateSource:
         catalog: RichCatalog,
         *,
         representation_verifier: Callable[[RichRepresentationArtifacts], None],
+        prepared_snapshot: bool = False,
+        relevance_policy: RelevancePolicy | None = None,
     ) -> None:
         """Bind provider-neutral persistence and integrity boundaries."""
         self._object_store = object_store
         self._catalog = catalog
         self._representation_verifier = representation_verifier
+        self._prepared_snapshot = prepared_snapshot
+        self._relevance_policy = relevance_policy
+        self._prepared: _PreparedRichLexicalCorpus | None = None
 
     def discover(
         self,
@@ -273,9 +290,28 @@ class RichLexicalCandidateSource:
         items = lexical_query_items(task)
         if not items:
             return ()
+        cache_key = str(
+            canonical_sha256(
+                {
+                    "domain": "openardp.prepared-rich-lexical-corpus",
+                    "version": 1,
+                    "snapshot": snapshot.model_dump(mode="json"),
+                    "max_discovered": limits.max_discovered,
+                    "max_body_bytes": limits.max_body_bytes,
+                }
+            )
+        )
+        cached = self._prepared if self._prepared_snapshot else None
+        if cached is not None and cached.cache_key == cache_key:
+            self._reconcile_prepared(snapshot, cached)
+            return self._score_prepared(task, cached.entries, items, limits, cancel)
         candidates: list[ContextCandidate] = []
+        prepared_entries: list[tuple[ContextCandidate, str]] = []
+        authority_by_scope: dict[tuple[str, str, str], str | None] = {}
+        total_text_bytes = 0
         for scope in snapshot.scopes:
             artifacts = self._catalog.load_rich_representation(_representation_scope(scope))
+            authority_by_scope[_scope_key(scope)] = self._catalog_authority(scope, artifacts)
             if artifacts is None:
                 continue
             try:
@@ -294,18 +330,29 @@ class RichLexicalCandidateSource:
                     raise ContextLimitExceeded("rich_body_limit_exceeded")
                 if len(candidates) >= limits.max_discovered:
                     raise ContextLimitExceeded("max_discovered_exceeded")
-                candidate = self._verified_candidate(scope, record, items)
-                if candidate is not None:
-                    candidates.append(candidate)
+                candidate, body = self._verified_entry(scope, record)
+                total_text_bytes += len(body.encode("utf-8"))
+                if total_text_bytes > _MAX_PREPARED_LEXICAL_TEXT_BYTES:
+                    raise ContextLimitExceeded("prepared_lexical_text_limit_exceeded")
+                prepared_entries.append((candidate, body))
+                coverage, occurrences = lexical_score(body, items)
+                if coverage:
+                    candidates.append(self._annotate(candidate, task, body, coverage, occurrences))
+        if self._prepared_snapshot:
+            self._prepared = _PreparedRichLexicalCorpus(
+                cache_key=cache_key,
+                authority_by_scope=authority_by_scope,
+                entries=tuple(prepared_entries),
+                total_text_bytes=total_text_bytes,
+            )
         return tuple(candidates)
 
-    def _verified_candidate(
+    def _verified_entry(
         self,
         scope: VersionScope,
         record: RichEvidenceRecord,
-        items: tuple[str, ...],
-    ) -> ContextCandidate | None:
-        """Verify one accepted projection body exactly and rescore it deterministically."""
+    ) -> tuple[ContextCandidate, str]:
+        """Verify one accepted projection and return its query-independent base."""
         projection = record.projection
         payload = _read_verified(self._object_store, record.retrieval_object)
         try:
@@ -319,9 +366,6 @@ class RichLexicalCandidateSource:
                     raise ValueError
             except (json.JSONDecodeError, TypeError, ValueError) as error:
                 raise ContextIntegrityFailure("rich_body_noncanonical_json") from error
-        coverage, occurrences = lexical_score(body, items)
-        if coverage == 0:
-            return None
         try:
             provenance = ContextProjectionProvenance(
                 record_type="evidence_projection",
@@ -342,22 +386,118 @@ class RichLexicalCandidateSource:
             integrity=projection.trust.integrity,
             sensitivity=projection.trust.sensitivity,
         )
-        return ContextCandidate(
-            evidence_id=projection.evidence_projection_id,
-            scope=scope,
-            provenance=provenance,
-            representation=EvidenceRepresentation.EXACT
-            if projection.retrieval.media_type == "text/plain"
-            else EvidenceRepresentation.STRUCTURED,
-            source_order=record.ordinal,
-            body_object=record.retrieval_object,
-            body_media_type=projection.retrieval.media_type,
-            trust=trust,
-            freshness=CandidateFreshness.CURRENT,
-            term_coverage=coverage,
-            occurrences=occurrences,
-            reason_code=RICH_MATCH_REASON,
-            high_value=False,
+        return (
+            ContextCandidate(
+                evidence_id=projection.evidence_projection_id,
+                scope=scope,
+                provenance=provenance,
+                representation=EvidenceRepresentation.EXACT
+                if projection.retrieval.media_type == "text/plain"
+                else EvidenceRepresentation.STRUCTURED,
+                source_order=record.ordinal,
+                body_object=record.retrieval_object,
+                body_media_type=projection.retrieval.media_type,
+                trust=trust,
+                freshness=CandidateFreshness.CURRENT,
+                term_coverage=0,
+                occurrences=0,
+                reason_code=RICH_MATCH_REASON,
+                high_value=False,
+            ),
+            body,
+        )
+
+    def _score_prepared(
+        self,
+        task: str,
+        entries: tuple[tuple[ContextCandidate, str], ...],
+        items: tuple[str, ...],
+        limits: ContextCompileLimits,
+        cancel: CancellationCheck,
+    ) -> tuple[ContextCandidate, ...]:
+        """Rescore cached bodies and reverify every returned match against CAS."""
+        candidates: list[ContextCandidate] = []
+        for candidate, body in entries:
+            if cancel():
+                raise ContextCompilationCancelled("cancelled_during_rich_verification")
+            coverage, occurrences = lexical_score(body, items)
+            if not coverage:
+                continue
+            if len(candidates) >= limits.max_discovered:
+                raise ContextLimitExceeded("max_discovered_exceeded")
+            stored = candidate.body_object
+            if stored is None or stored.byte_length > limits.max_body_bytes:
+                raise ContextLimitExceeded("rich_body_limit_exceeded")
+            payload = _read_verified(self._object_store, stored)
+            if payload.decode("utf-8") != body:
+                raise ContextIntegrityFailure("prepared_lexical_body_mismatch")
+            candidates.append(self._annotate(candidate, task, body, coverage, occurrences))
+        return tuple(candidates)
+
+    def _annotate(
+        self,
+        candidate: ContextCandidate,
+        task: str,
+        body: str,
+        coverage: int,
+        occurrences: int,
+    ) -> ContextCandidate:
+        """Attach query-specific lexical and optional exact relevance observations."""
+        update: dict[str, object] = {
+            "term_coverage": coverage,
+            "occurrences": occurrences,
+        }
+        if self._relevance_policy is not None:
+            try:
+                update["relevance"] = evaluate_candidate_relevance(
+                    task, body, self._relevance_policy
+                )
+            except ValueError as error:
+                raise ContextLimitExceeded("relevance_task_limit_exceeded") from error
+        return candidate.model_copy(update=update)
+
+    def _reconcile_prepared(
+        self,
+        snapshot: CorpusSnapshot,
+        prepared: _PreparedRichLexicalCorpus,
+    ) -> None:
+        """Compare cached body-free evidence facts with current immutable catalog rows."""
+        current: dict[tuple[str, str, str], str | None] = {}
+        for scope in snapshot.scopes:
+            artifacts = (
+                None
+                if isinstance(self._catalog, RichEvidenceAuthorityCatalog)
+                else self._catalog.load_rich_representation(_representation_scope(scope))
+            )
+            current[_scope_key(scope)] = self._catalog_authority(scope, artifacts)
+        if current != prepared.authority_by_scope:
+            raise ContextIntegrityFailure("prepared_lexical_catalog_mismatch")
+
+    def _catalog_authority(
+        self,
+        scope: VersionScope,
+        artifacts: RichRepresentationArtifacts | None,
+    ) -> str | None:
+        """Prefer a lightweight catalog-native digest with a portable fallback."""
+        if isinstance(self._catalog, RichEvidenceAuthorityCatalog):
+            return self._catalog.rich_evidence_authority_fingerprint(_representation_scope(scope))
+        return self._authority_fingerprint(artifacts) if artifacts is not None else None
+
+    @staticmethod
+    def _authority_fingerprint(artifacts: RichRepresentationArtifacts) -> str:
+        """Identify only catalog-authoritative evidence and retrieval-object facts."""
+        return str(
+            canonical_sha256(
+                [
+                    {
+                        "evidence_projection_id": record.projection.evidence_projection_id,
+                        "ordinal": record.ordinal,
+                        "retrieval_object": record.retrieval_object.model_dump(mode="json"),
+                        "media_type": record.projection.retrieval.media_type,
+                    }
+                    for record in artifacts.bundle.records
+                ]
+            )
         )
 
 

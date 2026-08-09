@@ -35,6 +35,8 @@ from openardp.domain.context_compilation import (
     ContextSelectionPolicy,
     CorpusSnapshot,
 )
+from openardp.domain.context_relevance import RelevancePolicy
+from openardp.domain.rich_ingestion import RichRepresentationArtifacts
 from openardp.ports.context import (
     ContextCompilationCancelled,
     ContextIntegrityFailure,
@@ -329,6 +331,51 @@ def test_rich_scan_returns_verified_projection_candidates(tmp_path: Path) -> Non
     assert candidate.freshness is CandidateFreshness.CURRENT
     assert candidate.trust.role is ContentRole.DATA
     assert candidate.reason_code == "rich_lexical_scan"
+
+
+def test_prepared_rich_scan_reuses_verified_snapshot_and_rescores_new_query(
+    tmp_path: Path,
+) -> None:
+    """Avoid full rich verification on warm queries while reconciling catalog facts."""
+    source_path = tmp_path / "source.docx"
+    source_path.write_bytes(b"source-v1")
+    parser = _Parser()
+    parser.text = "alpha evidence alpha"
+    ingestion, store, catalog = _service(tmp_path, parser, clock=_Clock())
+    result = ingestion.ingest(source_path)
+    snapshot = _rich_snapshot(catalog, result.scope.document_id)
+    verifier_calls = 0
+
+    def verify(artifacts: RichRepresentationArtifacts) -> None:
+        nonlocal verifier_calls
+        verifier_calls += 1
+        ingestion.verify_ready_representation(artifacts)
+
+    source = RichLexicalCandidateSource(
+        store,
+        catalog,
+        representation_verifier=verify,
+        prepared_snapshot=True,
+        relevance_policy=RelevancePolicy(),
+    )
+
+    alpha = source.discover("alpha", snapshot, LIMITS, _never_cancel)
+    evidence = source.discover("evidence", snapshot, LIMITS, _never_cancel)
+
+    assert verifier_calls == 1
+    assert len(alpha) == len(evidence) == 1
+    assert alpha[0].occurrences == 2
+    assert evidence[0].occurrences == 1
+    assert alpha[0].relevance is not None
+    assert alpha[0].relevance.policy_id == RelevancePolicy().policy_id
+
+    with sqlite3.connect(tmp_path / "catalog.sqlite3") as connection:
+        connection.execute(
+            "UPDATE rich_attempt_evidence SET retrieval_object_id = reference_object_id "
+            "WHERE ordinal = 0"
+        )
+    with pytest.raises(ContextIntegrityFailure, match="prepared_lexical_catalog_mismatch"):
+        source.discover("alpha", snapshot, LIMITS, _never_cancel)
 
 
 def test_rich_scan_skips_text_scopes_and_verifies_bodies(tmp_path: Path) -> None:

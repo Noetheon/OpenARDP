@@ -26,7 +26,10 @@ from openardp.ports.context import (
     ContextConfigurationMismatch,
     ContextEstimator,
 )
-from openardp.ports.semantic_retrieval import SemanticRetrievalProvider
+from openardp.ports.semantic_retrieval import (
+    PreparedSemanticRetrievalProvider,
+    SemanticRetrievalProvider,
+)
 from openardp.services.context_compiler import ContextCompilerService, context_algorithm_identity
 from openardp.services.context_relevance import (
     RANKING_ALGORITHM_NAME,
@@ -152,6 +155,7 @@ def local_semantic_context_compiler(
     semantic_max_per_document: int = 32,
     semantic_ranked_prefix: int = 4,
     rich_first: bool = True,
+    prepared_corpus: bool = False,
 ) -> ContextCompilerService:
     """Compose one explicit optional semantic profile; default composition stays lexical."""
     selected_policy = policy or SemanticRetrievalPolicy()
@@ -169,6 +173,7 @@ def local_semantic_context_compiler(
         max_per_document=semantic_max_per_document,
         ranked_prefix=semantic_ranked_prefix,
         rich_first=rich_first,
+        prepared_corpus=prepared_corpus,
     )
     candidate_source: ContextCandidateSource = source
     if hybrid_lexical_fallback:
@@ -180,6 +185,8 @@ def local_semantic_context_compiler(
                     workspace.object_store,
                     workspace.catalog,
                     representation_verifier=rich_verifier,
+                    prepared_snapshot=prepared_corpus,
+                    relevance_policy=RelevancePolicy() if prepared_corpus else None,
                 ),
             ),
             RelevancePolicy(),
@@ -200,9 +207,11 @@ def local_semantic_context_compiler(
             semantic_max_per_document=semantic_max_per_document,
             semantic_ranked_prefix=semantic_ranked_prefix,
             rich_first=rich_first,
+            prepared_corpus=prepared_corpus,
         ),
         allocation_policy=selected_allocation,
         semantic_abstention=True,
+        additive_budgeting=prepared_corpus,
     )
 
 
@@ -233,7 +242,7 @@ def local_context_compiler_for_profile(
     policy = SemanticRetrievalPolicy()
     limits = SemanticRetrievalLimits()
     allocation = LexicalAllocationPolicy()
-    expected = semantic_algorithm_identity(
+    legacy = semantic_algorithm_identity(
         provider.recipe,
         policy,
         limits,
@@ -244,8 +253,29 @@ def local_context_compiler_for_profile(
         semantic_ranked_prefix=4,
         rich_first=True,
     )
-    if algorithm is not None and algorithm != expected:
+    prepared = semantic_algorithm_identity(
+        provider.recipe,
+        policy,
+        limits,
+        allocation,
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        semantic_max_per_document=64,
+        semantic_ranked_prefix=4,
+        rich_first=True,
+        prepared_corpus=True,
+    )
+    if algorithm is None:
+        use_prepared = isinstance(provider, PreparedSemanticRetrievalProvider)
+    elif algorithm == prepared:
+        use_prepared = True
+    elif algorithm == legacy:
+        use_prepared = False
+    else:
         raise ContextConfigurationMismatch("algorithm_mismatch")
+    if use_prepared and not isinstance(provider, PreparedSemanticRetrievalProvider):
+        raise ContextConfigurationMismatch("semantic_provider_preparation_unavailable")
+    semantic_max_per_document = 64 if use_prepared else 32
     return local_semantic_context_compiler(
         workspace,
         estimator,
@@ -257,9 +287,10 @@ def local_context_compiler_for_profile(
         allocation_policy=allocation,
         hybrid_lexical_fallback=True,
         source_balanced=True,
-        semantic_max_per_document=32,
+        semantic_max_per_document=semantic_max_per_document,
         semantic_ranked_prefix=4,
         rich_first=True,
+        prepared_corpus=use_prepared,
     )
 
 

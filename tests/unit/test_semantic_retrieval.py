@@ -6,7 +6,9 @@ import math
 
 import pytest
 
+from openardp.domain.identity import canonical_sha256
 from openardp.domain.semantic_retrieval import (
+    PreparedSemanticCorpus,
     SemanticPassage,
     SemanticProviderRecipe,
     SemanticRetrievalLimits,
@@ -90,3 +92,41 @@ def test_passage_and_score_keep_only_exact_identity_and_fixed_point_result() -> 
     )
     assert "text" not in score.model_dump(mode="json")
     assert score.score_millionths == 812_345
+
+
+def test_prepared_corpus_identity_binds_order_recipe_limits_and_never_contains_body() -> None:
+    """Make the process-local handle deterministic without retaining passage text."""
+    recipe = _recipe()
+    passages = (
+        _passage := SemanticPassage(
+            evidence_id="evidence-1",
+            object_id="sha256:" + "c" * 64,
+            text="untrusted body",
+        ),
+    )
+    limits = SemanticRetrievalLimits(max_passages=1, max_cache_entries=1)
+    prepared = PreparedSemanticCorpus.from_passages(recipe.recipe_id, passages, limits)
+    assert prepared.corpus_id == canonical_sha256(
+        {
+            "domain": "openardp.prepared-semantic-corpus",
+            "version": 1,
+            "provider_recipe_id": recipe.recipe_id,
+            "passages": [{"evidence_id": _passage.evidence_id, "object_id": _passage.object_id}],
+            "limits": limits.model_dump(mode="json"),
+        }
+    )
+    assert prepared.passage_count == 1
+    assert prepared.total_text_bytes == len(b"untrusted body")
+    assert "untrusted body" not in str(prepared.model_dump(mode="json"))
+    changed = PreparedSemanticCorpus.from_passages(
+        recipe.recipe_id,
+        (
+            SemanticPassage(
+                evidence_id="evidence-2",
+                object_id=_passage.object_id,
+                text=_passage.text,
+            ),
+        ),
+        limits,
+    )
+    assert changed.corpus_id != prepared.corpus_id

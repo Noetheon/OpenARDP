@@ -11,6 +11,7 @@ from openardp.domain.context_compilation import (
     ContextCandidate,
     ContextSelectionPolicy,
 )
+from openardp.domain.context_ranking import LexicalAllocationPolicy, allocate_lexical_candidates
 from openardp.domain.context_relevance import RelevancePolicy
 from openardp.ports.context import ContextIntegrityFailure
 
@@ -70,6 +71,30 @@ class ClassifiedCandidates:
     stale: tuple[ContextCandidate, ...]
 
 
+def allocate_candidates(
+    classified: ClassifiedCandidates,
+    policy: LexicalAllocationPolicy | None,
+) -> ClassifiedCandidates:
+    """Apply the optional lexical allocation policy without changing partitions."""
+    if policy is None:
+        return classified
+    allocation = allocate_lexical_candidates(classified.ordered, policy)
+    return ClassifiedCandidates(
+        ordered=allocation.ordered,
+        rejected=(*classified.rejected, *allocation.rejected),
+        stale=classified.stale,
+    )
+
+
+def bounded_candidates(
+    classified: ClassifiedCandidates,
+    maximum: int,
+) -> tuple[tuple[ContextCandidate, ...], bool]:
+    """Bound ordered candidates and report whether truncation occurred."""
+    ordered = classified.ordered
+    return ordered[:maximum], len(ordered) > maximum
+
+
 def classify_candidates(
     candidates: tuple[ContextCandidate, ...],
     policy: ContextSelectionPolicy,
@@ -126,6 +151,8 @@ def classify_candidates(
 
 __all__ = [
     "ClassifiedCandidates",
+    "allocate_candidates",
+    "bounded_candidates",
     "candidate_total_order_key",
     "classify_candidates",
     "required_representations",

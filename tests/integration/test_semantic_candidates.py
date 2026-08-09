@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from openardp.adapters.context_estimators import Utf8ByteEstimator
@@ -14,16 +14,23 @@ from openardp.adapters.text_parser import TextParserAdapter
 from openardp.domain.common import Sensitivity
 from openardp.domain.context import ContextMode
 from openardp.domain.context_compilation import ContextCompileRequest, ContextSelectionPolicy
+from openardp.domain.context_ranking import LexicalAllocationPolicy
 from openardp.domain.semantic_retrieval import (
+    PreparedSemanticCorpus,
     SemanticPassage,
     SemanticProviderRecipe,
     SemanticRetrievalLimits,
     SemanticRetrievalPolicy,
     SemanticScore,
 )
-from openardp.interfaces.context_composition import local_semantic_context_compiler
+from openardp.interfaces.context_composition import (
+    RetrievalProfile,
+    local_context_compiler_for_profile,
+    local_semantic_context_compiler,
+)
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.ingestion import IngestionService
+from openardp.services.semantic_retrieval import semantic_algorithm_identity
 from tests.integration.test_rich_ingestion import _Clock, _Parser
 from tests.integration.test_rich_ingestion import _service as _rich_service
 
@@ -112,13 +119,51 @@ class _CsvDominatingProvider(_MeaningProvider):
         )
 
 
-def _service(workspace: LocalWorkspace, parser: object, owner: str) -> IngestionService:
+class _PreparedMeaningProvider(_MeaningProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.prepare_calls = 0
+        self.prepared_score_calls = 0
+        self.prepared_passages: tuple[SemanticPassage, ...] = ()
+
+    def prepare(
+        self,
+        passages: tuple[SemanticPassage, ...],
+        limits: SemanticRetrievalLimits,
+        cancel: object,
+    ) -> PreparedSemanticCorpus:
+        del cancel
+        self.prepare_calls += 1
+        self.prepared_passages = passages
+        return PreparedSemanticCorpus.from_passages(self.recipe.recipe_id, passages, limits)
+
+    def score_prepared(
+        self,
+        query: str,
+        corpus: PreparedSemanticCorpus,
+        limits: SemanticRetrievalLimits,
+        cancel: object,
+    ) -> tuple[SemanticScore, ...]:
+        assert corpus == PreparedSemanticCorpus.from_passages(
+            self.recipe.recipe_id, self.prepared_passages, limits
+        )
+        self.prepared_score_calls += 1
+        return super().score(query, self.prepared_passages, limits, cancel)
+
+
+def _service(
+    workspace: LocalWorkspace,
+    parser: object,
+    owner: str,
+    *,
+    now: datetime = NOW,
+) -> IngestionService:
     return IngestionService(
         workspace.object_store,
         workspace.catalog,
         parser,  # type: ignore[arg-type]
         source_factory=LocalSource,
-        clock=lambda: NOW,
+        clock=lambda: now,
         owner_id_factory=lambda: owner,
         lease_token_factory=lambda: owner * 16,
         random_bits=lambda: 1 if owner == "text" else 2,
@@ -304,3 +349,117 @@ def test_semantic_enumeration_prefers_verified_rich_projection_over_generic_rows
     assert "Scientific, Technical and Ethical Robustness" in str(
         compiled.bundle.items[0].content.body
     )
+
+
+def test_prepared_source_reuses_exact_snapshot_and_invalidates_on_scope_change(
+    tmp_path: Path,
+) -> None:
+    """Prepare once per exact snapshot while current-head changes force fresh authority work."""
+    workspace = LocalWorkspace.initialize(tmp_path / "workspace", now=NOW)
+    source_path = tmp_path / "principles.txt"
+    source_path.write_text("Scientific and Ethically Robust\n", encoding="utf-8")
+    service = _service(workspace, TextParserAdapter(), "text")
+    first = service.ingest(source_path)
+    provider = _PreparedMeaningProvider()
+    compiler = local_semantic_context_compiler(
+        workspace,
+        Utf8ByteEstimator(),
+        service.verify_ready_representation,
+        lambda _rich: None,
+        provider,
+        policy=SemanticRetrievalPolicy(minimum_score_millionths=0),
+        provider_limits=SemanticRetrievalLimits(
+            max_passages=10, max_cache_entries=10, max_response_entries=10
+        ),
+        prepared_corpus=True,
+    )
+
+    def compile(document_id: object) -> object:
+        return compiler.compile(
+            ContextCompileRequest(
+                task="Robustheitsprinzip",
+                document_ids=(document_id,),  # type: ignore[arg-type]
+                budget_limit=65_536,
+                estimator=Utf8ByteEstimator().identity,
+                policy=ContextSelectionPolicy(
+                    mode=ContextMode.EXACT,
+                    maximum_sensitivity=Sensitivity.UNKNOWN,
+                ),
+            )
+        )
+
+    compile(first.scope.document_id)
+    compile(first.scope.document_id)
+    assert provider.prepare_calls == 1
+    assert provider.prepared_score_calls == 2
+
+    source_path.write_text("Scientific and Ethically Robust, revised\n", encoding="utf-8")
+    later_service = _service(
+        workspace,
+        TextParserAdapter(),
+        "late",
+        now=NOW + timedelta(seconds=1),
+    )
+    later_service.ingest(source_path)
+    compile(first.scope.document_id)
+    assert provider.prepare_calls == 2
+
+
+def test_product_profile_selects_f035_and_preserves_exact_f029_replay(
+    tmp_path: Path,
+) -> None:
+    """Use prepared 1.3 for new work and legacy 1.2 only for its exact identity."""
+    workspace = LocalWorkspace.initialize(tmp_path / "workspace", now=NOW)
+    source_path = tmp_path / "principles.txt"
+    source_path.write_text("Scientific and Ethically Robust\n", encoding="utf-8")
+    service = _service(workspace, TextParserAdapter(), "text")
+    result = service.ingest(source_path)
+    provider = _PreparedMeaningProvider()
+    request = ContextCompileRequest(
+        task="Robustheitsprinzip",
+        document_ids=(result.scope.document_id,),
+        budget_limit=65_536,
+        estimator=Utf8ByteEstimator().identity,
+        policy=ContextSelectionPolicy(
+            mode=ContextMode.EXACT,
+            maximum_sensitivity=Sensitivity.UNKNOWN,
+        ),
+    )
+    current = local_context_compiler_for_profile(
+        workspace,
+        Utf8ByteEstimator(),
+        service.verify_ready_representation,
+        lambda _rich: None,
+        RetrievalProfile.SEMANTIC,
+        provider=provider,
+    )
+
+    current_result = current.compile(request)
+
+    assert current_result.receipt.algorithm.version == "1.3.0"
+    assert provider.prepare_calls == 1
+    legacy_identity = semantic_algorithm_identity(
+        provider.recipe,
+        SemanticRetrievalPolicy(),
+        SemanticRetrievalLimits(),
+        LexicalAllocationPolicy(),
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        semantic_max_per_document=32,
+        semantic_ranked_prefix=4,
+        rich_first=True,
+    )
+    legacy = local_context_compiler_for_profile(
+        workspace,
+        Utf8ByteEstimator(),
+        service.verify_ready_representation,
+        lambda _rich: None,
+        RetrievalProfile.SEMANTIC,
+        provider=provider,
+        algorithm=legacy_identity,
+    )
+
+    legacy_result = legacy.compile(request)
+
+    assert legacy_result.receipt.algorithm == legacy_identity
+    assert provider.prepare_calls == 1

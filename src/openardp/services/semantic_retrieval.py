@@ -18,6 +18,7 @@ SEMANTIC_ALGORITHM_NAME = "openardp.semantic-context-ranked"
 SEMANTIC_ALGORITHM_VERSION = "1.0.0"
 HYBRID_SEMANTIC_ALGORITHM_VERSION = "1.1.0"
 RICH_HYBRID_SEMANTIC_ALGORITHM_VERSION = "1.2.0"
+PREPARED_HYBRID_SEMANTIC_ALGORITHM_VERSION = "1.3.0"
 
 
 def semantic_algorithm_identity(
@@ -31,11 +32,38 @@ def semantic_algorithm_identity(
     semantic_max_per_document: int = 32,
     semantic_ranked_prefix: int = 4,
     rich_first: bool = False,
+    prepared_corpus: bool = False,
 ) -> AlgorithmIdentity:
     """Bind provider inference, admission and F027 allocation into replay identity."""
-    if not hybrid_lexical_fallback and not source_balanced:
+    extra: dict[str, JsonValue]
+    if prepared_corpus:
+        if not rich_first or not source_balanced:
+            raise ValueError("prepared semantic profile requires rich source balance")
+        version = PREPARED_HYBRID_SEMANTIC_ALGORITHM_VERSION
+        relevance = RelevancePolicy()
+        extra = {
+            "hybrid_lexical_fallback": hybrid_lexical_fallback,
+            "lexical_relevance_policy": relevance.model_dump(mode="json"),
+            "lexical_relevance_policy_id": relevance.policy_id,
+            "retrieval_tier_order": (
+                ["minimum_relevant_lexical", "semantic"]
+                if hybrid_lexical_fallback
+                else ["semantic"]
+            ),
+            "source_balanced_semantic_admission": True,
+            "semantic_max_per_document": semantic_max_per_document,
+            "semantic_ranked_prefix": semantic_ranked_prefix,
+            "representation_precedence": "rich_then_text",
+            "prepared_corpus": "process_local_exact_snapshot_v1",
+            "selected_evidence_verification": "catalog_scope_and_cas_v1",
+            "budgeting": "additive_canonical_prefix_v1",
+            "prepared_lexical_corpus": (
+                "exact_snapshot_catalog_reconcile_v1" if hybrid_lexical_fallback else "disabled"
+            ),
+        }
+    elif not hybrid_lexical_fallback and not source_balanced:
         version = SEMANTIC_ALGORITHM_VERSION
-        extra: dict[str, JsonValue] = {}
+        extra = {}
     else:
         version = (
             RICH_HYBRID_SEMANTIC_ALGORITHM_VERSION
@@ -78,6 +106,7 @@ def semantic_algorithm_identity(
 
 __all__ = [
     "HYBRID_SEMANTIC_ALGORITHM_VERSION",
+    "PREPARED_HYBRID_SEMANTIC_ALGORITHM_VERSION",
     "RICH_HYBRID_SEMANTIC_ALGORITHM_VERSION",
     "SEMANTIC_ALGORITHM_NAME",
     "SEMANTIC_ALGORITHM_VERSION",

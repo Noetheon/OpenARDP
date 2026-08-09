@@ -51,6 +51,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 32 | `032-documentation-governance` | Replace universal process overhead with risk-proportionate governance and compact completed feature records without losing contracts or evidence. |
 | 33 | `033-product-benchmark-correctness` | Make the F020 rich-format benchmark mutually complete, fail before expensive phases on invalid PDF assets and preserve its body-free command boundary. |
 | 34 | `034-independent-retrieval-holdout` | Freeze and baseline an externally sourced 100-question multilingual retrieval holdout before any further retrieval optimization. |
+| 35 | `035-profiled-retrieval-optimization` | Attribute retrieval cost by phase, then improve F025 quality and warm latency together before one milestone-only F034 validation. |
 
 ## Dependency rule
 
@@ -78,6 +79,9 @@ separate successor work packages.
 Feature 034 derives a deterministic CC BY-SA 4.0 evaluation subset from a pinned XQuAD revision. It establishes a new
 20-document, 100-question English/German/Spanish holdout and current lexical/semantic baselines without changing retrieval
 behavior. The public F025 set remains the development/control set; F034 is reserved for milestone validation.
+Feature 035 profiles the unchanged F029 profile on F025 before changing it. Candidate policies and ephemeral-cache behavior
+are selected only against F025, retain the lexical default and exact fail-closed replay, and must improve absolute quality
+and warm latency together. The frozen F034 holdout is evaluated exactly once after the candidate and thresholds are frozen.
 
 ## Scope rule
 

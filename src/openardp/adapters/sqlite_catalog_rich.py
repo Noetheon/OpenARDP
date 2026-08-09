@@ -7,7 +7,7 @@ from datetime import datetime
 from uuid import UUID
 
 from openardp.adapters.sqlite_catalog_base import _SQLiteCatalogBase
-from openardp.domain.identity import canonical_json_bytes
+from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.ingestion import IngestionDisposition, IngestionEvent, RepresentationScope
 from openardp.domain.rich_ingestion import (
     ReadyRichRepresentationCommit,
@@ -154,6 +154,43 @@ class _SQLiteCatalogRichMixin(_SQLiteCatalogBase):
         """Load one accepted rich aggregate from a single read snapshot."""
         with self._read_connection() as connection:
             return self._rich_representation(connection, scope)
+
+    def rich_evidence_authority_fingerprint(
+        self,
+        scope: RepresentationScope,
+    ) -> str | None:
+        """Hash accepted rich evidence mappings without rebuilding provider-native models."""
+        with self._read_connection() as connection:
+            accepted = connection.execute(
+                "SELECT accepted_attempt_id FROM rich_accepted_representations "
+                "WHERE document_id = ? AND version_id = ? AND representation_id = ?",
+                (str(scope.document_id), scope.version_id, scope.representation_id),
+            ).fetchone()
+            if accepted is None:
+                return None
+            attempt_id = str(accepted["accepted_attempt_id"])
+            rows = connection.execute(
+                "SELECT ordinal, reference_object_id, projection_object_id, "
+                "retrieval_object_id FROM rich_attempt_evidence WHERE attempt_id = ? "
+                "ORDER BY ordinal",
+                (attempt_id,),
+            ).fetchall()
+        return str(
+            canonical_sha256(
+                {
+                    "accepted_attempt_id": attempt_id,
+                    "evidence": [
+                        {
+                            "ordinal": int(row["ordinal"]),
+                            "reference_object_id": str(row["reference_object_id"]),
+                            "projection_object_id": str(row["projection_object_id"]),
+                            "retrieval_object_id": str(row["retrieval_object_id"]),
+                        }
+                        for row in rows
+                    ],
+                }
+            )
+        )
 
     def get_rich_attempt(self, attempt_id: UUID) -> RichParseAttempt | None:
         """Return one append-only rich attempt or no result."""

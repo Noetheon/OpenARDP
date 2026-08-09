@@ -83,6 +83,30 @@ BUILT_IN_ESTIMATORS: tuple[ContextEstimator, ...] = (
 )
 
 
+def additive_usage_fixed_point(zero_usage: int) -> int:
+    """Resolve two embedded decimal usage fields from an exact zero-usage measure."""
+    usage = 0
+    for _ in range(DEFAULT_FIXED_POINT_ITERATIONS):
+        measured = zero_usage + (2 * (len(str(usage)) - 1))
+        if measured == usage:
+            return usage
+        usage = measured
+    raise ContextLimitExceeded("budget_fixed_point_diverged")
+
+
+def empty_phase_metrics() -> dict[str, int]:
+    """Return a fresh complete phase ledger for compile and replay paths."""
+    return {
+        "snapshot_ns": 0,
+        "discovery_ns": 0,
+        "classification_ns": 0,
+        "materialization_ns": 0,
+        "budgeting_ns": 0,
+        "finalization_ns": 0,
+        "compile_ns": 0,
+    }
+
+
 def resolve_estimator(identity: EstimatorIdentity) -> ContextEstimator:
     """Return the built-in estimator for one exact identity without fallback."""
     for estimator in BUILT_IN_ESTIMATORS:
@@ -114,6 +138,8 @@ __all__ = [
     "ConservativeTokenEstimator",
     "UnicodeCharacterEstimator",
     "Utf8ByteEstimator",
+    "additive_usage_fixed_point",
+    "empty_phase_metrics",
     "fixed_point_measure",
     "resolve_estimator",
 ]

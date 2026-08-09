@@ -14,7 +14,11 @@ from openardp.adapters.context_candidates import (
     RichLexicalCandidateSource,
     TextLexicalCandidateSource,
 )
-from openardp.adapters.context_estimators import UnicodeCharacterEstimator, Utf8ByteEstimator
+from openardp.adapters.context_estimators import (
+    ConservativeTokenEstimator,
+    UnicodeCharacterEstimator,
+    Utf8ByteEstimator,
+)
 from openardp.adapters.filesystem_cas import FilesystemObjectStore
 from openardp.adapters.local_source import LocalSource
 from openardp.adapters.sqlite_catalog import SQLiteCatalog
@@ -63,6 +67,7 @@ class MixedCorpus:
     catalog: SQLiteCatalog
     text_ingestion: IngestionService
     text_path: Path
+    candidate_sources: tuple[Any, ...]
 
 
 def _mixed_corpus(tmp_path: Path) -> MixedCorpus:
@@ -96,18 +101,19 @@ def _mixed_corpus(tmp_path: Path) -> MixedCorpus:
     rich_path = tmp_path / "source.docx"
     rich_path.write_bytes(b"source-v1")
     rich_result = rich_ingestion.ingest(rich_path)
+    candidate_sources = (
+        TextLexicalCandidateSource(store, catalog),
+        RichLexicalCandidateSource(
+            store,
+            catalog,
+            representation_verifier=rich_ingestion.verify_ready_representation,
+        ),
+    )
     compiler = ContextCompilerService(
         store,
         catalog,
         Utf8ByteEstimator(),
-        (
-            TextLexicalCandidateSource(store, catalog),
-            RichLexicalCandidateSource(
-                store,
-                catalog,
-                representation_verifier=rich_ingestion.verify_ready_representation,
-            ),
-        ),
+        candidate_sources,
     )
     document_ids = tuple(
         sorted(
@@ -122,7 +128,71 @@ def _mixed_corpus(tmp_path: Path) -> MixedCorpus:
         catalog=catalog,
         text_ingestion=text_ingestion,
         text_path=text_path,
+        candidate_sources=candidate_sources,
     )
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    (Utf8ByteEstimator(), UnicodeCharacterEstimator(), ConservativeTokenEstimator()),
+)
+@pytest.mark.parametrize("budget_limit", (4_000, 8_000, 20_000))
+def test_additive_budgeting_is_exactly_equivalent_to_legacy_selection(
+    tmp_path: Path,
+    estimator: Any,
+    budget_limit: int,
+) -> None:
+    """Preserve exact bundles and receipts across every built-in estimator."""
+    corpus = _mixed_corpus(tmp_path)
+    legacy = ContextCompilerService(
+        corpus.store,
+        corpus.catalog,
+        estimator,
+        corpus.candidate_sources,
+    )
+    additive = ContextCompilerService(
+        corpus.store,
+        corpus.catalog,
+        estimator,
+        corpus.candidate_sources,
+        additive_budgeting=True,
+    )
+    request = _request(corpus.document_ids, budget_limit, estimator.identity)
+
+    expected = legacy.compile(request)
+    actual = additive.compile(request)
+
+    assert bundle_object_bytes(actual.bundle) == bundle_object_bytes(expected.bundle)
+    assert receipt_object_bytes(actual.receipt) == receipt_object_bytes(expected.receipt)
+
+
+def test_compiler_phase_metrics_are_body_free_non_overlapping_and_reconciled(
+    tmp_path: Path,
+) -> None:
+    """Expose only bounded monotonic phase durations beneath the compile parent."""
+    corpus = _mixed_corpus(tmp_path)
+    compiler = ContextCompilerService(
+        corpus.store,
+        corpus.catalog,
+        Utf8ByteEstimator(),
+        corpus.candidate_sources,
+        additive_budgeting=True,
+    )
+
+    compiler.compile(_request(corpus.document_ids, 20_000))
+
+    metrics = compiler.last_phase_metrics
+    children = {
+        "snapshot_ns",
+        "discovery_ns",
+        "classification_ns",
+        "materialization_ns",
+        "budgeting_ns",
+        "finalization_ns",
+    }
+    assert set(metrics) == {*children, "compile_ns"}
+    assert all(isinstance(value, int) and value >= 0 for value in metrics.values())
+    assert sum(metrics[name] for name in children) <= metrics["compile_ns"]
 
 
 def _request(

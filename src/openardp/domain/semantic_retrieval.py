@@ -90,6 +90,49 @@ class SemanticPassage(DomainModel):
     text: str = Field(min_length=1, max_length=8 * 1024 * 1024)
 
 
+class PreparedSemanticCorpus(DomainModel):
+    """Body-free identity for one bounded provider-process corpus preparation."""
+
+    corpus_id: Sha256Id
+    provider_recipe_id: Sha256Id
+    passage_count: int = Field(strict=True, ge=1, le=10_000)
+    total_text_bytes: int = Field(strict=True, ge=1, le=64 * 1024 * 1024)
+
+    @classmethod
+    def from_passages(
+        cls,
+        provider_recipe_id: Sha256Id,
+        passages: tuple[SemanticPassage, ...],
+        limits: SemanticRetrievalLimits,
+    ) -> Self:
+        """Bind ordered exact identities and limits without retaining body text."""
+        if not passages or len(passages) > limits.max_passages:
+            raise ValueError("prepared semantic corpus passage count invalid")
+        identities = tuple((passage.evidence_id, passage.object_id) for passage in passages)
+        if len(set(identities)) != len(identities):
+            raise ValueError("prepared semantic corpus identities duplicated")
+        total = sum(len(passage.text.encode("utf-8")) for passage in passages)
+        if total < 1 or total > limits.max_total_text_bytes:
+            raise ValueError("prepared semantic corpus text bytes invalid")
+        return cls(
+            corpus_id=canonical_sha256(
+                {
+                    "domain": "openardp.prepared-semantic-corpus",
+                    "version": 1,
+                    "provider_recipe_id": provider_recipe_id,
+                    "passages": [
+                        {"evidence_id": evidence_id, "object_id": object_id}
+                        for evidence_id, object_id in identities
+                    ],
+                    "limits": limits.model_dump(mode="json"),
+                }
+            ),
+            provider_recipe_id=provider_recipe_id,
+            passage_count=len(passages),
+            total_text_bytes=total,
+        )
+
+
 class SemanticScore(DomainModel):
     """Body/vector-free fixed-point result for one exact passage."""
 
@@ -131,6 +174,7 @@ def quantize_cosine(value: float) -> int:
 __all__ = [
     "DEFAULT_SEMANTIC_SCORE_FLOOR",
     "SEMANTIC_SCORE_SCALE",
+    "PreparedSemanticCorpus",
     "SemanticCandidateObservation",
     "SemanticPassage",
     "SemanticProviderRecipe",

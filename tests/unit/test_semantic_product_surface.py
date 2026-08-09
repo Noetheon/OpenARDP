@@ -70,6 +70,33 @@ def test_f029_algorithm_resolves_to_semantic() -> None:
     assert retrieval_profile_for_algorithm(algorithm) is RetrievalProfile.SEMANTIC
 
 
+def test_prepared_algorithm_has_new_identity_while_legacy_remains_classifiable() -> None:
+    """Version the faster behavior without reinterpreting historical F029 receipts."""
+    legacy = semantic_algorithm_identity(
+        _recipe(),
+        SemanticRetrievalPolicy(),
+        SemanticRetrievalLimits(),
+        LexicalAllocationPolicy(),
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        rich_first=True,
+    )
+    prepared = semantic_algorithm_identity(
+        _recipe(),
+        SemanticRetrievalPolicy(),
+        SemanticRetrievalLimits(),
+        LexicalAllocationPolicy(),
+        hybrid_lexical_fallback=True,
+        source_balanced=True,
+        rich_first=True,
+        prepared_corpus=True,
+    )
+    assert legacy.version == "1.2.0"
+    assert prepared.version == "1.3.0"
+    assert legacy.config_hash != prepared.config_hash
+    assert retrieval_profile_for_algorithm(prepared) is RetrievalProfile.SEMANTIC
+
+
 def test_unknown_algorithm_fails_closed() -> None:
     """Never reinterpret an unknown persisted algorithm as a supported profile."""
     algorithm = AlgorithmIdentity(

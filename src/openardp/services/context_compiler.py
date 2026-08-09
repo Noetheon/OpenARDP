@@ -5,14 +5,18 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 from uuid import UUID
 
 from pydantic import JsonValue, ValidationError
 
-from openardp.adapters.context_estimators import fixed_point_measure
+from openardp.adapters.context_estimators import (
+    BUILT_IN_ESTIMATORS,
+    additive_usage_fixed_point,
+    empty_phase_metrics,
+    fixed_point_measure,
+)
 from openardp.domain.block import ContentBlock
 from openardp.domain.common import ContentRole, validate_json
 from openardp.domain.context import EvidenceRepresentation, VersionScope
@@ -35,7 +39,6 @@ from openardp.domain.context_compilation import (
     ContextProjectionProvenance,
     ContextSelectionTrace,
     CorpusSnapshot,
-    ReceiptDecision,
     ReceiptNotice,
     SelectionOutcome,
     SelectionReceipt,
@@ -43,10 +46,7 @@ from openardp.domain.context_compilation import (
     context_policy_digest,
     task_digest,
 )
-from openardp.domain.context_ranking import (
-    LexicalAllocationPolicy,
-    allocate_lexical_candidates,
-)
+from openardp.domain.context_ranking import LexicalAllocationPolicy
 from openardp.domain.context_relevance import RelevancePolicy
 from openardp.domain.identity import (
     CANONICALIZATION_ALGORITHM,
@@ -78,33 +78,27 @@ from openardp.ports.context import (
 )
 from openardp.ports.object_store import ObjectStore, ObjectStoreError
 from openardp.services.context_evidence import (
-    candidate_object_cost as _candidate_object_cost,
-)
-from openardp.services.context_evidence import (
-    item_evidence_id as _item_evidence_id,
-)
-from openardp.services.context_evidence import (
-    item_scope as _item_scope,
-)
-from openardp.services.context_evidence import (
-    missing_evidence as _missing_evidence,
-)
-from openardp.services.context_evidence import (
-    read_verified as _read_verified,
+    PersistedCompilation,
+    bundle_object_bytes,
+    item_evidence_id,
+    item_scope,
+    missing_evidence,
+    read_verified,
+    receipt_decision,
+    receipt_object_bytes,
 )
 from openardp.services.context_ranking import (
     ClassifiedCandidates,
+    allocate_candidates,
+    bounded_candidates,
     candidate_total_order_key,
     classify_candidates,
     required_representations,
 )
 from openardp.services.context_relevance import (
     compilation_notices,
+    context_algorithm_identity,
     is_relevance_abstention,
-    relevance_extensions,
-)
-from openardp.services.context_relevance import (
-    context_algorithm_identity as _context_algorithm_identity,
 )
 
 _LOGGER = logging.getLogger("openardp.context_compiler")
@@ -136,60 +130,6 @@ def _log_failure(operation: str, started: float, error: BaseException) -> None:
     )
 
 
-def context_algorithm_identity(
-    relevance_policy: RelevancePolicy | None = None,
-    allocation_policy: LexicalAllocationPolicy | None = None,
-) -> AlgorithmIdentity:
-    """Return the exact legacy, relevance, or ranked algorithm identity."""
-    return _context_algorithm_identity(relevance_policy, allocation_policy)
-
-
-def _allocate_candidates(
-    classified: ClassifiedCandidates,
-    policy: LexicalAllocationPolicy | None,
-) -> ClassifiedCandidates:
-    if policy is None:
-        return classified
-    allocation = allocate_lexical_candidates(classified.ordered, policy)
-    return ClassifiedCandidates(
-        ordered=allocation.ordered,
-        rejected=(*classified.rejected, *allocation.rejected),
-        stale=classified.stale,
-    )
-
-
-def _bounded(
-    classified: ClassifiedCandidates,
-    maximum: int,
-) -> tuple[tuple[ContextCandidate, ...], bool]:
-    ordered = classified.ordered
-    return ordered[:maximum], len(ordered) > maximum
-
-
-@dataclass(frozen=True, slots=True)
-class PersistedCompilation:
-    """Verified compile result together with its immutable catalog record."""
-
-    result: ContextCompilationResult
-    record: ContextCompilationRecord
-
-
-def receipt_object_bytes(receipt: SelectionReceipt) -> bytes:
-    """Serialize the canonical identity envelope whose SHA-256 is the receipt ID."""
-    envelope: dict[str, JsonValue] = {
-        "canonicalization": CANONICALIZATION_ALGORITHM,
-        "domain": SELECTION_RECEIPT_DOMAIN,
-        "identity_version": IDENTITY_VERSION,
-        "payload": receipt.model_dump(mode="json", exclude={"receipt_id"}),
-    }
-    return canonical_json_bytes(envelope)
-
-
-def bundle_object_bytes(bundle: ContextBundleV020) -> bytes:
-    """Serialize the complete canonical ContextBundle 0.2.0 handoff bytes."""
-    return canonical_json_bytes(bundle.model_dump(mode="json"))
-
-
 class ContextCompilerService:
     """Compile deterministic bounded evidence bundles plus body-free receipts."""
 
@@ -204,6 +144,7 @@ class ContextCompilerService:
         relevance_policy: RelevancePolicy | None = None,
         allocation_policy: LexicalAllocationPolicy | None = None,
         semantic_abstention: bool = False,
+        additive_budgeting: bool = False,
     ) -> None:
         """Bind provider-neutral ports and one exact estimator/algorithm identity."""
         self._object_store = object_store
@@ -213,9 +154,25 @@ class ContextCompilerService:
         self._relevance_policy = relevance_policy
         self._allocation_policy = allocation_policy
         self._semantic_abstention = semantic_abstention
+        if additive_budgeting and not any(
+            estimator.identity == built_in.identity for built_in in BUILT_IN_ESTIMATORS
+        ):
+            raise ContextConfigurationMismatch("additive_budgeting_estimator_unsupported")
+        self._additive_budgeting = additive_budgeting
+        self._last_phase_metrics: dict[str, int] = {}
         self._algorithm = algorithm or context_algorithm_identity(
             relevance_policy, allocation_policy
         )
+
+    @property
+    def last_phase_metrics(self) -> dict[str, int]:
+        """Return body-free monotonic timings for the most recent compilation."""
+        return dict(self._last_phase_metrics)
+
+    @property
+    def algorithm(self) -> AlgorithmIdentity:
+        """Return the exact immutable algorithm identity bound to this compiler."""
+        return self._algorithm
 
     def compile(
         self,
@@ -252,12 +209,18 @@ class ContextCompilerService:
         cancel: CancellationCheck,
     ) -> ContextCompilationResult:
         """Validate identity bindings and compile against the resolved snapshot."""
+        compile_started = time.perf_counter_ns()
+        self._last_phase_metrics = empty_phase_metrics()
         if cancel():
             raise ContextCompilationCancelled("cancelled_before_snapshot")
         if self._estimator.identity != request.estimator:
             raise ContextConfigurationMismatch("estimator_mismatch")
+        phase_started = time.perf_counter_ns()
         snapshot = self._resolve_snapshot(request)
-        return self._compile_with_snapshot(request, snapshot, cancel)
+        self._last_phase_metrics["snapshot_ns"] = time.perf_counter_ns() - phase_started
+        result = self._compile_with_snapshot(request, snapshot, cancel)
+        self._last_phase_metrics["compile_ns"] = time.perf_counter_ns() - compile_started
+        return result
 
     def _compile_with_snapshot(
         self,
@@ -268,6 +231,7 @@ class ContextCompilerService:
         """Compile against one exact caller-supplied corpus snapshot."""
         if cancel():
             raise ContextCompilationCancelled("cancelled_before_discovery")
+        phase_started = time.perf_counter_ns()
         discovered: list[ContextCandidate] = []
         truncated = False
         for source in self._candidate_sources:
@@ -275,78 +239,42 @@ class ContextCompilerService:
             if len(discovered) > request.limits.max_discovered:
                 del discovered[request.limits.max_discovered :]
                 truncated = True
+        self._last_phase_metrics["discovery_ns"] = time.perf_counter_ns() - phase_started
         if cancel():
             raise ContextCompilationCancelled("cancelled_before_selection")
+        phase_started = time.perf_counter_ns()
         classified = classify_candidates(
             tuple(discovered),
             request.policy,
             relevance_policy=self._relevance_policy,
         )
-        classified = _allocate_candidates(classified, self._allocation_policy)
-        ordered, cut = _bounded(classified, request.limits.max_candidates)
+        classified = allocate_candidates(classified, self._allocation_policy)
+        ordered, cut = bounded_candidates(classified, request.limits.max_candidates)
         truncated = truncated or cut
+        self._last_phase_metrics["classification_ns"] = time.perf_counter_ns() - phase_started
 
         limit = request.budget_limit
         reserve = (limit + 9) // 10
         ceiling = limit - reserve
-        base_used = fixed_point_measure(
-            lambda usage: self._canonical_bundle_bytes(
-                request,
-                snapshot,
-                (),
-                (),
-                (),
-                usage,
-            ),
-            self._estimator,
+        base_used, selected, omitted, used = self._select_candidates(
+            request, snapshot, ordered, ceiling, cancel
         )
-        if base_used > ceiling:
-            raise ContextLimitExceeded("base_bundle_exceeds_budget")
 
-        selected: list[tuple[ContextCandidate, ContextEvidenceItem, int]] = []
-        omitted: list[tuple[ContextCandidate, int]] = []
-        used = base_used
-        for candidate in ordered:
-            if cancel():
-                raise ContextCompilationCancelled("cancelled_during_selection")
-            item = self._build_item(candidate)
-            tentative: tuple[ContextEvidenceItem, ...] = (
-                *tuple(entry[1] for entry in selected),
-                item,
-            )
-
-            def measure(
-                builder_usage: int,
-                items: tuple[ContextEvidenceItem, ...] = tentative,
-            ) -> bytes:
-                return self._canonical_bundle_bytes(
-                    request,
-                    snapshot,
-                    items,
-                    (),
-                    (),
-                    builder_usage,
-                )
-
-            usage = fixed_point_measure(measure, self._estimator)
-            if usage <= ceiling:
-                selected.append((candidate, item, usage - used))
-                used = usage
-            else:
-                omitted.append((candidate, usage - used))
-
+        phase_started = time.perf_counter_ns()
         relevance_abstained = is_relevance_abstention(
             tuple(discovered), ordered, classified.rejected, self._relevance_policy
         )
-        missing, receipt_notices = _missing_evidence(request.policy, selected)
+        missing, receipt_notices = missing_evidence(request.policy, selected)
         final_warnings, extra_notices = compilation_notices(
             truncated=truncated,
             relevance_abstained=relevance_abstained,
             semantic_abstained=self._semantic_abstention and not ordered,
         )
         receipt_notices.extend(extra_notices)
+        self._last_phase_metrics["finalization_ns"] += time.perf_counter_ns() - phase_started
         if missing or final_warnings:
             final_missing = tuple(missing)
+            phase_started = time.perf_counter_ns()
             used = fixed_point_measure(
                 lambda usage: self._canonical_bundle_bytes(
                     request,
@@ -358,9 +286,11 @@ class ContextCompilerService:
                 ),
                 self._estimator,
             )
+            self._last_phase_metrics["budgeting_ns"] += time.perf_counter_ns() - phase_started
             if used > ceiling:
                 raise ContextLimitExceeded("bundle_exceeds_budget")
 
+        phase_started = time.perf_counter_ns()
         decision_count = (
             len(selected) + len(omitted) + len(classified.rejected) + len(classified.stale)
         )
@@ -396,7 +326,102 @@ class ContextCompilerService:
             truncated,
             tuple(receipt_notices),
         )
+        self._last_phase_metrics["finalization_ns"] += time.perf_counter_ns() - phase_started
         return ContextCompilationResult(bundle=bundle, receipt=receipt)
+
+    def _select_candidates(
+        self,
+        request: ContextCompileRequest,
+        snapshot: CorpusSnapshot,
+        ordered: tuple[ContextCandidate, ...],
+        ceiling: int,
+        cancel: CancellationCheck,
+    ) -> tuple[
+        int,
+        list[tuple[ContextCandidate, ContextEvidenceItem, int]],
+        list[tuple[ContextCandidate, int]],
+        int,
+    ]:
+        """Materialize and budget ordered candidates without changing selection semantics."""
+        phase_started = time.perf_counter_ns()
+        if self._additive_budgeting:
+            selected_zero_usage = self._estimator.measure(
+                self._canonical_bundle_bytes(request, snapshot, (), (), (), 0)
+            )
+            base_used = additive_usage_fixed_point(selected_zero_usage)
+            comma_used = self._estimator.measure(b",")
+        else:
+            selected_zero_usage = 0
+            comma_used = 0
+            base_used = fixed_point_measure(
+                lambda usage: self._canonical_bundle_bytes(
+                    request,
+                    snapshot,
+                    (),
+                    (),
+                    (),
+                    usage,
+                ),
+                self._estimator,
+            )
+        self._last_phase_metrics["budgeting_ns"] += time.perf_counter_ns() - phase_started
+        if base_used > ceiling:
+            raise ContextLimitExceeded("base_bundle_exceeds_budget")
+
+        selected: list[tuple[ContextCandidate, ContextEvidenceItem, int]] = []
+        omitted: list[tuple[ContextCandidate, int]] = []
+        used = base_used
+        for candidate in ordered:
+            if cancel():
+                raise ContextCompilationCancelled("cancelled_during_selection")
+            phase_started = time.perf_counter_ns()
+            item = self._build_item(candidate)
+            self._last_phase_metrics["materialization_ns"] += time.perf_counter_ns() - phase_started
+            tentative_zero_usage = selected_zero_usage
+            phase_started = time.perf_counter_ns()
+            if self._additive_budgeting:
+                trace = ContextSelectionTrace(
+                    evidence_id=item_evidence_id(item),
+                    final_order=len(selected),
+                    reason_code=item.reason,
+                )
+                if selected:
+                    tentative_zero_usage += 2 * comma_used
+                tentative_zero_usage += self._estimator.measure(
+                    canonical_json_bytes(item.model_dump(mode="json"))
+                )
+                tentative_zero_usage += self._estimator.measure(
+                    canonical_json_bytes(trace.model_dump(mode="json"))
+                )
+                usage = additive_usage_fixed_point(tentative_zero_usage)
+            else:
+                tentative: tuple[ContextEvidenceItem, ...] = (
+                    *tuple(entry[1] for entry in selected),
+                    item,
+                )
+
+                def measure(
+                    builder_usage: int,
+                    items: tuple[ContextEvidenceItem, ...] = tentative,
+                ) -> bytes:
+                    return self._canonical_bundle_bytes(
+                        request,
+                        snapshot,
+                        items,
+                        (),
+                        (),
+                        builder_usage,
+                    )
+
+                usage = fixed_point_measure(measure, self._estimator)
+            self._last_phase_metrics["budgeting_ns"] += time.perf_counter_ns() - phase_started
+            if usage <= ceiling:
+                selected.append((candidate, item, usage - used))
+                used = usage
+                selected_zero_usage = tentative_zero_usage
+            else:
+                omitted.append((candidate, usage - used))
+        return base_used, selected, omitted, used
 
     def compile_and_persist(
         self,
@@ -431,8 +456,8 @@ class ContextCompilerService:
             raise ContextIntegrityFailure("compilation_object_publication_failed") from error
         if receipt_object.object_id != result.receipt.receipt_id:
             raise ContextIntegrityFailure("receipt_object_identity_mismatch")
-        _read_verified(self._object_store, receipt_object)
-        _read_verified(self._object_store, bundle_object)
+        read_verified(self._object_store, receipt_object)
+        read_verified(self._object_store, bundle_object)
         if cancel():
             # The immutable pre-published objects stay unreachable recovery
             # candidates; no catalog-visible compilation can exist yet.
@@ -540,7 +565,10 @@ class ContextCompilerService:
             policy=receipt.policy,
             limits=ContextCompileLimits(),
         )
+        replay_started = time.perf_counter_ns()
+        self._last_phase_metrics = empty_phase_metrics()
         recompiled = self._compile_with_snapshot(request, snapshot, cancel)
+        self._last_phase_metrics["compile_ns"] = time.perf_counter_ns() - replay_started
         if bundle_object_bytes(recompiled.bundle) != bundle_object_bytes(result.bundle):
             raise ContextConfigurationMismatch("replay_bundle_diverged")
         if receipt_object_bytes(recompiled.receipt) != receipt_object_bytes(result.receipt):
@@ -570,7 +598,7 @@ class ContextCompilerService:
 
     def _verified_receipt_object(self, record: ContextCompilationRecord) -> SelectionReceipt:
         """Verify the receipt CAS object digest, envelope and canonical identity."""
-        payload = _read_verified(self._object_store, record.receipt_object)
+        payload = read_verified(self._object_store, record.receipt_object)
         try:
             envelope = json.loads(payload)
         except json.JSONDecodeError as error:
@@ -603,7 +631,7 @@ class ContextCompilerService:
 
     def _verified_bundle_object(self, record: ContextCompilationRecord) -> ContextBundleV020:
         """Verify the bundle CAS object digest, model identity and canonical shape."""
-        payload = _read_verified(self._object_store, record.bundle_object)
+        payload = read_verified(self._object_store, record.bundle_object)
         try:
             bundle = validate_json(ContextBundleV020, payload)
         except (ValidationError, ValueError) as error:
@@ -660,8 +688,8 @@ class ContextCompilerService:
         for index, (decision, item) in enumerate(zip(receipt.selected, bundle.items, strict=True)):
             if (
                 decision.final_order != index
-                or _item_evidence_id(item) != decision.evidence_id
-                or _item_scope(item) != decision.scope
+                or item_evidence_id(item) != decision.evidence_id
+                or item_scope(item) != decision.scope
                 or item.representation != decision.representation
                 or item.trust.role is not ContentRole.DATA
                 or item.trust.instruction_execution_allowed
@@ -767,7 +795,7 @@ class ContextCompilerService:
         """Reverify one F002 block object and enclose its exact content as data."""
         if candidate.body_object is None:
             raise ContextIntegrityFailure("selected_block_body_missing")
-        payload = _read_verified(self._object_store, candidate.body_object)
+        payload = read_verified(self._object_store, candidate.body_object)
         try:
             block = validate_json(ContentBlock, payload)
         except (ValidationError, ValueError) as error:
@@ -797,7 +825,7 @@ class ContextCompilerService:
             raise ContextIntegrityFailure("selected_projection_mismatch")
         if candidate.body_object is None or candidate.body_media_type is None:
             raise ContextIntegrityFailure("selected_projection_body_missing")
-        payload = _read_verified(self._object_store, candidate.body_object)
+        payload = read_verified(self._object_store, candidate.body_object)
         try:
             body = payload.decode("utf-8")
         except UnicodeDecodeError as error:
@@ -824,7 +852,7 @@ class ContextCompilerService:
         """Serialize the canonical bundle with a fixed-width placeholder identity."""
         trace = tuple(
             ContextSelectionTrace(
-                evidence_id=_item_evidence_id(item),
+                evidence_id=item_evidence_id(item),
                 final_order=index,
                 reason_code=item.reason,
             )
@@ -865,7 +893,7 @@ class ContextCompilerService:
         items = tuple(entry[1] for entry in selected)
         trace = tuple(
             ContextSelectionTrace(
-                evidence_id=_item_evidence_id(item),
+                evidence_id=item_evidence_id(item),
                 final_order=index,
                 reason_code=item.reason,
             )
@@ -908,18 +936,19 @@ class ContextCompilerService:
     ) -> SelectionReceipt:
         """Assemble the body-free receipt with its recomputed SHA-256 identity."""
         selected_decisions = tuple(
-            _decision(candidate, SelectionOutcome.SELECTED, cost, final_order=index)
+            receipt_decision(candidate, SelectionOutcome.SELECTED, cost, final_order=index)
             for index, (candidate, _item, cost) in enumerate(selected)
         )
         omitted_decisions = tuple(
-            _decision(candidate, SelectionOutcome.OMITTED, cost) for candidate, cost in omitted
+            receipt_decision(candidate, SelectionOutcome.OMITTED, cost)
+            for candidate, cost in omitted
         )
         rejected_decisions = tuple(
-            _decision(candidate, SelectionOutcome.REJECTED, None, reason_code=reason)
+            receipt_decision(candidate, SelectionOutcome.REJECTED, None, reason_code=reason)
             for candidate, reason in classified.rejected
         )
         stale_decisions = tuple(
-            _decision(
+            receipt_decision(
                 candidate,
                 SelectionOutcome.STALE,
                 None,
@@ -951,31 +980,6 @@ class ContextCompilerService:
         identity_payload = draft.model_dump(mode="json", exclude={"receipt_id"})
         payload["receipt_id"] = selection_receipt_id(identity_payload)
         return SelectionReceipt.model_validate(payload)
-
-
-def _decision(
-    candidate: ContextCandidate,
-    outcome: SelectionOutcome,
-    cost: int | None,
-    *,
-    reason_code: str | None = None,
-    final_order: int | None = None,
-) -> ReceiptDecision:
-    """Project one classified candidate into its body-free receipt decision."""
-    return ReceiptDecision(
-        outcome=outcome,
-        evidence_id=candidate.evidence_id,
-        scope=candidate.scope,
-        representation=candidate.representation,
-        reason_code=reason_code if reason_code is not None else candidate.reason_code,
-        high_value=candidate.high_value,
-        term_coverage=candidate.term_coverage,
-        occurrences=candidate.occurrences,
-        source_order=candidate.source_order,
-        estimated_cost=(cost if cost is not None else _candidate_object_cost(candidate)),
-        final_order=final_order,
-        extensions=relevance_extensions(candidate),
-    )
 
 
 __all__ = [

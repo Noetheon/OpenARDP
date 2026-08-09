@@ -27,6 +27,11 @@ raw observations, summaries, the decision, the report and a checksummed run mani
 rejected. An honest conditional or negative decision exits successfully; malformed evidence or an incomplete run does
 not.
 
+For `reference` and `full`, rich fixture digests and format-bound parser configurations are validated before text work.
+`--pdf-model-root` names the manifest-bound assets directory, not its parent installation directory. The supplied model
+bundle is granted only to the PDF parser; DOCX and PPTX use independent model-free parser instances in the same run.
+Parser-domain failures map to `benchmark_execution_failed` without reflecting exception text.
+
 ### Validate evidence
 
 ```text

@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 from collections import defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import partial
@@ -787,14 +787,39 @@ def _median_ns(values: Sequence[int]) -> int:
     return (ordered[middle - 1] + ordered[middle]) // 2
 
 
+def _preflight_rich(
+    repository_root: Path,
+    inputs: BenchmarkInputs,
+    *,
+    model_root: Path | None,
+    model_manifest: ModelBundleManifest | None,
+) -> dict[str, IsolatedDoclingAdapter]:
+    """Validate rich fixtures and bind provider authority before costly phases."""
+    parsers = {
+        "docx": IsolatedDoclingAdapter(),
+        "pdf": IsolatedDoclingAdapter(
+            model_root=model_root,
+            model_manifest=model_manifest,
+        ),
+        "pptx": IsolatedDoclingAdapter(),
+    }
+    for fixture in inputs.corpus.rich_fixtures:
+        if fixture.format not in parsers:
+            raise ValueError("unsupported rich fixture format")
+        source_bytes = (repository_root / fixture.path).read_bytes()
+        digest = "sha256:" + hashlib.sha256(source_bytes).hexdigest()
+        if digest != fixture.sha256:
+            raise ValueError("rich fixture digest mismatch")
+    return parsers
+
+
 def _run_rich(
     repository_root: Path,
     inputs: BenchmarkInputs,
     environment_id: str,
     root: Path,
     *,
-    model_root: Path | None,
-    model_manifest: ModelBundleManifest | None,
+    parsers: Mapping[str, IsolatedDoclingAdapter],
 ) -> tuple[list[BenchmarkObservation], tuple[str, ...], dict[str, JsonValue]]:
     observations: list[BenchmarkObservation] = []
     available: list[str] = []
@@ -808,7 +833,7 @@ def _run_rich(
         if digest != fixture.sha256:
             raise ValueError("rich fixture digest mismatch")
         workload = f"rich-{fixture.format}"
-        parser = IsolatedDoclingAdapter(model_root=model_root, model_manifest=model_manifest)
+        parser = parsers[fixture.format]
         media_type = {
             "docx": RichMediaType.DOCX.value,
             "pdf": RichMediaType.PDF.value,
@@ -1556,6 +1581,14 @@ def execute_product_benchmark(
     inputs = load_benchmark_inputs(root / "benchmarks/product-value/v0.1.0")
     if output.exists():
         raise FileExistsError("benchmark output already exists")
+    rich_parsers: Mapping[str, IsolatedDoclingAdapter] | None = None
+    if profile in {BenchmarkProfile.REFERENCE, BenchmarkProfile.FULL}:
+        rich_parsers = _preflight_rich(
+            root,
+            inputs,
+            model_root=model_root,
+            model_manifest=model_manifest,
+        )
     environment = environment_profile(reference_timing=True)
     environment_value = environment.model_dump(mode="json")
     environment_id = canonical_sha256(environment_value)
@@ -1587,13 +1620,14 @@ def execute_product_benchmark(
         rich_formats: tuple[str, ...] = ()
         rich_details: dict[str, JsonValue] = {}
         if profile in {BenchmarkProfile.REFERENCE, BenchmarkProfile.FULL}:
+            if rich_parsers is None:  # pragma: no cover - guarded by profile selection above
+                raise ValueError("rich parser preflight missing")
             rich_observations, rich_formats, rich_details = _run_rich(
                 root,
                 inputs,
                 environment_id,
                 work / "rich",
-                model_root=model_root,
-                model_manifest=model_manifest,
+                parsers=rich_parsers,
             )
             observations.extend(rich_observations)
         summaries = _summaries(inputs, observations)

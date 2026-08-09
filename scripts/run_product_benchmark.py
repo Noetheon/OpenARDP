@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 
 from product_benchmark_runner import execute_product_benchmark
 
 from openardp.domain.product_benchmark import BenchmarkProfile
 from openardp.domain.rich_ingestion import ModelBundleManifest
+from openardp.ports.parser import ParserError
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def main() -> int:
@@ -42,6 +46,10 @@ def main() -> int:
     except FileExistsError:
         print("benchmark_output_conflict")
         return 8
+    except ParserError as error:
+        _LOGGER.debug("product benchmark parser failure: %s", type(error).__name__)
+        print("benchmark_execution_failed")
+        return 6
     except (OSError, ValueError):
         print("benchmark_execution_failed")
         return 6

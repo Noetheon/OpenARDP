@@ -49,6 +49,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 30 | `030-semantic-retrieval-product-surface` | Expose the validated optional hybrid semantic profile through bounded CLI and MCP product surfaces with exact replay and operational measurements. |
 | 31 | `031-repository-hygiene` | Detect and remove synchronization artifacts and reduce measured parser, scanner and CLI hotspots without contract or storage change. |
 | 32 | `032-documentation-governance` | Replace universal process overhead with risk-proportionate governance and compact completed feature records without losing contracts or evidence. |
+| 33 | `033-product-benchmark-correctness` | Make the F020 rich-format benchmark mutually complete, fail before expensive phases on invalid PDF assets and preserve its body-free command boundary. |
 
 ## Dependency rule
 
@@ -70,6 +71,9 @@ Feature 031 is a behavior-preserving maintenance slice after F030. It adds a rea
 bounded private refactoring only; it does not change retrieval policy, product contracts, persistence or providers.
 Feature 032 is a governance-only transition. It preserves product behavior and normative evidence while establishing
 routine, standard and high-assurance documentation tiers and compacting transient historical planning artifacts.
+Feature 033 corrects the existing F020 measurement harness without changing its corpus, value policy, parser behavior or
+published evidence schema. Independent holdout, profiling, retrieval-policy changes and downstream utility evidence remain
+separate successor work packages.
 
 ## Scope rule
 

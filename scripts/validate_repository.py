@@ -388,6 +388,33 @@ _F031_REQUIRED_FILES = (
     "tests/unit/test_repository_hygiene.py",
 )
 
+_F034_REQUIRED_FILES = (
+    "benchmarks/retrieval-holdout/v0.1.0/protocol.json",
+    "benchmarks/retrieval-holdout/v0.1.0/questions.json",
+    "benchmarks/retrieval-holdout/v0.1.0/questions.schema.json",
+    "benchmarks/retrieval-holdout/v0.1.0/results/reference-macos-arm64/decision.json",
+    "benchmarks/retrieval-holdout/v0.1.0/results/reference-macos-arm64/observations.json",
+    "benchmarks/retrieval-holdout/v0.1.0/results/reference-macos-arm64/report.md",
+    "benchmarks/retrieval-holdout/v0.1.0/results/reference-macos-arm64/run-manifest.json",
+    "benchmarks/retrieval-holdout/v0.1.0/results/reference-macos-arm64/summary.json",
+    "corpora/retrieval-holdout/v0.1.0/LICENSES/CC-BY-SA-4.0.txt",
+    "corpora/retrieval-holdout/v0.1.0/README.md",
+    "corpora/retrieval-holdout/v0.1.0/THIRD_PARTY_NOTICES.md",
+    "corpora/retrieval-holdout/v0.1.0/corpus-lock.json",
+    "corpora/retrieval-holdout/v0.1.0/upstream-lock.json",
+    "scripts/generate_retrieval_holdout.py",
+    "scripts/retrieval_holdout.py",
+    "scripts/retrieval_holdout_evaluation.py",
+    "scripts/run_retrieval_holdout.py",
+    "scripts/validate_retrieval_holdout.py",
+    "specs/034-independent-retrieval-holdout/contracts/benchmark.md",
+    "specs/034-independent-retrieval-holdout/implementation-notes.md",
+    "specs/034-independent-retrieval-holdout/spec.md",
+    "tests/integration/test_retrieval_holdout.py",
+    "tests/test_retrieval_holdout_drift.py",
+    "tests/unit/test_retrieval_holdout.py",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
@@ -1148,6 +1175,31 @@ def _validate_f031_repository_hygiene(root: Path) -> list[Diagnostic]:
     ]
 
 
+def _validate_f034_retrieval_holdout(root: Path) -> list[Diagnostic]:
+    """Require the frozen F034 inputs, reference result and independent validator."""
+    diagnostics = [
+        _governance_finding(
+            root,
+            "GOV027",
+            relative,
+            "required F034 retrieval-holdout artifact is missing",
+        )
+        for relative in _F034_REQUIRED_FILES
+        if not (root / relative).is_file()
+    ]
+    sources = root / "corpora/retrieval-holdout/v0.1.0/sources"
+    if not sources.is_dir() or len(tuple(sources.glob("*.md"))) != 20:
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV027",
+                "corpora/retrieval-holdout/v0.1.0/sources",
+                "F034 must retain exactly 20 Markdown source documents",
+            )
+        )
+    return diagnostics
+
+
 def validate_governance(root: Path) -> list[Diagnostic]:
     """Validate required policy files and cross-document baseline consistency."""
     root = Path(os.path.abspath(root))
@@ -1243,6 +1295,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
     diagnostics.extend(_validate_f028_csv(root))
     diagnostics.extend(_validate_f029_semantic_retrieval(root))
     diagnostics.extend(_validate_f031_repository_hygiene(root))
+    diagnostics.extend(_validate_f034_retrieval_holdout(root))
     return _sort_diagnostics(root, diagnostics)
 
 

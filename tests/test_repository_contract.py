@@ -206,7 +206,7 @@ def test_governance_and_prior_contracts_are_present_and_frozen(
 ) -> None:
     """Require compact feature records, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/033-product-benchmark-correctness"
+    assert active["feature_directory"] == "specs/034-independent-retrieval-holdout"
     transient = {
         "analysis.md",
         "data-model.md",
@@ -663,6 +663,7 @@ def test_feature_map_has_one_exact_dependency_sequence(
     )
     assert "032-documentation-governance" in feature_map
     assert "033-product-benchmark-correctness" in feature_map
+    assert "034-independent-retrieval-holdout" in feature_map
 
 
 def test_f005a_adrs_preserve_decision_history(repository_root: Path) -> None:

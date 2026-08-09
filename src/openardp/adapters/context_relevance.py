@@ -69,6 +69,11 @@ class RelevanceObservingCandidateSource:
                     raise ContextCompilationCancelled("cancelled_during_relevance_evaluation")
                 if len(observed) >= limits.max_discovered:
                     raise ContextLimitExceeded("max_discovered_exceeded")
+                if candidate.relevance is not None:
+                    if candidate.relevance.policy_id != self._policy.policy_id:
+                        raise ContextIntegrityFailure("relevance_policy_mismatch")
+                    observed.append(candidate)
+                    continue
                 text = self._verified_candidate_text(candidate, limits)
                 try:
                     relevance = evaluate_candidate_relevance(task, text, self._policy)

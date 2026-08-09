@@ -1,0 +1,99 @@
+{
+  "benchmark_version": "0.1.0",
+  "development_runs": 2,
+  "holdout_runs": 2,
+  "profile_order": [
+    ["f029_baseline", "f035_candidate"],
+    ["f035_candidate", "f029_baseline"]
+  ],
+  "f025": {
+    "corpus_id": "sha256:5e505148c7e9004a9c1ae7bd68c66addfc9ae3377be7e3057a81d7a1996649bd",
+    "question_set_id": "sha256:e251354b95bcd59d68604cd4a1cf0a5e2300dabdf8145844e2e2a0bb5703bdce",
+    "protocol_id": "sha256:5d8d927e9f9675508257a6054fe6ad5bc93ff5b93fd71274ae0ab4e8e1306582"
+  },
+  "f034": {
+    "corpus_id": "sha256:a5047bbd768cd2927da302da94ded5fa8449a2a3df097ec482f9f6ca708eaca3",
+    "question_set_id": "sha256:5648e59596d1e6bc95cf786f5bdf8a9da8856d8d1f6ee072621014be1b848c61",
+    "protocol_id": "sha256:371bfeafc35d80b792aed06cf5394356bcba83cc4fb2510e682ef29cf2f4e91e"
+  },
+  "f025_parent": {
+    "context": {
+      "budget_bytes": 262144,
+      "max_scopes": 6,
+      "max_discovered": 10000,
+      "max_candidates": 64,
+      "max_body_bytes": 8388608,
+      "max_decisions": 12000,
+      "max_bundle_units": 262144
+    },
+    "semantic_policy": {
+      "minimum_score_millionths": 800000,
+      "top_k": 128,
+      "require_volatile_time_match": true
+    },
+    "provider_limits": {
+      "max_passages": 10000,
+      "max_total_text_bytes": 67108864,
+      "max_passage_bytes": 8388608,
+      "batch_size": 16,
+      "max_cache_entries": 10000,
+      "max_response_entries": 10000,
+      "timeout_seconds": 900
+    },
+    "retrieval_profile": {
+      "hybrid_lexical_fallback": true,
+      "source_balanced_semantic_admission": true,
+      "semantic_max_per_document": 32,
+      "semantic_ranked_prefix": 4,
+      "representation_precedence": "rich_then_text"
+    }
+  },
+  "candidate": {
+    "semantic_policy": {
+      "minimum_score_millionths": 800000,
+      "top_k": 128,
+      "require_volatile_time_match": true
+    },
+    "retrieval_profile": {
+      "hybrid_lexical_fallback": true,
+      "source_balanced_semantic_admission": true,
+      "semantic_max_per_document": 64,
+      "semantic_ranked_prefix": 4,
+      "representation_precedence": "rich_then_text",
+      "prepared_corpus": "process_local_exact_snapshot_v1",
+      "budgeting": "additive_canonical_prefix_v1"
+    }
+  },
+  "gates": {
+    "protected_quality": [
+      "full_support",
+      "atom_recall",
+      "source_recall",
+      "evidence_precision",
+      "mrr",
+      "citation_integrity",
+      "unsupported_abstention"
+    ],
+    "strict_improvement_any": [
+      "full_support",
+      "atom_recall",
+      "source_recall",
+      "evidence_precision",
+      "mrr"
+    ],
+    "warm_p50_max_baseline_fraction": [3, 4],
+    "warm_p95_non_regression": true
+  },
+  "holdout_baseline": {
+    "full_support": {"numerator": 71, "denominator": 90, "ratio": "0.788889"},
+    "atom_recall": {"numerator": 81, "denominator": 100, "ratio": "0.810000"},
+    "source_recall": {"numerator": 81, "denominator": 100, "ratio": "0.810000"},
+    "evidence_precision": {"numerator": 41, "denominator": 229, "ratio": "0.179039"},
+    "mrr": {"numerator": 5459, "denominator": 7560, "ratio": "0.722090"},
+    "citation_integrity": {"numerator": 1, "denominator": 1, "ratio": "1.000000"},
+    "unsupported_abstention": {"numerator": 1, "denominator": 1, "ratio": "1.000000"}
+  },
+  "network": "denied",
+  "result_max_bytes": 16777216,
+  "protocol_id": "sha256:825a8f1599352ef69c4987a5da2293a7792045664020961c92eeea0a23721bfd"
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import unicodedata
 from collections.abc import Callable
 from typing import Any, cast
@@ -26,17 +27,19 @@ from openardp.domain.context_relevance import (
     RelevanceSignalClass,
     extract_relevance_signals,
 )
-from openardp.domain.identity import canonical_json_bytes
+from openardp.domain.identity import canonical_json_bytes, canonical_sha256
 from openardp.domain.ingestion import RepresentationAggregate, RepresentationScope
 from openardp.domain.rich_ingestion import RichRepresentationArtifacts
 from openardp.domain.semantic_retrieval import (
+    PreparedSemanticCorpus,
     SemanticCandidateObservation,
     SemanticPassage,
     SemanticRetrievalLimits,
     SemanticRetrievalPolicy,
+    SemanticScore,
 )
 from openardp.domain.storage import StoredObject
-from openardp.ports.catalog import Catalog, RichCatalog
+from openardp.ports.catalog import Catalog, RichCatalog, RichEvidenceAuthorityCatalog
 from openardp.ports.context import (
     CancellationCheck,
     ContextCandidateSource,
@@ -46,6 +49,7 @@ from openardp.ports.context import (
 )
 from openardp.ports.object_store import ObjectStore, ObjectStoreError
 from openardp.ports.semantic_retrieval import (
+    PreparedSemanticRetrievalProvider,
     SemanticProviderInvalid,
     SemanticProviderLimitExceeded,
     SemanticRetrievalProvider,
@@ -72,6 +76,7 @@ class SemanticContextCandidateSource:
         max_per_document: int = 32,
         ranked_prefix: int = 4,
         rich_first: bool = True,
+        prepared_corpus: bool = False,
     ) -> None:
         """Bind exact evidence authorities and an explicitly configured provider."""
         self._object_store = object_store
@@ -88,11 +93,43 @@ class SemanticContextCandidateSource:
         self._max_per_document = max_per_document
         self._ranked_prefix = ranked_prefix
         self._rich_first = rich_first
+        if prepared_corpus and not isinstance(provider, PreparedSemanticRetrievalProvider):
+            raise ValueError("semantic provider does not support prepared corpora")
+        self._prepared_corpus = prepared_corpus
+        self._prepared_cache: (
+            tuple[
+                str,
+                list[tuple[ContextCandidate, SemanticPassage]],
+                PreparedSemanticCorpus,
+                dict[RepresentationScope, str],
+            ]
+            | None
+        ) = None
+        self._calls = 0
+        self._snapshot_cache_hits = 0
+        self._passages_prepared = 0
+        self._enumeration_ns = 0
+        self._provider_ns = 0
+        self._admission_ns = 0
+        self._reconciliation_ns = 0
 
     @property
     def provider(self) -> SemanticRetrievalProvider:
         """Return the exact provider for lifecycle management and metrics."""
         return self._provider
+
+    @property
+    def phase_metrics(self) -> dict[str, int]:
+        """Return cumulative body-free discovery phase observations."""
+        return {
+            "calls": self._calls,
+            "snapshot_cache_hits": self._snapshot_cache_hits,
+            "passages_prepared": self._passages_prepared,
+            "enumeration_ns": self._enumeration_ns,
+            "provider_ns": self._provider_ns,
+            "admission_ns": self._admission_ns,
+            "reconciliation_ns": self._reconciliation_ns,
+        }
 
     def discover(
         self,
@@ -104,7 +141,20 @@ class SemanticContextCandidateSource:
         """Return policy-admitted semantic candidates with exact score ordering."""
         if cancel():
             raise ContextCompilationCancelled("cancelled_before_semantic_discovery")
-        corpus = self._enumerate(snapshot, limits, cancel)
+        self._calls += 1
+        cache_key = self._cache_key(snapshot, limits)
+        cached = self._prepared_cache
+        if self._prepared_corpus and cached is not None and cached[0] == cache_key:
+            self._snapshot_cache_hits += 1
+            corpus = cached[1]
+            prepared = cached[2]
+            rich_authorities = cached[3]
+        else:
+            enumeration_started = time.perf_counter_ns()
+            corpus = self._enumerate(snapshot, limits, cancel)
+            self._enumeration_ns += time.perf_counter_ns() - enumeration_started
+            prepared = None
+            rich_authorities = self._rich_authorities(snapshot)
         passages = tuple(entry[1] for entry in corpus)
         encoded_bytes = sum(len(passage.text.encode("utf-8")) for passage in passages)
         if encoded_bytes > self._provider_limits.max_total_text_bytes:
@@ -112,18 +162,52 @@ class SemanticContextCandidateSource:
         identities = {(passage.evidence_id, passage.object_id) for passage in passages}
         if len(identities) != len(passages):
             raise ContextIntegrityFailure("semantic_passage_identity_duplicate")
+        provider_started = time.perf_counter_ns()
         try:
-            scores = self._provider.score(task, passages, self._provider_limits, cancel)
+            if self._prepared_corpus:
+                prepared_provider = cast(PreparedSemanticRetrievalProvider, self._provider)
+                if prepared is None:
+                    prepared = prepared_provider.prepare(passages, self._provider_limits, cancel)
+                    self._prepared_cache = (
+                        cache_key,
+                        corpus,
+                        prepared,
+                        rich_authorities,
+                    )
+                    self._passages_prepared += len(passages)
+                scores = prepared_provider.score_prepared(
+                    task, prepared, self._provider_limits, cancel
+                )
+            else:
+                scores = self._provider.score(task, passages, self._provider_limits, cancel)
         except SemanticProviderLimitExceeded as error:
             raise ContextLimitExceeded("semantic_provider_limit_exceeded") from error
         except SemanticProviderInvalid as error:
             raise ContextIntegrityFailure("semantic_provider_response_invalid") from error
+        finally:
+            self._provider_ns += time.perf_counter_ns() - provider_started
+        admitted = self._admit(task, corpus, scores)
+        if self._prepared_corpus and cached is not None and cached[0] == cache_key:
+            reconciliation_started = time.perf_counter_ns()
+            self._reconcile_catalog(admitted, rich_authorities)
+            self._reconciliation_ns += time.perf_counter_ns() - reconciliation_started
+        return tuple(admitted)
+
+    def _admit(
+        self,
+        task: str,
+        corpus: list[tuple[ContextCandidate, SemanticPassage]],
+        scores: tuple[SemanticScore, ...],
+    ) -> list[ContextCandidate]:
+        """Validate provider coverage and apply the exact semantic admission policy."""
+        passages = tuple(entry[1] for entry in corpus)
         expected = {(passage.evidence_id, passage.object_id) for passage in passages}
         observed = {(score.evidence_id, score.object_id) for score in scores}
         if len(scores) != len(observed) or observed != expected:
             raise ContextIntegrityFailure("semantic_provider_response_coverage")
         recipe_id = self._provider.recipe.recipe_id
         by_identity = {(score.evidence_id, score.object_id): score for score in scores}
+        admission_started = time.perf_counter_ns()
         candidates: list[ContextCandidate] = []
         for candidate, passage in corpus:
             score = by_identity[(passage.evidence_id, passage.object_id)]
@@ -162,9 +246,92 @@ class SemanticContextCandidateSource:
                 candidate.evidence_id,
             )
         )
-        if self._source_balanced:
-            return tuple(self._balanced(candidates)[: self._policy.top_k])
-        return tuple(candidates[: self._policy.top_k])
+        admitted = (
+            self._balanced(candidates)[: self._policy.top_k]
+            if self._source_balanced
+            else candidates[: self._policy.top_k]
+        )
+        self._admission_ns += time.perf_counter_ns() - admission_started
+        return admitted
+
+    def _cache_key(self, snapshot: CorpusSnapshot, limits: ContextCompileLimits) -> str:
+        """Bind one compiler-lifetime cache entry to exact authority and limits."""
+        return str(
+            canonical_sha256(
+                {
+                    "domain": "openardp.semantic-candidate-cache",
+                    "version": 1,
+                    "snapshot": snapshot.model_dump(mode="json"),
+                    "compile_limits": limits.model_dump(mode="json"),
+                    "provider_limits": self._provider_limits.model_dump(mode="json"),
+                    "provider_recipe_id": self._provider.recipe.recipe_id,
+                    "rich_first": self._rich_first,
+                }
+            )
+        )
+
+    def _rich_authorities(self, snapshot: CorpusSnapshot) -> dict[RepresentationScope, str]:
+        """Capture lightweight accepted-rich-row fingerprints when supported."""
+        if not isinstance(self._catalog, RichEvidenceAuthorityCatalog):
+            return {}
+        result: dict[RepresentationScope, str] = {}
+        for scope in snapshot.scopes:
+            representation_scope = _representation_scope(scope)
+            fingerprint = self._catalog.rich_evidence_authority_fingerprint(representation_scope)
+            if fingerprint is not None:
+                result[representation_scope] = fingerprint
+        return result
+
+    def _reconcile_catalog(
+        self,
+        candidates: list[ContextCandidate],
+        rich_authorities: dict[RepresentationScope, str],
+    ) -> None:
+        """Recheck cached admitted metadata against current authoritative catalog rows."""
+        by_scope: dict[
+            RepresentationScope,
+            tuple[RepresentationAggregate | None, RichRepresentationArtifacts | None],
+        ] = {}
+        verified_rich_scopes: set[RepresentationScope] = set()
+        for candidate in candidates:
+            representation_scope = _representation_scope(candidate.scope)
+            if representation_scope in verified_rich_scopes:
+                continue
+            facts = by_scope.get(representation_scope)
+            if facts is None:
+                expected_rich = rich_authorities.get(representation_scope)
+                if expected_rich is not None and isinstance(
+                    self._catalog, RichEvidenceAuthorityCatalog
+                ):
+                    current = self._catalog.rich_evidence_authority_fingerprint(
+                        representation_scope
+                    )
+                    if current != expected_rich:
+                        raise ContextIntegrityFailure("semantic_cached_catalog_mismatch")
+                    verified_rich_scopes.add(representation_scope)
+                    continue
+                facts = (
+                    self._catalog.load_representation(representation_scope),
+                    self._rich_catalog.load_rich_representation(representation_scope),
+                )
+                by_scope[representation_scope] = facts
+            aggregate, rich = facts
+            if isinstance(candidate.provenance, ContextBlockProvenance):
+                if aggregate is None or not any(
+                    str(row.block_id) == candidate.evidence_id
+                    and row.object == candidate.body_object
+                    and row.ordinal == candidate.source_order
+                    for row in aggregate.blocks
+                ):
+                    raise ContextIntegrityFailure("semantic_cached_catalog_mismatch")
+                continue
+            if rich is None or not any(
+                record.projection.evidence_projection_id == candidate.evidence_id
+                and record.retrieval_object == candidate.body_object
+                and record.ordinal == candidate.source_order
+                for record in rich.bundle.records
+            ):
+                raise ContextIntegrityFailure("semantic_cached_catalog_mismatch")
 
     def _balanced(self, candidates: list[ContextCandidate]) -> list[ContextCandidate]:
         """Apply a ranked prefix then fair document round-robin before global top-k."""

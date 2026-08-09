@@ -9,7 +9,11 @@ import pytest
 
 import openardp.adapters.e5_semantic as e5_module
 from openardp.adapters.e5_semantic import IsolatedE5SemanticProvider
-from openardp.domain.semantic_retrieval import SemanticPassage, SemanticRetrievalLimits
+from openardp.domain.semantic_retrieval import (
+    PreparedSemanticCorpus,
+    SemanticPassage,
+    SemanticRetrievalLimits,
+)
 from openardp.ports.semantic_retrieval import (
     SemanticProviderInvalid,
     SemanticProviderLimitExceeded,
@@ -138,6 +142,81 @@ def test_score_accepts_body_free_response_and_tracks_metrics(
         "peak_worker_rss_bytes": 123,
     }
     assert input_connection.sent[0]["kind"] == "score"  # type: ignore[index]
+
+
+def test_prepare_then_score_prepared_uses_body_once_and_tracks_phase_metrics(
+    provider: IsolatedE5SemanticProvider,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Send full text only during preparation and a compact corpus handle thereafter."""
+    passage = _passage()
+    limits = SemanticRetrievalLimits(max_passages=1, max_cache_entries=1)
+    prepared = PreparedSemanticCorpus.from_passages(provider.recipe.recipe_id, (passage,), limits)
+    input_connection = _Connection()
+    output_connection = _Connection()
+    responses = [
+        {
+            "kind": "prepared",
+            "corpus": prepared.model_dump(mode="json"),
+            "peak_rss_bytes": 120,
+            "passage_encode_ns": 11,
+        },
+        {
+            "kind": "scores",
+            "peak_rss_bytes": 123,
+            "query_encode_ns": 7,
+            "similarity_ns": 5,
+            "scores": [
+                {
+                    "cache_hit": True,
+                    "evidence_id": passage.evidence_id,
+                    "object_id": passage.object_id,
+                    "provider_recipe_id": provider.recipe.recipe_id,
+                    "score_millionths": 812_345,
+                }
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        provider, "_ensure_worker", lambda _cancel: (input_connection, output_connection)
+    )
+    monkeypatch.setattr(provider, "_receive", lambda *_args: responses.pop(0))
+
+    assert provider.prepare((passage,), limits, lambda: False) == prepared
+    scores = provider.score_prepared("valid query", prepared, limits, lambda: False)
+
+    assert scores[0].score_millionths == 812_345
+    assert input_connection.sent[0]["kind"] == "prepare"  # type: ignore[index]
+    assert input_connection.sent[0]["passages"][0]["text"] == passage.text  # type: ignore[index]
+    assert input_connection.sent[1] == {  # type: ignore[index]
+        "corpus_id": prepared.corpus_id,
+        "kind": "score_prepared",
+        "limits": limits.model_dump(mode="json"),
+        "query": "valid query",
+    }
+    assert provider.phase_metrics == {
+        "preparations": 1,
+        "prepared_requests": 1,
+        "passage_encode_ns": 11,
+        "query_encode_ns": 7,
+        "similarity_ns": 5,
+    }
+
+
+def test_prepared_calls_reject_recipe_mismatch_and_malformed_worker_response(
+    provider: IsolatedE5SemanticProvider,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fail closed before or after IPC when a process-local handle cannot be trusted."""
+    passage = _passage()
+    limits = SemanticRetrievalLimits(max_passages=1, max_cache_entries=1)
+    wrong = PreparedSemanticCorpus.from_passages("sha256:" + "f" * 64, (passage,), limits)
+    with pytest.raises(SemanticProviderInvalid, match="recipe"):
+        provider.score_prepared("query", wrong, limits, lambda: False)
+    monkeypatch.setattr(provider, "_ensure_worker", lambda _cancel: (_Connection(), _Connection()))
+    monkeypatch.setattr(provider, "_receive", lambda *_args: {"kind": "unknown"})
+    with pytest.raises(SemanticProviderInvalid, match="response invalid"):
+        provider.prepare((passage,), limits, lambda: False)
 
 
 @pytest.mark.parametrize(

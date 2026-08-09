@@ -576,6 +576,18 @@ class RichCatalog(Catalog, Protocol):
 
 
 @runtime_checkable
+class RichEvidenceAuthorityCatalog(Protocol):
+    """Optional lightweight authority fingerprint for accepted rich evidence rows."""
+
+    def rich_evidence_authority_fingerprint(
+        self,
+        scope: RepresentationScope,
+    ) -> str | None:
+        """Return a body-free digest of accepted attempt and evidence object mappings."""
+        ...
+
+
+@runtime_checkable
 class ContextCatalog(Catalog, Protocol):
     """Additive atomic persistence boundary for F008 context compilations."""
 

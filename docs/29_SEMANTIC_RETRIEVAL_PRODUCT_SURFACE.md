@@ -1,9 +1,10 @@
 # Semantic Retrieval Product Surface
 
-Feature 030 exposes the exact F029 v0.3 hybrid multilingual retrieval profile as a usable, opt-in product capability.
-It does not change retrieval quality policy: lexical F027 remains the provider-free default, and semantic selection
-retains the pinned score floor, Rich-first precedence, source-balanced admission, exact deduplication, quotas,
-verification and abstention behavior.
+Feature 030 introduced the exact F029 v0.3 hybrid multilingual retrieval profile as an opt-in product capability.
+Feature 035 advances new semantic compilations to the exactly identified `1.3.0` profile when the configured provider
+advertises prepared-corpus support, while preserving `1.2.0` for historical replay and compatible third-party providers.
+Lexical retrieval remains the provider-free default. The score floor, Rich-first precedence, exact
+deduplication, quotas, verification and abstention remain explicit identity-bound behavior.
 
 ## CLI
 
@@ -39,6 +40,19 @@ Clients never receive path, provider, model, policy, limit or executable authori
 returns the stable `invalid_params` category without lexical fallback. One provider worker is reused within the session
 and closed on normal exit or failure; embeddings remain bounded disposable process memory.
 
+## Current prepared execution profile
+
+The F035 profile prepares the exact ordered semantic corpus once in the isolated E5 worker. Warm requests carry only the
+query and opaque corpus identity. A second bounded compiler-local cache retains verified rich retrieval text for exact
+lexical rescoring; returned matches are CAS-reverified. Both caches bind the exact snapshot and limits and are discarded
+on drift or process close. Neither creates a vector database, durable index or provider-neutral document representation.
+
+Warm catalog checks use a body-free digest of the accepted rich attempt and all ordered reference, projection and
+retrieval object mappings. This avoids rebuilding thousands of provider-native models while still comparing the cache
+with authoritative SQLite facts. Selected content is independently hash-verified again during bundle materialization.
+Canonical additive budgeting is byte-identical to historical full-bundle measurement for every built-in estimator;
+unknown estimators fail closed.
+
 ## Operational evidence
 
 The frozen F030 benchmark measures two cold/warm pairs over fresh workspaces and the unchanged F024/F025 workload. Each
@@ -63,6 +77,17 @@ The committed two-run result is `SEMANTIC_SURFACE_READY`. Cold query wall time t
 252.880 seconds (72.5216% of cold, or 27.4784% lower). All 121,828 warm passage scores are cache hits, both within-run
 and across-run timing-free projections are identical, and peak provider-worker RSS is 1,500,725,248 bytes (1.398 GiB),
 109,887,488 bytes below the frozen ceiling.
+
+F035 adds a separate counterbalanced phase benchmark over unchanged F025 plus one post-freeze F034 milestone. Its
+`run-manifest.json` discloses each provider-worker peak RSS and exact recipe; `phases.json` reconciles compiler, source and
+provider durations without bodies, questions, user names, host names or paths. The F034 result is reported independently
+from F025 candidate acceptance and is retained even when generalization is negative.
+
+The binding macOS arm64 result is valid: F025 precision improves from `29/673` to `29/669` with every protected quality
+metric non-regressing. Warm p50 falls from 7.391 s to 2.369 s (67.94%) and warm p95 from 21.194 s to 3.175 s (85.02%).
+Cold samples remain separately disclosed and noisy; no cold-start improvement is claimed. Peak provider-worker RSS is
+1,365,327,872 bytes. The unchanged F034 candidate exactly reproduces all frozen F029 quality metrics in two deterministic
+fresh workspaces, so holdout generalization is positive without holdout tuning.
 
 ## Persistence and rollback
 

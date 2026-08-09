@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from openardp.domain.semantic_retrieval import (
+    PreparedSemanticCorpus,
     SemanticPassage,
     SemanticProviderRecipe,
     SemanticRetrievalLimits,
@@ -57,7 +58,32 @@ class SemanticRetrievalProvider(Protocol):
         ...
 
 
+@runtime_checkable
+class PreparedSemanticRetrievalProvider(SemanticRetrievalProvider, Protocol):
+    """Optionally prepare an exact corpus once for compact process-local scoring."""
+
+    def prepare(
+        self,
+        passages: tuple[SemanticPassage, ...],
+        limits: SemanticRetrievalLimits,
+        cancel: CancellationCheck,
+    ) -> PreparedSemanticCorpus:
+        """Prepare verified passages and return a body-free process-local handle."""
+        ...
+
+    def score_prepared(
+        self,
+        query: str,
+        corpus: PreparedSemanticCorpus,
+        limits: SemanticRetrievalLimits,
+        cancel: CancellationCheck,
+    ) -> tuple[SemanticScore, ...]:
+        """Score every identity in one still-live prepared corpus."""
+        ...
+
+
 __all__ = [
+    "PreparedSemanticRetrievalProvider",
     "SemanticProviderInvalid",
     "SemanticProviderLimitExceeded",
     "SemanticProviderTimedOut",

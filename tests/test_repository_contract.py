@@ -288,18 +288,23 @@ def test_governance_and_prior_contracts_are_present_and_frozen(
     assert (
         repository_root / "conformance/alternate-parser/v0.1.0/expected/alternate-record-set.json"
     ).is_file()
-    migration_source = (repository_root / "src/openardp/adapters/sqlite_migrations.py").read_text(
-        encoding="utf-8"
-    )
-    assert "MIGRATION_8 = Migration(" in migration_source
-    assert 'name="visual-evidence"' in migration_source
-    assert "MIGRATION_9 = Migration(" in migration_source
-    assert 'name="local-watcher-and-cancellable-jobs"' in migration_source
-    assert "MIGRATION_10 = Migration(" in migration_source
-    assert 'name="retention-recovery-maintenance"' in migration_source
+    from openardp.adapters.sqlite_migrations import MIGRATIONS
+
+    migration_names = {migration.version: migration.name for migration in MIGRATIONS}
+    assert migration_names[8] == "visual-evidence"
+    assert migration_names[9] == "local-watcher-and-cancellable-jobs"
+    assert migration_names[10] == "retention-recovery-maintenance"
     for relative, expected in F009_FROZEN_DESCRIPTOR_HASHES.items():
         actual = hashlib.sha256((repository_root / relative).read_bytes()).hexdigest()
         assert actual == expected
+
+
+def test_production_modules_need_no_maintainability_exceptions(repository_root: Path) -> None:
+    """Keep every production module within the default reviewed size boundary."""
+    policy = json.loads(
+        (repository_root / "quality/maintainability-policy.json").read_text(encoding="utf-8")
+    )
+    assert policy["module_exceptions"] == {}
 
 
 def test_f020_committed_reference_result_remains_valid(repository_root: Path) -> None:

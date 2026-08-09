@@ -3,28 +3,7 @@
   "source_root": "src/openardp",
   "module_line_limit": 1000,
   "function_line_limit": 100,
-  "module_exceptions": {
-    "src/openardp/adapters/filesystem_maintenance.py": {
-      "maximum_lines": 1305,
-      "reason": "Reviewed F022 dual-form inventory, exact backup, restore and quarantine compatibility over the legacy recovery adapter."
-    },
-    "src/openardp/adapters/sqlite_catalog.py": {
-      "maximum_lines": 7182,
-      "reason": "Reviewed F029 bounded deterministic FTS offset paging plus F022 revision-11 normalized projection, fail-closed search coverage, optimizer fence, safe inventory and compaction over the legacy transactional facade."
-    },
-    "src/openardp/adapters/sqlite_migrations.py": {
-      "maximum_lines": 1666,
-      "reason": "Append-only reviewed SQL migration history through workspace revision 11, including the durable storage-optimizer operation kind."
-    },
-    "src/openardp/interfaces/cli.py": {
-      "maximum_lines": 1380,
-      "reason": "Reviewed F031 composition and execution facade after bounded argument-grammar and output-renderer extraction."
-    },
-    "src/openardp/services/context_compiler.py": {
-      "maximum_lines": 1115,
-      "reason": "Auditable deterministic context selection and receipt orchestration."
-    }
-  },
+  "module_exceptions": {},
   "function_exceptions": {
     "src/openardp/adapters/docling_native.py:convert_docling_bytes": {
       "maximum_lines": 184,
@@ -34,27 +13,27 @@
       "maximum_lines": 144,
       "reason": "Reviewed thin evidence projection boundary."
     },
-    "src/openardp/adapters/filesystem_maintenance.py:backup_workspace": {
+    "src/openardp/adapters/filesystem_backup.py:backup_workspace": {
       "maximum_lines": 139,
       "reason": "Atomic backup orchestration with explicit verification stages."
     },
-    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog._load_reconciliation": {
+    "src/openardp/adapters/sqlite_catalog_reconciliation.py:_SQLiteCatalogReconciliationMixin._load_reconciliation": {
       "maximum_lines": 143,
       "reason": "Validated reconciliation aggregate reconstruction."
     },
-    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.acquire_representation": {
+    "src/openardp/adapters/sqlite_catalog_representations.py:_SQLiteCatalogRepresentationMixin.acquire_representation": {
       "maximum_lines": 123,
       "reason": "Fenced representation lease acquisition transaction with revision-11 normalized scope publication."
     },
-    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.commit_ready_representation": {
+    "src/openardp/adapters/sqlite_catalog_representations.py:_SQLiteCatalogRepresentationMixin.commit_ready_representation": {
       "maximum_lines": 160,
       "reason": "Atomic ready-representation publication transaction with revision-11 block projection metadata."
     },
-    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.commit_reconciliation": {
+    "src/openardp/adapters/sqlite_catalog_reconciliation.py:_SQLiteCatalogReconciliationMixin.commit_reconciliation": {
       "maximum_lines": 120,
       "reason": "Atomic reconciliation result publication transaction."
     },
-    "src/openardp/adapters/sqlite_catalog.py:SQLiteCatalog.publish_derivation": {
+    "src/openardp/adapters/sqlite_catalog_derivations.py:_SQLiteCatalogDerivationMixin.publish_derivation": {
       "maximum_lines": 145,
       "reason": "Atomic derivation lifecycle publication transaction."
     },

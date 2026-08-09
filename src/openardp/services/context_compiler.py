@@ -33,7 +33,6 @@ from openardp.domain.context_compilation import (
     ContextEvidenceItem,
     ContextMissingEvidence,
     ContextProjectionProvenance,
-    ContextSelectionPolicy,
     ContextSelectionTrace,
     CorpusSnapshot,
     ReceiptDecision,
@@ -78,6 +77,21 @@ from openardp.ports.context import (
     ContextNotFound,
 )
 from openardp.ports.object_store import ObjectStore, ObjectStoreError
+from openardp.services.context_evidence import (
+    candidate_object_cost as _candidate_object_cost,
+)
+from openardp.services.context_evidence import (
+    item_evidence_id as _item_evidence_id,
+)
+from openardp.services.context_evidence import (
+    item_scope as _item_scope,
+)
+from openardp.services.context_evidence import (
+    missing_evidence as _missing_evidence,
+)
+from openardp.services.context_evidence import (
+    read_verified as _read_verified,
+)
 from openardp.services.context_ranking import (
     ClassifiedCandidates,
     candidate_total_order_key,
@@ -939,21 +953,6 @@ class ContextCompilerService:
         return SelectionReceipt.model_validate(payload)
 
 
-def _item_evidence_id(item: ContextEvidenceItem) -> str:
-    provenance = item.provenance
-    if isinstance(provenance, ContextBlockProvenance):
-        return str(provenance.block_id)
-    return provenance.evidence_projection_id
-
-
-def _candidate_object_cost(candidate: ContextCandidate) -> int:
-    """Return the verified body or descriptor object length used for receipt costing."""
-    value = candidate.body_object or candidate.cost_object
-    if value is None:
-        raise ContextIntegrityFailure("candidate_cost_object_missing")
-    return value.byte_length
-
-
 def _decision(
     candidate: ContextCandidate,
     outcome: SelectionOutcome,
@@ -976,59 +975,6 @@ def _decision(
         estimated_cost=(cost if cost is not None else _candidate_object_cost(candidate)),
         final_order=final_order,
         extensions=relevance_extensions(candidate),
-    )
-
-
-def _missing_evidence(
-    policy: ContextSelectionPolicy,
-    selected: list[tuple[ContextCandidate, ContextEvidenceItem, int]],
-) -> tuple[list[ContextMissingEvidence], list[ReceiptNotice]]:
-    """Report unsatisfied requirements and visual escalation honestly."""
-    required = required_representations(policy)
-    satisfied = {entry[1].representation for entry in selected}
-    missing: list[ContextMissingEvidence] = []
-    notices: list[ReceiptNotice] = []
-    if not (required & satisfied):
-        for representation in sorted(required, key=lambda item: item.value):
-            missing.append(
-                ContextMissingEvidence(
-                    evidence_type=representation,
-                    reason_code="required_evidence_unavailable",
-                )
-            )
-    if EvidenceRepresentation.VISUAL_HANDLE in required and (
-        EvidenceRepresentation.VISUAL_HANDLE not in satisfied
-    ):
-        if not any(item.evidence_type is EvidenceRepresentation.VISUAL_HANDLE for item in missing):
-            missing.append(
-                ContextMissingEvidence(
-                    evidence_type=EvidenceRepresentation.VISUAL_HANDLE,
-                    reason_code="visual_evidence_required",
-                )
-            )
-        notices.append(ReceiptNotice(code="visual_evidence_required"))
-    return missing, notices
-
-
-def _read_verified(object_store: ObjectStore, stored: StoredObject) -> bytes:
-    """Read one object only after digest, length and shape verification."""
-    try:
-        verified = object_store.verify(stored.object_id, expected_length=stored.byte_length)
-        payload = b"".join(object_store.iter_chunks(verified.object_id))
-    except ObjectStoreError as error:
-        raise ContextIntegrityFailure("selected_object_invalid") from error
-    if len(payload) != verified.byte_length:
-        raise ContextIntegrityFailure("selected_object_length_changed")
-    return payload
-
-
-def _item_scope(item: ContextEvidenceItem) -> VersionScope:
-    """Return the exact corpus scope of one persisted evidence item."""
-    provenance = item.provenance
-    return VersionScope(
-        document_id=provenance.document_id,
-        version_id=provenance.version_id,
-        representation_id=provenance.representation_id,
     )
 
 

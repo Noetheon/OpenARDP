@@ -23,7 +23,6 @@
     ],
     "prefixes": [
       "docs/",
-      "spec-kit/feature-prompts/",
       "specs/"
     ]
   },

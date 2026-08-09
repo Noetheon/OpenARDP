@@ -14,7 +14,6 @@
     "scripts",
     "spec-kit/FEATURE_MAP.md",
     "spec-kit/OPERATING_PROCEDURE.md",
-    "spec-kit/feature-prompts/015-benchmark-security-release-gate.md",
     "specs/015-benchmark-security-release-gate",
     "src",
     "tests",

@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User request to test the complete delivered OpenARDP project, design and execute a meaningful benchmark,
 publish inspectable results, and determine whether its actual benefits justify its preparation and storage costs.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-01
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Authoritative Feature 013 prompt
 `spec-kit/feature-prompts/013-retention-recovery-migrations.md` (SHA-256

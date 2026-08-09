@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Converged; cross-platform PR and post-merge `main` CI passed
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User description: "Implement F003 completely, deeply, sustainably and according to best practice. Persist immutable content objects, documents, versions and jobs safely on one machine so repeated ingestion can reuse exact content and interrupted work cannot expose partial state."
 

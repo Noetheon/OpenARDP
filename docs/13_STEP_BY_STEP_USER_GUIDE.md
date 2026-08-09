@@ -21,12 +21,13 @@ uv run pytest
 Record the exact base commit, tool versions and result. Do not alter the lockfile unless the active feature explicitly
 owns a reviewed dependency change.
 
-## 3. Select exactly one feature
+## 3. Select and classify one bounded change
 
-Use the next entry in [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) only after its predecessor converges, merges
-and has green post-merge CI. Use the matching prompt in `spec-kit/feature-prompts/`.
+Use [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) for roadmap work and classify the change as routine, standard
+or high assurance using the constitution. Routine changes do not create feature directories. Standard changes retain a
+specification and implementation notes. High-assurance changes use the full lifecycle below.
 
-## 4. Complete Spec Kit planning
+## 4. Complete high-assurance planning when required
 
 ```text
 $speckit-specify
@@ -37,19 +38,20 @@ $speckit-tasks
 $speckit-analyze
 ```
 
-Correct contradictions in the highest-level originating artifact. Do not start implementation while a critical/high
-finding remains.
+Correct contradictions in the highest-level originating artifact. Do not start high-assurance implementation while a
+critical/high finding remains. The full lifecycle is optional for standard changes and unnecessary for routine changes.
 
 ## 5. Implement test-first
 
-Use `$speckit-implement` for the active phase. Add failing deterministic offline tests before changed behavior or
-contracts where practical. Preserve original source bytes, provider-native artifacts, evidence provenance, local-first
-defaults and provider boundaries.
+For high-assurance work, use `$speckit-implement` for the active phase. For every tier, add failing deterministic offline
+tests before changed behavior or contracts where practical. Preserve original source bytes, provider-native artifacts,
+evidence provenance, local-first defaults and provider boundaries.
 
 ## 6. Validate and converge
 
-Run the full locked gate, repository validator, build and feature quickstart. Then run `$speckit-converge`. Append missing
-tasks and implement them until no critical/high finding remains.
+Run the applicable locked gate, repository validator and build. High-assurance work then runs `$speckit-converge`; append
+missing tasks and implement them until no critical/high finding remains. Compact temporary planning artifacts only after
+their durable content and references have been migrated.
 
 ## 7. Commit and publish one work package
 

@@ -2,8 +2,9 @@
 
 ## Decision
 
-OpenARDP uses GitHub Spec Kit as the development-process layer for Codex. Spec Kit does not define the product or replace
-the architecture. It turns the checked-in product, security and architecture decisions into bounded feature
+OpenARDP uses GitHub Spec Kit selectively as the high-assurance development-process layer for Codex. Spec Kit does not
+define the product or replace the architecture. Routine changes use a scoped PR, standard changes retain a compact
+requirements/evidence record, and high-assurance work turns checked-in product, security and architecture decisions into
 specifications, plans, tasks, analysis gates and implementation/convergence loops.
 
 ## Why it is appropriate
@@ -18,7 +19,8 @@ OpenARDP is unusually sensitive to semantic drift. A superficially plausible imp
 - introduce mandatory cloud dependencies;
 - claim performance improvements without benchmarks.
 
-A constitution-driven, feature-bounded workflow keeps these constraints visible throughout implementation.
+A constitution-driven, risk-proportionate workflow keeps these constraints visible without turning every change into a
+large permanent dossier.
 
 ## Source-of-truth model
 
@@ -29,7 +31,7 @@ Accepted ADRs and public schemas
         ↓
 Project product requirements and architecture
         ↓
-Active feature specification and plan
+Durable active requirements and required plan
         ↓
 Tasks
         ↓
@@ -38,9 +40,21 @@ Code and tests
 
 A lower layer may implement or refine a higher layer but may not silently contradict it.
 
-## Lifecycle
+## Risk classification
 
-Every production-relevant feature follows:
+Classify before implementation and move upward when scope is unknown, mixed or disputed:
+
+| Tier | Boundary | Durable record |
+|---|---|---|
+| Routine | Docs, tests, internal refactoring or narrow fixes without behavior/contract/trust impact | PR evidence only |
+| Standard | Bounded behavior without a high-assurance trigger | `spec.md` and `implementation-notes.md` |
+| High assurance | Contracts, schemas, identity, migration, security/trust, providers, dependencies, benchmarks or release | Full lifecycle, then compact record |
+
+Tier selection never weakens executable CI, security, coverage, compatibility or release gates.
+
+## High-assurance lifecycle
+
+High-assurance work follows:
 
 1. **Constitution** — project rules already established.
 2. **Specify** — what the bounded user/operator outcome is and why it matters.
@@ -60,6 +74,14 @@ managed memory/template files.
 
 Generated Codex skills live in `.agents/skills/`. Feature artifacts live in `specs/`. Project architecture continues to
 live in `docs/` rather than being copied into every feature folder.
+
+## Retention and recovery
+
+Completed features retain accepted `spec.md`, final `implementation-notes.md` and normative `contracts/`. Planning-time
+`plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `tasks.md`, `analysis.md`, checklists and generated prompts may
+be removed after convergence, unique-content review and link migration. Their exact historical content remains available
+through normal Git history. This reduces current-tree maintenance and navigation; it does not rewrite history or claim a
+material reduction in historical clone size.
 
 ## Project-local template propagation
 

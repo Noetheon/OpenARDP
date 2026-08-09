@@ -12,5 +12,5 @@ The decision is ready only when both runs preserve timing-free projection identi
 warm wall time does not exceed cold wall time, peak provider-worker RSS is no more than 1.5 GiB and offline execution is
 declared. These operational gates do not change or re-evaluate F029 retrieval quality.
 
-See `specs/030-semantic-retrieval-product-surface/quickstart.md` for exact commands. External model bundles remain outside
+See `docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md` for exact commands. External model bundles remain outside
 Git and must match their committed source locks.

@@ -5,7 +5,7 @@ description: "Task list template for feature implementation"
 
 # Tasks: [FEATURE NAME]
 
-**Input**: Design documents from `/specs/[###-feature-name]/`
+**Input**: High-assurance design documents from `/specs/[###-feature-name]/`
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
@@ -14,6 +14,9 @@ before implementation where practical. Documentation-only features still require
 deterministic validation for changed governance or claims.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+**Retention**: This is a high-assurance working artifact. After convergence, migrate durable evidence to
+`implementation-notes.md`; `tasks.md` need not remain in the current tree.
 
 ## Format: `[ID] [P?] [Story] Description`
 

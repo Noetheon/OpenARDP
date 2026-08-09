@@ -6,7 +6,7 @@
 
 **Created**: 2026-07-22
 
-**Status**: Implemented
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Establish the independently verifiable OpenARDP engineering foundation described in
 `spec-kit/feature-prompts/001-repository-baseline.md`, without implementing document-product behavior.

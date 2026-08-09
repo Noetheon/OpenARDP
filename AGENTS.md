@@ -82,32 +82,24 @@ uv run pytest
 - allow document content to initiate side-effecting tools.
 - add bidirectional Word/PPTX round-tripping to the MVP.
 
-## Spec Kit workflow and artifact governance
+## Risk-proportionate workflow and artifact governance
 
-GitHub Spec Kit is the required execution framework for production-relevant features after bootstrap.
+Classify every change before mutation. If scope is mixed or uncertain, move upward:
 
-- Project-wide constraints live in `.specify/memory/constitution.md`, this file, accepted ADRs, public schemas and `docs/`.
-- Feature-specific requirements, plans and tasks live under `specs/<feature>/`.
-- Do not duplicate project architecture verbatim inside every feature spec; reference the authoritative source.
-- Do not silently resolve conflicts in code. Correct the highest-level originating artifact and regenerate downstream work.
-- Do not create one feature for the full platform. Follow `spec-kit/FEATURE_MAP.md` in order.
+- **Routine**: documentation, tests, internal refactoring or a narrow fix with no user-visible behavior, contract, schema,
+  persistence, identity, migration, security/trust, provider, dependency, benchmark or release impact. Use one scoped PR,
+  relevant tests and exact results. Do not create a Spec Kit directory.
+- **Standard**: bounded user-visible behavior without a high-assurance trigger. Retain `spec.md` and
+  `implementation-notes.md`; use only the planning artifacts that materially reduce risk.
+- **High assurance**: public contracts, schemas, persisted identity, migrations, security/trust boundaries, providers,
+  external dependencies, licensing/supply chain, benchmarks or release decisions. Use the complete Spec Kit lifecycle:
+  specify, clarify, plan, checklist, tasks, analyze, implement and converge, plus an ADR where required.
 
-For each bounded feature, use the full lifecycle:
+Project-wide truth lives in `.specify/memory/constitution.md`, this file, accepted ADRs, public schemas and `docs/`.
+Correct conflicts at the highest-level source. High-assurance implementation is blocked by unresolved critical/high
+analysis findings and merge is blocked by unresolved critical/high convergence findings.
 
-```text
-$speckit-specify
-$speckit-clarify
-$speckit-plan
-$speckit-checklist
-$speckit-tasks
-$speckit-analyze
-$speckit-implement
-$speckit-converge
-```
-
-Implementation is blocked while `speckit.analyze` reports unresolved critical contradictions. A feature is not complete until
-convergence and all repository quality gates pass.
-
-The Codex agent MUST read the active feature's `spec.md`, `plan.md` and `tasks.md` in addition to the project-wide files
-listed above. It MUST implement only the active feature and only the selected task phase unless explicitly directed
-otherwise.
+For an active high-assurance change, read `spec.md`, `plan.md` and `tasks.md`. For a standard change, read its durable
+`spec.md`; routine changes need no feature directory. Completed features retain `spec.md`, `implementation-notes.md` and
+normative contracts. Transient planning files may be removed after convergence and reference migration; Git history is
+their recovery path.

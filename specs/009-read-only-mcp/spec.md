@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-27
 
-**Status**: Converged, merged and remotely verified
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Expose prepared evidence through object-scoped, least-privilege MCP tools over
 a local stdio transport. Configured workspace only; no arbitrary paths, ingestion,

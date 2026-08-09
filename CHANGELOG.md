@@ -8,6 +8,18 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 032 — risk-proportionate documentation governance
+
+- Replaced universal Spec Kit dossiers with deterministic routine, standard and high-assurance tiers while preserving
+  the complete lifecycle for contracts, schemas, identities, migrations, trust/security, providers, dependencies,
+  benchmarks and releases.
+- Compacted 275 transient tracked Markdown files from completed feature records: plans, research, data models,
+  quickstarts, tasks, analyses, checklists and generated prompts remain recoverable from unchanged Git history.
+- Retained every historical `spec.md`, `implementation-notes.md` and normative contract, made the feature map the sole
+  status registry and migrated current guides and links to durable targets.
+- Replaced historical filename enumeration with a generic fail-closed repository invariant that rejects missing durable
+  records, retained transient artifacts, generated prompts and unsafe active-feature locators.
+
 ### Feature 031 — repository hygiene and bounded refactoring
 
 - Added a deterministic, standard-library, Git-aware sync-artifact audit that classifies worktree and Git-metadata

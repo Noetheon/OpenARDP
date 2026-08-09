@@ -74,13 +74,6 @@ F005A_FEATURE_SEQUENCE = (
     "020-product-value-benchmark",
     "021-incremental-freshness",
 )
-HISTORICAL_FEATURE_PROMPTS = (
-    "001-repository-baseline.md",
-    "002-domain-models-schemas.md",
-    "003-cas-sqlite-catalog.md",
-    "004-text-ingestion-slice.md",
-    "005-lexical-search.md",
-)
 F005A_ADRS = (
     "0007-implementation-first.md",
     "0008-preserve-provider-native-representations.md",
@@ -208,25 +201,27 @@ def test_f009_dependency_manifests_remain_frozen(repository_root: Path) -> None:
     }
 
 
-def test_f028_governance_and_prior_contracts_are_present_and_frozen(
+def test_governance_and_prior_contracts_are_present_and_frozen(
     repository_root: Path,
 ) -> None:
-    """Require retained CSV governance, accepted ADRs and frozen prior contracts."""
+    """Require compact feature records, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/031-repository-hygiene"
-    feature = repository_root / "specs/028-csv-ingestion"
-    assert {path.name for path in feature.iterdir()} >= {
-        "spec.md",
-        "plan.md",
-        "tasks.md",
-        "research.md",
-        "data-model.md",
-        "quickstart.md",
+    assert active["feature_directory"] == "specs/032-documentation-governance"
+    transient = {
         "analysis.md",
-        "implementation-notes.md",
-        "contracts",
-        "checklists",
+        "data-model.md",
+        "plan.md",
+        "quickstart.md",
+        "research.md",
+        "tasks.md",
     }
+    for feature in (repository_root / "specs").iterdir():
+        if not feature.is_dir() or not re.fullmatch(r"\d{3}[A-Z]?-[a-z0-9-]+", feature.name):
+            continue
+        assert (feature / "spec.md").is_file()
+        assert (feature / "implementation-notes.md").is_file()
+        assert not transient.intersection(path.name for path in feature.rglob("*.md"))
+        assert not tuple((feature / "checklists").glob("*.md"))
     f010_adr = (
         repository_root / "docs/adr/0011-reconciliation-lineages-and-derivation-lifecycle.md"
     ).read_text(encoding="utf-8")
@@ -256,21 +251,8 @@ def test_f028_governance_and_prior_contracts_are_present_and_frozen(
     )
     assert "Status: Accepted for Feature 017" in f017_adr
     assert "does not authorize production Graph access" in f017_adr
-    assert (repository_root / "spec-kit/feature-prompts/018-repository-hygiene.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/019-ci-cost-optimization.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/020-product-value-benchmark.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/021-incremental-freshness.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/022-storage-amplification.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/023-offline-pdf-model-bundle.md").is_file()
-    assert (
-        repository_root / "spec-kit/feature-prompts/024-redistributable-realworld-corpus.md"
-    ).is_file()
-    assert (
-        repository_root / "spec-kit/feature-prompts/025-semantic-e2e-source-evaluation.md"
-    ).is_file()
-    assert (repository_root / "spec-kit/feature-prompts/026-relevance-abstention.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/027-lexical-ranking-diversity.md").is_file()
-    assert (repository_root / "spec-kit/feature-prompts/031-repository-hygiene.md").is_file()
+    prompt_root = repository_root / "spec-kit/feature-prompts"
+    assert not prompt_root.exists() or not tuple(prompt_root.rglob("*.md"))
     assert (
         repository_root / "benchmarks/relevance/v0.1.0/results/reference-macos-arm64/result.json"
     ).is_file()
@@ -342,22 +324,19 @@ def test_f020_committed_reference_result_remains_valid(repository_root: Path) ->
     }
 
 
-def test_focused_quickstarts_separate_partial_tests_from_full_coverage(
+def test_constitution_mirror_and_compact_feature_policy_are_frozen(
     repository_root: Path,
 ) -> None:
-    """Keep feature-focused commands runnable without weakening the full coverage gate."""
-    quickstarts = (
-        "010-reconciliation-derivation-dag",
-        "014-export-interchange-experiment",
-        "015-benchmark-security-release-gate",
-        "016-alternate-parser-conformance-spike",
-        "017-microsoft-graph-design-spike",
-        "018-repository-hygiene",
-        "021-incremental-freshness",
-    )
-    for feature in quickstarts:
-        text = (repository_root / "specs" / feature / "quickstart.md").read_text(encoding="utf-8")
-        assert "pytest --no-cov" in text
+    """Keep the ratified tiered workflow and retention policy synchronized."""
+    managed = (repository_root / ".specify/memory/constitution.md").read_bytes()
+    source = (repository_root / "spec-kit/CONSTITUTION_SOURCE.md").read_bytes()
+    assert managed == source
+    text = managed.decode("utf-8")
+    assert "**Current version:** 3.0.0" in text
+    assert "**Routine** changes" in text
+    assert "**Standard** changes" in text
+    assert "**High-assurance** changes" in text
+    assert "recoverable from Git history" in text
 
 
 def test_generated_local_state_is_not_tracked(repository_root: Path) -> None:
@@ -635,15 +614,16 @@ def test_f005a_constitution_is_ratified_and_canonical(repository_root: Path) -> 
     source = (repository_root / "spec-kit/CONSTITUTION_SOURCE.md").read_text(encoding="utf-8")
 
     assert constitution == source
-    assert "**Current version:** 2.0.0" in constitution
-    assert "**Last amended:** 2026-07-26" in constitution
+    assert "**Current version:** 3.0.0" in constitution
+    assert "**Last amended:** 2026-08-09" in constitution
     required_boundaries = (
         "implementation-first",
         "complete provider-native",
         "second complete provider-neutral document representation",
         "Search indexes",
         "verified",
-        "Linux, macOS and Windows",
+        "Linux, macOS",
+        "Windows checks",
         "external-use evidence",
     )
     for boundary in required_boundaries:
@@ -666,28 +646,17 @@ def test_f005a_adoption_sources_point_to_canonical_governance(
         assert "not authoritative" in content.casefold()
 
 
-def test_f005a_feature_map_and_prompts_have_one_exact_sequence(
+def test_feature_map_has_one_exact_dependency_sequence(
     repository_root: Path,
 ) -> None:
-    """Require one dependency-ordered continuation map and prompt inventory."""
+    """Require one dependency-ordered continuation map without prompt duplication."""
     feature_map = (repository_root / "spec-kit/FEATURE_MAP.md").read_text(encoding="utf-8")
     positions = [feature_map.index(feature) for feature in F005A_FEATURE_SEQUENCE]
     assert positions == sorted(positions)
     assert (
         feature_map.count("A feature begins only after its predecessor converges and merges") == 1
     )
-
-    prompt_directory = repository_root / "spec-kit/feature-prompts"
-    actual_prompts = {path.name for path in prompt_directory.glob("*.md")}
-    expected_prompts = set(HISTORICAL_FEATURE_PROMPTS) | {
-        f"{feature}.md" for feature in F005A_FEATURE_SEQUENCE
-    }
-    assert expected_prompts <= actual_prompts
-    assert "022-storage-amplification.md" in actual_prompts
-
-    for feature in F005A_FEATURE_SEQUENCE:
-        prompt = (prompt_directory / f"{feature}.md").read_text(encoding="utf-8")
-        assert feature.split("-", maxsplit=1)[0].casefold() in prompt.casefold()
+    assert "032-documentation-governance" in feature_map
 
 
 def test_f005a_adrs_preserve_decision_history(repository_root: Path) -> None:

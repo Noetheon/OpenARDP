@@ -163,6 +163,21 @@ def test_f005a_governance_rejects_drift_and_source_package(tmp_path: Path) -> No
     assert {"GOV007", "GOV008", "GOV009"} <= codes
 
 
+def test_compact_feature_governance_rejects_missing_transient_and_unsafe_records(
+    tmp_path: Path,
+) -> None:
+    """Reject incomplete durable records, converged working files and unsafe locators."""
+    _write(tmp_path / "specs/001-synthetic/spec.md", "# Accepted requirements\n")
+    _write(tmp_path / "specs/001-synthetic/plan.md", "# Temporary plan\n")
+    _write(tmp_path / "specs/001-synthetic/checklists/requirements.md", "# Checklist\n")
+    _write(tmp_path / "spec-kit/feature-prompts/001-synthetic.md", "# Prompt\n")
+    _write(tmp_path / ".specify/feature.json", '{"feature_directory":"../escape"}\n')
+
+    codes = set(_codes(validate_governance(tmp_path)))
+
+    assert {"GOV027", "GOV028", "GOV029", "GOV030"} <= codes
+
+
 def test_real_repository_contract_is_clean(repository_root: Path) -> None:
     """Validate all real Markdown and governance contracts offline."""
     assert validate_repository(repository_root) == []

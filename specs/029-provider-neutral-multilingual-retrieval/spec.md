@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-03
 
-**Status**: Converged — publication pending
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 ## Clarifications
 

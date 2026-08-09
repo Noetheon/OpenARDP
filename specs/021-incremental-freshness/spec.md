@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Converged locally; publication verification pending
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: Optimize OpenARDP's status and freshness path incrementally or sublinearly after F020 measured 2.087-second
 reference and 28.626-second scale p95 results, while preserving exact change detection and explicit integrity truth.

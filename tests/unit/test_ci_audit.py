@@ -32,7 +32,7 @@ def _policy_payload(**overrides: object) -> dict[str, object]:
         ],
         "governance_only": {
             "exact": ["CHANGELOG.md", "README.md"],
-            "prefixes": ["docs/", "specs/", "spec-kit/feature-prompts/"],
+            "prefixes": ["docs/", "specs/"],
         },
         "release_owned": {
             "exact": ["pyproject.toml", "uv.lock"],

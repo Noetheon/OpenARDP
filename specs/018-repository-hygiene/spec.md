@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-02
 
-**Status**: Draft
+**Status**: Converged — see the [authoritative feature map](../../spec-kit/FEATURE_MAP.md)
 
 **Input**: User request for a complete post-roadmap refactoring, hygiene and cleaning pass, constrained by the
 OpenARDP constitution and the requirement to preserve existing behavior and evidence.

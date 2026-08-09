@@ -94,6 +94,16 @@ _CANONICAL_COMMANDS = (
     "uv run mypy src",
     "uv run pytest",
 )
+_FEATURE_DIRECTORY = re.compile(r"^\d{3}[A-Z]?-[a-z0-9]+(?:-[a-z0-9]+)*$")
+_DURABLE_FEATURE_FILES = ("spec.md", "implementation-notes.md")
+_TRANSIENT_FEATURE_FILES = {
+    "analysis.md",
+    "data-model.md",
+    "plan.md",
+    "quickstart.md",
+    "research.md",
+    "tasks.md",
+}
 _F005A_OVERLAY_DESTINATIONS = (
     "codex/MASTER_SESSION_PROMPT.md",
     "conformance/README.md",
@@ -117,19 +127,6 @@ _F005A_OVERLAY_DESTINATIONS = (
     "spec-kit/CONSTITUTION_V3_SOURCE.md",
     "spec-kit/FEATURE_MAP_V3.md",
     "spec-kit/OPERATING_PROCEDURE_V3.md",
-    "spec-kit/feature-prompts/005A-strategic-realignment.md",
-    "spec-kit/feature-prompts/006-evidence-contract-foundation.md",
-    "spec-kit/feature-prompts/007-docling-native-adapter.md",
-    "spec-kit/feature-prompts/008-context-compiler-receipts.md",
-    "spec-kit/feature-prompts/009-read-only-mcp.md",
-    "spec-kit/feature-prompts/010-reconciliation-derivation-dag.md",
-    "spec-kit/feature-prompts/011-visual-evidence-escalation.md",
-    "spec-kit/feature-prompts/012-local-watcher-and-jobs.md",
-    "spec-kit/feature-prompts/013-retention-recovery-migrations.md",
-    "spec-kit/feature-prompts/014-export-interchange-experiment.md",
-    "spec-kit/feature-prompts/015-benchmark-security-release-gate.md",
-    "spec-kit/feature-prompts/016-alternate-parser-conformance-spike.md",
-    "spec-kit/feature-prompts/017-microsoft-graph-design-spike.md",
 )
 _F005A_ADOPTION_SOURCES = {
     "spec-kit/CONSTITUTION_V3_SOURCE.md": "CONSTITUTION_SOURCE.md",
@@ -169,18 +166,12 @@ _F016_REQUIRED_FILES = (
 _F017_REQUIRED_FILES = (
     "docs/16_MICROSOFT_GRAPH_DESIGN_SPIKE.md",
     "docs/adr/0016-microsoft-graph-mock-design.md",
-    "specs/017-microsoft-graph-design-spike/analysis.md",
     "specs/017-microsoft-graph-design-spike/contracts/connector-contract.md",
     "specs/017-microsoft-graph-design-spike/contracts/data-protection-assessment.md",
     "specs/017-microsoft-graph-design-spike/contracts/permission-matrix.md",
     "specs/017-microsoft-graph-design-spike/contracts/threat-model.md",
-    "specs/017-microsoft-graph-design-spike/data-model.md",
     "specs/017-microsoft-graph-design-spike/implementation-notes.md",
-    "specs/017-microsoft-graph-design-spike/plan.md",
-    "specs/017-microsoft-graph-design-spike/quickstart.md",
-    "specs/017-microsoft-graph-design-spike/research.md",
     "specs/017-microsoft-graph-design-spike/spec.md",
-    "specs/017-microsoft-graph-design-spike/tasks.md",
     "src/openardp/adapters/mock_graph.py",
     "src/openardp/domain/graph.py",
     "src/openardp/ports/graph.py",
@@ -196,16 +187,9 @@ _F019_REQUIRED_FILES = (
     "quality/ci-cost-baseline-2026-08-01.json",
     "quality/ci-policy.json",
     "scripts/audit_ci.py",
-    "spec-kit/feature-prompts/019-ci-cost-optimization.md",
-    "specs/019-ci-cost-optimization/analysis.md",
     "specs/019-ci-cost-optimization/contracts/ci-execution-policy.md",
-    "specs/019-ci-cost-optimization/data-model.md",
     "specs/019-ci-cost-optimization/implementation-notes.md",
-    "specs/019-ci-cost-optimization/plan.md",
-    "specs/019-ci-cost-optimization/quickstart.md",
-    "specs/019-ci-cost-optimization/research.md",
     "specs/019-ci-cost-optimization/spec.md",
-    "specs/019-ci-cost-optimization/tasks.md",
     "tests/unit/test_ci_audit.py",
 )
 _F020_REQUIRED_FILES = (
@@ -224,16 +208,9 @@ _F020_REQUIRED_FILES = (
     "scripts/product_benchmark_runner.py",
     "scripts/run_product_benchmark.py",
     "scripts/validate_product_benchmark.py",
-    "spec-kit/feature-prompts/020-product-value-benchmark.md",
-    "specs/020-product-value-benchmark/analysis.md",
     "specs/020-product-value-benchmark/contracts/maintainer-benchmark.md",
-    "specs/020-product-value-benchmark/data-model.md",
     "specs/020-product-value-benchmark/implementation-notes.md",
-    "specs/020-product-value-benchmark/plan.md",
-    "specs/020-product-value-benchmark/quickstart.md",
-    "specs/020-product-value-benchmark/research.md",
     "specs/020-product-value-benchmark/spec.md",
-    "specs/020-product-value-benchmark/tasks.md",
     "tests/integration/test_product_benchmark.py",
     "tests/unit/test_product_benchmark.py",
 )
@@ -269,15 +246,8 @@ _F024_REQUIRED_FILES = (
     "scripts/run_realworld_corpus_benchmark.py",
     "scripts/validate_realworld_corpus.py",
     "scripts/validate_realworld_corpus_benchmark.py",
-    "spec-kit/feature-prompts/024-redistributable-realworld-corpus.md",
-    "specs/024-redistributable-realworld-corpus/analysis.md",
-    "specs/024-redistributable-realworld-corpus/data-model.md",
     "specs/024-redistributable-realworld-corpus/implementation-notes.md",
-    "specs/024-redistributable-realworld-corpus/plan.md",
-    "specs/024-redistributable-realworld-corpus/quickstart.md",
-    "specs/024-redistributable-realworld-corpus/research.md",
     "specs/024-redistributable-realworld-corpus/spec.md",
-    "specs/024-redistributable-realworld-corpus/tasks.md",
     "tests/integration/test_realworld_corpus.py",
     "tests/integration/test_realworld_corpus_benchmark.py",
     "tests/integration/test_realworld_corpus_reference.py",
@@ -301,15 +271,8 @@ _F025_REQUIRED_FILES = (
     "scripts/semantic_e2e_benchmark.py",
     "scripts/semantic_e2e_evaluation.py",
     "scripts/validate_semantic_e2e_benchmark.py",
-    "spec-kit/feature-prompts/025-semantic-e2e-source-evaluation.md",
-    "specs/025-semantic-e2e-source-evaluation/analysis.md",
-    "specs/025-semantic-e2e-source-evaluation/data-model.md",
     "specs/025-semantic-e2e-source-evaluation/implementation-notes.md",
-    "specs/025-semantic-e2e-source-evaluation/plan.md",
-    "specs/025-semantic-e2e-source-evaluation/quickstart.md",
-    "specs/025-semantic-e2e-source-evaluation/research.md",
     "specs/025-semantic-e2e-source-evaluation/spec.md",
-    "specs/025-semantic-e2e-source-evaluation/tasks.md",
     "tests/integration/test_semantic_e2e_benchmark.py",
     "tests/integration/test_semantic_e2e_reference.py",
     "tests/security/test_semantic_e2e_boundaries.py",
@@ -322,16 +285,9 @@ _F026_REQUIRED_FILES = (
     "docs/25_RELEVANCE_AND_ABSTENTION.md",
     "scripts/run_relevance_benchmark.py",
     "scripts/validate_relevance_benchmark.py",
-    "spec-kit/feature-prompts/026-relevance-abstention.md",
-    "specs/026-relevance-abstention/analysis.md",
     "specs/026-relevance-abstention/contracts/context-relevance.md",
-    "specs/026-relevance-abstention/data-model.md",
     "specs/026-relevance-abstention/implementation-notes.md",
-    "specs/026-relevance-abstention/plan.md",
-    "specs/026-relevance-abstention/quickstart.md",
-    "specs/026-relevance-abstention/research.md",
     "specs/026-relevance-abstention/spec.md",
-    "specs/026-relevance-abstention/tasks.md",
     "src/openardp/adapters/context_relevance.py",
     "src/openardp/domain/context_relevance.py",
     "src/openardp/interfaces/context_composition.py",
@@ -349,16 +305,9 @@ _F027_REQUIRED_FILES = (
     "docs/26_LEXICAL_RANKING_AND_DIVERSITY.md",
     "scripts/run_ranking_benchmark.py",
     "scripts/validate_ranking_benchmark.py",
-    "spec-kit/feature-prompts/027-lexical-ranking-diversity.md",
-    "specs/027-lexical-ranking-diversity/analysis.md",
     "specs/027-lexical-ranking-diversity/contracts/lexical-allocation.md",
-    "specs/027-lexical-ranking-diversity/data-model.md",
     "specs/027-lexical-ranking-diversity/implementation-notes.md",
-    "specs/027-lexical-ranking-diversity/plan.md",
-    "specs/027-lexical-ranking-diversity/quickstart.md",
-    "specs/027-lexical-ranking-diversity/research.md",
     "specs/027-lexical-ranking-diversity/spec.md",
-    "specs/027-lexical-ranking-diversity/tasks.md",
     "src/openardp/domain/context_ranking.py",
     "src/openardp/services/context_ranking.py",
     "tests/domain/test_context_ranking.py",
@@ -375,16 +324,9 @@ _F028_REQUIRED_FILES = (
     "docs/27_STABLE_CSV_INGESTION.md",
     "scripts/run_csv_ingestion_benchmark.py",
     "scripts/validate_csv_ingestion_benchmark.py",
-    "spec-kit/feature-prompts/028-csv-ingestion.md",
-    "specs/028-csv-ingestion/analysis.md",
     "specs/028-csv-ingestion/contracts/README.md",
-    "specs/028-csv-ingestion/data-model.md",
     "specs/028-csv-ingestion/implementation-notes.md",
-    "specs/028-csv-ingestion/plan.md",
-    "specs/028-csv-ingestion/quickstart.md",
-    "specs/028-csv-ingestion/research.md",
     "specs/028-csv-ingestion/spec.md",
-    "specs/028-csv-ingestion/tasks.md",
     "src/openardp/adapters/csv_parser.py",
     "src/openardp/interfaces/ingestion_composition.py",
     "tests/integration/test_csv_ingestion.py",
@@ -416,16 +358,9 @@ _F029_REQUIRED_FILES = (
     "scripts/run_provider_retrieval_benchmark.py",
     "scripts/validate_provider_retrieval_benchmark.py",
     "scripts/verify_embedding_bundle.py",
-    "spec-kit/feature-prompts/029-provider-neutral-multilingual-retrieval.md",
-    "specs/029-provider-neutral-multilingual-retrieval/analysis.md",
     "specs/029-provider-neutral-multilingual-retrieval/contracts/README.md",
-    "specs/029-provider-neutral-multilingual-retrieval/data-model.md",
     "specs/029-provider-neutral-multilingual-retrieval/implementation-notes.md",
-    "specs/029-provider-neutral-multilingual-retrieval/plan.md",
-    "specs/029-provider-neutral-multilingual-retrieval/quickstart.md",
-    "specs/029-provider-neutral-multilingual-retrieval/research.md",
     "specs/029-provider-neutral-multilingual-retrieval/spec.md",
-    "specs/029-provider-neutral-multilingual-retrieval/tasks.md",
     "src/openardp/adapters/e5_semantic.py",
     "src/openardp/adapters/embedding_bundle.py",
     "src/openardp/adapters/embedding_bundle_provisioning.py",
@@ -445,18 +380,9 @@ _F029_REQUIRED_FILES = (
 _F031_REQUIRED_FILES = (
     "docs/17_CODEBASE_HYGIENE.md",
     "scripts/audit_repository_hygiene.py",
-    "spec-kit/feature-prompts/031-repository-hygiene.md",
-    "specs/031-repository-hygiene/analysis.md",
-    "specs/031-repository-hygiene/checklists/maintainability.md",
-    "specs/031-repository-hygiene/checklists/requirements.md",
     "specs/031-repository-hygiene/contracts/repository-hygiene-audit.md",
-    "specs/031-repository-hygiene/data-model.md",
     "specs/031-repository-hygiene/implementation-notes.md",
-    "specs/031-repository-hygiene/plan.md",
-    "specs/031-repository-hygiene/quickstart.md",
-    "specs/031-repository-hygiene/research.md",
     "specs/031-repository-hygiene/spec.md",
-    "specs/031-repository-hygiene/tasks.md",
     "src/openardp/interfaces/cli_arguments.py",
     "src/openardp/interfaces/cli_output.py",
     "tests/unit/test_repository_hygiene.py",
@@ -812,6 +738,93 @@ def _validate_f005a_governance(root: Path) -> list[Diagnostic]:
                     "GOV009",
                     path.relative_to(root).as_posix(),
                     "external blueprint package or platform metadata must not be committed",
+                )
+            )
+    return diagnostics
+
+
+def _validate_feature_records(root: Path) -> list[Diagnostic]:
+    """Require compact durable feature records and reject converged working artifacts."""
+    diagnostics: list[Diagnostic] = []
+    feature_root = root / "specs"
+    feature_directories = (
+        sorted(
+            path
+            for path in feature_root.iterdir()
+            if path.is_dir() and _FEATURE_DIRECTORY.fullmatch(path.name)
+        )
+        if feature_root.is_dir()
+        else []
+    )
+    for directory in feature_directories:
+        for name in _DURABLE_FEATURE_FILES:
+            path = directory / name
+            if not path.is_file():
+                relative = path.relative_to(root).as_posix()
+                diagnostics.append(
+                    _governance_finding(
+                        root,
+                        "GOV027",
+                        relative,
+                        "durable feature record is missing",
+                    )
+                )
+        for path in sorted(directory.rglob("*.md")):
+            if path.name in _TRANSIENT_FEATURE_FILES or "checklists" in path.parts:
+                relative = path.relative_to(root).as_posix()
+                diagnostics.append(
+                    _governance_finding(
+                        root,
+                        "GOV028",
+                        relative,
+                        "converged working artifact must be compacted into the durable record",
+                    )
+                )
+
+    prompt_root = root / "spec-kit" / "feature-prompts"
+    if prompt_root.is_dir():
+        for path in sorted(prompt_root.rglob("*.md")):
+            relative = path.relative_to(root).as_posix()
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV029",
+                    relative,
+                    "feature prompt is transient and must not remain after convergence",
+                )
+            )
+
+    locator = root / ".specify" / "feature.json"
+    try:
+        active = json.loads(locator.read_bytes())
+        active_relative = active["feature_directory"]
+        if not isinstance(active_relative, str):
+            raise TypeError
+        active_parts = Path(active_relative).parts
+        if (
+            len(active_parts) != 2
+            or active_parts[0] != "specs"
+            or not _FEATURE_DIRECTORY.fullmatch(active_parts[1])
+        ):
+            raise TypeError
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError):
+        diagnostics.append(
+            _governance_finding(
+                root,
+                "GOV030",
+                ".specify/feature.json",
+                "active-feature locator is missing or malformed",
+            )
+        )
+    else:
+        active_path = root / active_relative
+        if active_path not in feature_directories:
+            diagnostics.append(
+                _governance_finding(
+                    root,
+                    "GOV030",
+                    ".specify/feature.json",
+                    "active-feature locator does not identify a feature directory",
                 )
             )
     return diagnostics
@@ -1216,6 +1229,7 @@ def validate_governance(root: Path) -> list[Diagnostic]:
                     )
                 )
     diagnostics.extend(_validate_f005a_governance(root))
+    diagnostics.extend(_validate_feature_records(root))
     diagnostics.extend(_validate_mcp_fixtures(root))
     diagnostics.extend(_validate_f015_release_inputs(root))
     diagnostics.extend(_validate_f016_conformance(root))

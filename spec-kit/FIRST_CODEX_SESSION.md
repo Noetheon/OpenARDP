@@ -1,7 +1,8 @@
 # First Codex session prompt
 
 > **Historical onboarding artifact.** This prompt records the completed Feature 001 bootstrap and must not be used to
-> select current work. Use [`FEATURE_MAP.md`](FEATURE_MAP.md) and the active feature prompt instead.
+> select current work. Use [`FEATURE_MAP.md`](FEATURE_MAP.md), current governance and the applicable durable feature
+> record instead.
 
 Paste the text below into Codex from the repository root after running the bootstrap script.
 
@@ -19,9 +20,11 @@ Before doing any implementation:
 5. Report contradictions, missing prerequisites or accidental duplicate sources of truth.
 
 Use the installed Codex Spec Kit skills. Work only on feature `001-repository-baseline` using the prompt in
-`spec-kit/feature-prompts/001-repository-baseline.md`.
+the F001 entry in `spec-kit/FEATURE_MAP.md` and its durable feature record. The historical bootstrap prompt is available
+from Git history if an audit requires its exact bytes.
 
-Run the full lifecycle through specification, clarification, planning, checklist generation, task generation and analysis.
+Because the repository bootstrap is a high-assurance change, run the full lifecycle through specification,
+clarification, planning, checklist generation, task generation and analysis.
 Do not start implementation until the resulting spec, plan and tasks have no unresolved critical contradictions and you
 have shown me a concise readiness report.
 

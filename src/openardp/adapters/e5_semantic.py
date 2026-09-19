@@ -9,6 +9,7 @@ import socket
 import sys
 import time
 from contextlib import suppress
+from dataclasses import dataclass
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
 from pathlib import Path
@@ -84,6 +85,35 @@ def _mean_pool(last_hidden: Any, attention_mask: Any) -> Any:  # pragma: no cove
     return hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
 
+@dataclass(frozen=True)
+class _PreparedSelection:
+    """One worker-owned, ordered selection bound to its exact preparation limits."""
+
+    identities: tuple[tuple[str, str], ...]
+    limits: SemanticRetrievalLimits
+    total_text_bytes: int
+
+
+def _retain_passages(
+    passages: tuple[SemanticPassage, ...],
+    cache: dict[str, tuple[str, Any]],
+) -> list[SemanticPassage]:
+    """Validate object consistency, evict obsolete vectors and return unique misses."""
+    unique: dict[str, SemanticPassage] = {}
+    for passage in passages:
+        previous = unique.get(passage.object_id)
+        cached = cache.get(passage.object_id)
+        if (previous is not None and previous.text != passage.text) or (
+            cached is not None and cached[0] != passage.text
+        ):
+            raise ValueError("semantic object text conflict")
+        unique[passage.object_id] = passage
+    missing = [passage for object_id, passage in unique.items() if object_id not in cache]
+    for object_id in cache.keys() - unique.keys():
+        del cache[object_id]
+    return missing
+
+
 def _score_request(  # pragma: no cover
     request: dict[str, Any],
     *,
@@ -102,16 +132,9 @@ def _score_request(  # pragma: no cover
         raise ValueError
     limits = SemanticRetrievalLimits.model_validate(raw_limits)
     passages = tuple(SemanticPassage.model_validate(value) for value in raw_passages)
-    if len(passages) > limits.max_passages:
-        raise ValueError
+    IsolatedE5SemanticProvider._validate_request(query, passages, limits)
     prior_hits = {passage.object_id: passage.object_id in cache for passage in passages}
-    missing = [passage for passage in passages if passage.object_id not in cache]
-    if len(cache) + len(missing) > limits.max_cache_entries:
-        raise ValueError
-    for passage in passages:
-        existing = cache.get(passage.object_id)
-        if existing is not None and existing[0] != passage.text:
-            raise ValueError
+    missing = _retain_passages(passages, cache)
     passage_started = time.perf_counter_ns()
     with torch.inference_mode():
         for offset in range(0, len(missing), limits.batch_size):
@@ -178,7 +201,7 @@ def _prepare_request(  # pragma: no cover
     model: Any,
     recipe: SemanticProviderRecipe,
     cache: dict[str, tuple[str, Any]],
-    corpora: dict[str, tuple[tuple[str, str], ...]],
+    corpora: dict[str, _PreparedSelection],
 ) -> dict[str, Any]:
     raw_passages = request.get("passages")
     raw_limits = request.get("limits")
@@ -186,14 +209,9 @@ def _prepare_request(  # pragma: no cover
         raise ValueError
     limits = SemanticRetrievalLimits.model_validate(raw_limits)
     passages = tuple(SemanticPassage.model_validate(value) for value in raw_passages)
+    IsolatedE5SemanticProvider._validate_passages(passages, limits)
     prepared = PreparedSemanticCorpus.from_passages(recipe.recipe_id, passages, limits)
-    missing = [passage for passage in passages if passage.object_id not in cache]
-    if len(cache) + len(missing) > limits.max_cache_entries:
-        raise ValueError
-    for passage in passages:
-        existing = cache.get(passage.object_id)
-        if existing is not None and existing[0] != passage.text:
-            raise ValueError
+    missing = _retain_passages(passages, cache)
     started = time.perf_counter_ns()
     with torch.inference_mode():
         for offset in range(0, len(missing), limits.batch_size):
@@ -212,8 +230,11 @@ def _prepare_request(  # pragma: no cover
             ).cpu()
             for passage, vector in zip(batch, vectors, strict=True):
                 cache[passage.object_id] = (passage.text, vector)
-    corpora[prepared.corpus_id] = tuple(
-        (passage.evidence_id, passage.object_id) for passage in passages
+    corpora.clear()
+    corpora[prepared.corpus_id] = _PreparedSelection(
+        identities=tuple((passage.evidence_id, passage.object_id) for passage in passages),
+        limits=limits,
+        total_text_bytes=prepared.total_text_bytes,
     )
     return {
         "kind": "prepared",
@@ -232,16 +253,20 @@ def _score_prepared_request(  # pragma: no cover
     model: Any,
     recipe: SemanticProviderRecipe,
     cache: dict[str, tuple[str, Any]],
-    corpora: dict[str, tuple[tuple[str, str], ...]],
+    corpora: dict[str, _PreparedSelection],
 ) -> dict[str, Any]:
     query = request.get("query")
     corpus_id = request.get("corpus_id")
     limits = SemanticRetrievalLimits.model_validate(request.get("limits"))
     if not isinstance(query, str) or not isinstance(corpus_id, str):
         raise ValueError
-    identities = corpora.get(corpus_id)
-    if identities is None or len(identities) > limits.max_passages:
+    selection = corpora.get(corpus_id)
+    if selection is None or selection.limits != limits:
         raise ValueError
+    IsolatedE5SemanticProvider._validate_query(query, limits)
+    if len(query.encode("utf-8")) + selection.total_text_bytes > limits.max_total_text_bytes:
+        raise ValueError
+    identities = selection.identities
     if any(object_id not in cache for _evidence_id, object_id in identities):
         raise ValueError
     with torch.inference_mode():
@@ -315,7 +340,7 @@ def _worker(  # pragma: no cover
         if hidden_size != recipe.dimensions:
             raise ValueError
         cache: dict[str, tuple[str, Any]] = {}
-        corpora: dict[str, tuple[tuple[str, str], ...]] = {}
+        corpora: dict[str, _PreparedSelection] = {}
         output_connection.send({"kind": "ready", "dimensions": hidden_size})
         while True:
             request = input_connection.recv()
@@ -335,6 +360,7 @@ def _worker(  # pragma: no cover
                     recipe=recipe,
                     cache=cache,
                 )
+                corpora.clear()
             elif kind == "prepare":
                 response = _prepare_request(
                     request,
@@ -501,6 +527,8 @@ class IsolatedE5SemanticProvider:
         self._validate_query(query, limits)
         if corpus.passage_count > limits.max_passages:
             raise SemanticProviderLimitExceeded("semantic passage count exceeded")
+        if len(query.encode("utf-8")) + corpus.total_text_bytes > limits.max_total_text_bytes:
+            raise SemanticProviderLimitExceeded("semantic request bytes exceeded")
         if cancel():
             raise SemanticProviderTimedOut("semantic provider cancelled")
         input_connection, output_connection = self._ensure_worker(cancel)

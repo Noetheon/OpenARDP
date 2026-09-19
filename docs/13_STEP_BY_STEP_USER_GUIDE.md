@@ -1,5 +1,8 @@
 # Step-by-step contributor guide
 
+For the short first-use document task, use [the practical workflow](30_LOCAL_DOCUMENT_WORKFLOW.md).
+This longer walkthrough retains contributor and broader operational context.
+
 **Status:** Current-repository workflow. Initial ZIP extraction and bootstrap are historical; do not rerun them during a
 normal clone.
 

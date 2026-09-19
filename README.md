@@ -14,6 +14,17 @@ citations while keeping the default runtime local and provider-independent.
 
 **Compress access, not truth.**
 
+## Current focus: prove one recurring document workflow
+
+The immediate goal is to help a local user repeatedly find and verify exact evidence in a small, explicitly selected
+set of documents. Start with the [practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md).
+
+Further platform expansion is paused until a [bounded real-task pilot](pilots/local-document/v0.1.0/README.md) shows a
+clear advantage over both the user's current work and a simple persistent native-parser cache with search. Existing
+synthetic and retrieval benchmarks do not establish human time savings, answer correctness or external adoption.
+The pilot is prepared; real tasks, measurements and independent judgments are still missing. A negative or inconclusive
+result means pausing further expansion, while keeping the tested technical foundation available.
+
 ## Why OpenARDP?
 
 Document systems often repeat the same expensive and error-prone work: parse a file, split it
@@ -113,12 +124,16 @@ uv run openardp context \
   --budget 12000 \
   --unit tokens \
   --mode verification \
+  --include-bundle \
   --store .openardp
 ```
 
-For the complete operator workflow, including receipts, replay, MCP, maintenance, and recovery,
-continue with [Start Here](START_HERE.md) and the
-[step-by-step user guide](docs/13_STEP_BY_STEP_USER_GUIDE.md).
+`--include-bundle` explicitly displays the selected evidence and its source/version identifiers. It does not generate
+an answer; check that each passage actually supports your question. Omit the switch for the usual body-free summary.
+
+For a tested first-use loop with source checking and exact replay, follow the
+[practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md). Contributor gates and the wider command reference
+remain in [Start Here](START_HERE.md) and the [maintainer walkthrough](docs/13_STEP_BY_STEP_USER_GUIDE.md).
 
 ## Optional capabilities
 

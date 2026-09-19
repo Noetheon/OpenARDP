@@ -12,6 +12,13 @@ Make prepared document evidence reusable across agent tasks, models and tools wi
 OpenARDP is an implementation-first, local-first open-source reference platform for evidence lifecycle and context
 delivery above document-intelligence engines such as Docling.
 
+## Active focus
+
+Demonstrate repeat value for one local person's document questions with exact source/version checking. The reference
+platform remains the technical foundation; wider expansion waits for the
+[prospective pilot decision](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+Personal repeat usefulness and independent external adoption are separate evidence requirements.
+
 ## Layer boundaries
 
 | Layer | Responsibility |

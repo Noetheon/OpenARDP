@@ -71,3 +71,11 @@ uv run python scripts/validate_semantic_e2e_benchmark.py \
 
 Re-running the heavyweight product path additionally requires the exact external F023 PDF bundle. See the F025
 quickstart for the explicit command.
+
+## Interpretation boundary after the project audit
+
+These historical automated support labels are based on normalized answer-variant substrings within eligible sources.
+They can accept an answer word without the passage establishing the requested proposition. Citation integrity and
+source-fitness rubrics therefore do not establish human semantic correctness. Frozen evaluators/results remain intact;
+new practical-value judgments follow the [prospective human-review protocol](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+The follow-up sequence above describes the historical F025 response, not authorization for renewed platform expansion.

@@ -3,6 +3,17 @@
 **Status:** Current strategy supplement. For delivered behavior, use the repository
 [README](../README.md); for execution order, use the canonical [feature map](../spec-kit/FEATURE_MAP.md).
 
+## Current decision: bounded practical validation
+
+The delivered foundation is substantial; evidence of recurring human value is still missing. F037 corrected the actual
+MCP preparation lifetime and cumulative provider-cache exhaustion. F038 makes one local document workflow readable and
+prepares a [fair manual pilot](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+
+Pause wider platform expansion. Continue only with the existing workflow, necessary maintenance and the bounded pilot:
+at most 20 additional person-hours and ten working days, with setup/checking/repair included, strong baselines and human
+supporting-passage judgments. A confirmed limited-GO justifies a further bounded slice; otherwise pause expansion.
+The current state is pilot preparation, not demonstrated time savings, external adoption or a release GO.
+
 ## Problem
 
 AI agents repeatedly parse, chunk and reinterpret the same source documents. Existing document-intelligence engines already solve much of the parsing problem, but downstream systems still lack a consistent operational lifecycle for:
@@ -37,6 +48,6 @@ A future v0.1 should allow a developer to locally:
 7. verify provenance, trust labels and freshness;
 8. reproduce benchmark results against fair Docling baselines.
 
-As of Feature 005A, items 1 and the TXT/MD portion of item 2 are delivered together with exact lexical retrieval.
-Features 006–015 own the remaining contract, rich-parser, context, MCP, operations, recovery, export-decision and release
-evidence in bounded slices.
+This list originated at F005A. The delivered implementation now includes the local ingestion, evidence, context/MCP
+and operational foundations recorded in the [feature map](../spec-kit/FEATURE_MAP.md). Delivery of those mechanisms does
+not itself satisfy the current practical-value test, and the separate release decision remains NO-GO.

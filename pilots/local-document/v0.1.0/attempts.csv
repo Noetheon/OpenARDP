@@ -1,0 +1,1 @@
+attempt_id,task_id,person_id,assigned_arm,actual_method,phase,started_at,ended_at,active_work_minutes,active_source_check_minutes,active_repair_minutes,machine_wait_minutes,status,failure_reason,output_reference,submitted_final,notes

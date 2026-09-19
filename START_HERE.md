@@ -1,5 +1,10 @@
 # Start here
 
+**Using OpenARDP for a document task?** Start with the short
+[practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md). It covers importing, reading selected evidence,
+checking a source and replaying a receipt. The [prospective pilot](pilots/local-document/v0.1.0/README.md) then tests
+whether that workflow is worth continued work. The sections below are contributor setup and a broader command reference.
+
 OpenARDP is built implementation-first through bounded, independently testable changes. The authoritative delivered
 sequence and current outcomes live only in the [feature map](spec-kit/FEATURE_MAP.md); feature directories retain accepted
 requirements, final evidence and normative contracts without duplicating the project status registry.
@@ -58,11 +63,11 @@ openardp context "Which exact controls are documented?" \
   --store .openardp --json
 openardp context-receipt <receipt-sha256> --store .openardp --json
 openardp context "Which exact controls are documented?" \
-  --replay <receipt-sha256> --store .openardp --json
+  --replay <receipt-sha256> --unit tokens --store .openardp --json
 openardp visual-materialize <document-uuid> <projection-sha256> \
   --store .openardp --json
 openardp visual-evidence <visual-evidence-sha256> --store .openardp --json
-openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --json
+openardp watch /absolute/documents --store .openardp --once --stability-ms 0 --max-jobs-per-cycle 30 --json
 openardp jobs --store .openardp --limit 50 --json
 openardp storage-inventory --store .openardp --json
 openardp storage-diagnostics --store .openardp --json

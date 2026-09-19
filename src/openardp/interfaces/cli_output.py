@@ -11,6 +11,18 @@ from openardp.domain.common import SCHEMA_VERSION
 from openardp.domain.maintenance import StorageOptimizationReport
 from openardp.domain.search import SearchOutcome
 
+_TERMINAL_CONTROL_ESCAPES = {
+    code: f"\\u{code:04x}"
+    for code in (
+        *range(0x7F, 0xA0),
+        0x061C,
+        0x200E,
+        0x200F,
+        *range(0x202A, 0x202F),
+        *range(0x2066, 0x206A),
+    )
+}
+
 
 def json_value(value: object) -> object:
     """Project supported result values into deterministic JSON-compatible values."""
@@ -160,6 +172,8 @@ def _render_context(command: str, converted: object) -> bool:
         for missing in _sequence(item["missing_evidence"]):
             record = _mapping(missing)
             print(f"missing {record['evidence_type']} ({record['reason_code']})")
+        if "bundle" in item:
+            _render_context_bundle(_mapping(item["bundle"]))
     elif command == "context-receipt":
         item = _mapping(converted)
         policy = _mapping(item["policy"])
@@ -179,6 +193,47 @@ def _render_context(command: str, converted: object) -> bool:
     else:
         return False
     return True
+
+
+def _render_context_bundle(bundle: dict[object, object]) -> None:
+    """Render only the explicitly included evidence and its available provenance."""
+    items = _sequence(bundle["items"])
+    if not items:
+        print("No evidence selected.")
+    for index, entry in enumerate(items, start=1):
+        item = _mapping(entry)
+        provenance = _mapping(item["provenance"])
+        print(f"\nEvidence {index} [untrusted_data]")
+        print(
+            f"representation={safe_text(str(item['representation']))} "
+            f"reason={safe_text(str(item['reason']))}"
+        )
+        print(f"document={safe_text(str(provenance['document_id']))}")
+        print(f"version={safe_text(str(provenance['version_id']))}")
+        print(f"representation_id={safe_text(str(provenance['representation_id']))}")
+        if provenance["record_type"] == "block":
+            print(f"block={safe_text(str(provenance['block_id']))}")
+            source = json.dumps(provenance["source"], ensure_ascii=False, sort_keys=True)
+            print(f"source={safe_text(source)}")
+        else:
+            print(f"source_version={safe_text(str(provenance['source_version_id']))}")
+            print(f"native_representation={safe_text(str(provenance['native_representation_id']))}")
+            print(f"projection={safe_text(str(provenance['evidence_projection_id']))}")
+            print(f"reference={safe_text(str(provenance['evidence_reference_id']))}")
+        if item.get("content") is not None:
+            content = _mapping(item["content"])
+            body = content["body"]
+            rendered = (
+                body
+                if isinstance(body, str)
+                else json.dumps(body, ensure_ascii=False, sort_keys=True)
+            )
+            print(f"content ({safe_text(str(content['media_type']))}):")
+            print(safe_text(rendered))
+        if item.get("artifact_handle") is not None:
+            print(f"artifact={safe_text(str(item['artifact_handle']))}")
+        if item.get("artifact_id") is not None:
+            print(f"artifact_id={safe_text(str(item['artifact_id']))}")
 
 
 def _render_operations(command: str, converted: object) -> bool:
@@ -240,9 +295,9 @@ def _depth(value: object) -> int:
 
 
 def safe_text(value: str) -> str:
-    """Escape terminal control characters in a human-oriented value."""
+    """Escape terminal and bidi controls while retaining ordinary Unicode text."""
     encoded = json.dumps(value, ensure_ascii=False)
-    return encoded[1:-1]
+    return encoded[1:-1].translate(_TERMINAL_CONTROL_ESCAPES)
 
 
 __all__ = ["json_value", "success", "write_json"]

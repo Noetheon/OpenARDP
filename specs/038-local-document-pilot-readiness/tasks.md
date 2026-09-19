@@ -8,14 +8,14 @@
 
 ## US1 — source-verifiable human workflow
 
-- [ ] T004 [P] [US1] Add failing explicit/default/JSON, text/structured/handle/empty and C0/DEL/C1/bidi-control and normal-umlaut regressions in `tests/integration/test_cli_context.py` or a focused sibling (FR-001–002, FR-008, SC-001, SC-004).
-- [ ] T005 [US1] Add the smallest human bundle renderer and enumerated shared control-character hardening in `src/openardp/interfaces/cli_output.py`; preserve existing JSON, grammar, source and receipt bytes; pass T004 (FR-001–002, SC-001).
-- [ ] T006 [US1] Write `docs/30_LOCAL_DOCUMENT_WORKFLOW.md`; smoke-test locked install/init/ingest/reuse/list/context/source inspection/replay in a fresh synthetic workspace and record exact evidence in `implementation-notes.md` (FR-003, SC-002).
+- [x] T004 [P] [US1] Add failing explicit/default/JSON, text/structured/handle/empty and C0/DEL/C1/bidi-control and normal-umlaut regressions in `tests/integration/test_cli_context.py` or a focused sibling (FR-001–002, FR-008, SC-001, SC-004).
+- [x] T005 [US1] Add the smallest human bundle renderer and enumerated shared control-character hardening in `src/openardp/interfaces/cli_output.py`; preserve existing JSON, grammar, source and receipt bytes; pass T004 (FR-001–002, SC-001).
+- [x] T006 [US1] Write `docs/30_LOCAL_DOCUMENT_WORKFLOW.md`; smoke-test locked install/init/ingest/reuse/list/context/source inspection/replay in a fresh synthetic workspace and record exact evidence in `implementation-notes.md` (FR-003, SC-002).
 
 ## US2 — prospective utility decision
 
-- [ ] T007 [P] [US2] Create empty task/attempt/overhead/review CSVs, pending decision template and concise private-run instructions under `pilots/local-document/v0.1.0/`; cross-check all gates/fields and prohibit fabricated user data (FR-004–006, SC-003).
-- [ ] T008 [US2] Align `README.md`, `START_HERE.md`, canonical product/strategy/governance, `docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md`, `CHANGELOG.md` and `spec-kit/FEATURE_MAP.md` with the narrow focus, pause rule and explicit legacy evidence limitations; preserve frozen benchmark/evaluator bytes (FR-007, SC-004).
+- [x] T007 [P] [US2] Create empty task/attempt/overhead/review CSVs, pending decision template and concise private-run instructions under `pilots/local-document/v0.1.0/`; cross-check all gates/fields and prohibit fabricated user data (FR-004–006, SC-003).
+- [x] T008 [US2] Align `README.md`, `START_HERE.md`, canonical product/strategy/governance, `docs/29_SEMANTIC_RETRIEVAL_PRODUCT_SURFACE.md`, `CHANGELOG.md` and `spec-kit/FEATURE_MAP.md` with the narrow focus, pause rule and explicit legacy evidence limitations; preserve frozen benchmark/evaluator bytes (FR-007, SC-004).
 
 ## Convergence and delivery
 

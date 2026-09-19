@@ -3,6 +3,16 @@
 **Status:** Canonical product requirements. Requirement presence does not imply current implementation; see the
 [README](../README.md) and [feature map](../spec-kit/FEATURE_MAP.md) for delivered and planned scope.
 
+## Current investment boundary (F038)
+
+Prioritize one local technical user's recurring source-backed document tasks. The immediate deliverable is the
+[usable document workflow](30_LOCAL_DOCUMENT_WORKFLOW.md) and its
+[prospective utility test](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+Further GUI, HTTP, connector, provider, export and standards work is paused pending that test's limited-GO decision.
+The broader user groups and requirements below retain product context; they do not authorize expansion during this
+phase. Existing correctness, compatibility and security maintenance remains necessary. Actual user benefit is unproved;
+missing real tasks/reviews cannot count as a successful test.
+
 ## 1. Problem statement
 
 Knowledge workers and coding agents repeatedly pay the perception cost of the same documents. Parsing, OCR, layout

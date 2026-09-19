@@ -2,7 +2,7 @@
 
 **Feature Branch**: `codex/f037-semantic-session-reuse`
 **Created**: 2026-09-19
-**Status**: Implemented and locally converged; merge requires the recorded platform CI checks
+**Status**: Merged after independent convergence and all required platform CI checks (PR #48)
 **Governance Tier**: high-assurance
 **Input**: Implement the audited semantic session lifecycle corrections before expanding the product.
 

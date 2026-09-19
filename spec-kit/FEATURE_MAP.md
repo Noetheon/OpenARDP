@@ -54,6 +54,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 35 | `035-profiled-retrieval-optimization` | Attribute retrieval cost by phase, then improve F025 quality and warm latency together before one milestone-only F034 validation. |
 | 36 | `036-downstream-evidence-utility` | Measure bounded citation-valid evidence-review completion and time-to-ready on F025, then evaluate the frozen method once on F034. |
 | 37 | `037-semantic-session-reuse` | Preserve bounded preparation across real MCP calls and replace obsolete provider caches safely. |
+| 38 | `038-local-document-pilot-readiness` | Make explicit context evidence readable and prepare a bounded real-task pilot; further expansion awaits demonstrated recurring value. |
 
 ## Dependency rule
 
@@ -97,3 +98,13 @@ identities, limits and ranking; onboarding and prospective human-task evaluation
 - Do not implement later-feature runtime behavior as “preparation”.
 - Historical requirements, final evidence and normative contracts stay in place. Transient working artifacts remain
   recoverable from Git history after compaction.
+
+
+## Current continuation boundary
+
+F038 narrows the active investment to one local recurring-document workflow. It corrects the explicit human bundle
+projection and prepares a prospective manual pilot without rewriting historical benchmark evidence or adding a new
+retrieval framework. Real tasks and independent human review remain prerequisites, not assumed completed work.
+The [pilot contract](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md) fixes continuation and pause
+rules. No successor platform feature is authorized by this map while that value decision is pending; necessary
+correctness, compatibility and security maintenance remains in scope under the normal governance tiers.

@@ -100,3 +100,11 @@ while retaining the F035 warm-latency gain. F034 primary completion is 61% lexic
 reaches 81% at the 64-item ceiling. These are bounded evidence-packet results, not measurements of human comprehension or
 generated answers. The authoritative projection is
 [`benchmarks/downstream-utility/v0.1.0/results/reference-macos-arm64/report.md`](../benchmarks/downstream-utility/v0.1.0/results/reference-macos-arm64/report.md).
+
+## F038 prospective practical-value boundary
+
+Future investment claims follow the [manual local-document pilot](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+It uses actual new tasks, a usable native-cache baseline, setup-inclusive active time and blinded independent human
+supporting-passage judgments. Legacy substring relevance and fixed source-fitness labels are not human truth labels.
+All initial judgments remain pending; no F015–F036 artifact or evaluator is rewritten. The pilot's investment thresholds
+are explicit heuristics for a small personal decision, not general efficacy or release evidence.

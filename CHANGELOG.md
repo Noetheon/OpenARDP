@@ -8,6 +8,16 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 038 — local document pilot readiness
+
+- Display explicitly requested context bundles in human CLI output with exact source/version provenance, untrusted
+  content and artifact handles; preserve the body-free default and JSON contract.
+- Escape the enumerated DEL/C1/bidi controls in human text while preserving normal Unicode, and add a tested practical
+  ingest/context/source/replay guide.
+- Prepare a manual real-task pilot with strong baselines, pending human judgments, full effort accounting and predeclared
+  continuation/pause gates. Freeze wider expansion pending actual value; disclose legacy relevance/source-fitness limits
+  without changing historical benchmark artifacts or evaluators. No real pilot result or release readiness is claimed.
+
 ### Feature 037 — bounded semantic session reuse
 
 - Reuse one semantic compiler across compatible MCP requests, bound to the complete estimator identity, and discard it

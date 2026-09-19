@@ -119,6 +119,22 @@ This validates bounded evidence-packet utility and review effort, not human read
 correctness, domain readiness or a release decision. The next evidentiary boundary is a preregistered blinded human study
 or a fixed answer-generation study whose prompts, model identity and grading policy are frozen before evaluation.
 
+## Limits of the inherited quality labels and next decision
+
+The frozen relevance evaluator matches answer variants as normalized substrings inside source-matched evidence. That
+can label a title or topically related paragraph as support even when it does not establish the requested proposition.
+For example, F034 H076 includes a selected answer-word title labelled relevant; a separate selected definition supports
+that task, so this observation does not establish that the whole H076 completion was false. F034's 90% source-fitness
+value follows a fixed metadata rubric, not an independent human assessment of source credibility or answer support.
+See the retained [relevance implementation](../scripts/semantic_e2e_benchmark.py) and
+[holdout source rubric](../scripts/retrieval_holdout.py).
+
+The F025–F036 artifacts, scoring code and numbers remain historical and reproducible. Their labels must not be promoted
+to verified human answer quality. The new [prospective manual pilot](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md)
+requires a human to verify a concrete supporting passage, original source and version for each material claim. Its
+judgments and decision start pending; the initial capability-matched pilot uses lexical retrieval. It does not rerun or
+tune the frozen holdout. Broader expansion remains paused until actual recurring value is shown.
+
 ## Persistence and rollback
 
 No embedding, vector, provider-native model state or universal vector index enters SQLite, CAS, schemas or receipts.

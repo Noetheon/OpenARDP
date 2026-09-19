@@ -15,6 +15,19 @@ Roadmap features proceed in dependency order and one dependent work package must
 Routine and standard maintenance outside that sequence follows the risk-proportionate governance tiers and does not
 require artificial roadmap entries.
 
+## Current expansion pause
+
+After F037/F038, prioritize the [existing local document workflow](30_LOCAL_DOCUMENT_WORKFLOW.md), necessary maintenance
+and the [bounded prospective pilot](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
+Do not start a broader feature roadmap merely because the foundation exists. New GUI, cloud, HTTP, connector, provider,
+export or specification-stabilization work needs a demonstrated workflow need and a subsequent bounded decision.
+
+The pilot compares current work, a usable parse-once native cache and OpenARDP on 30 distinct real tasks. It counts
+setup, checking and repair; human supporting-span review starts pending. The predeclared stop rule is 20 additional
+person-hours or ten working days. Missing evidence or unmet gates means pausing expansion. A personal limited-GO does
+not establish adoption: broader open-source investment additionally needs at least two independent repeat users.
+No pilot result changes the independent F015 release gate.
+
 ## Adoption ladder
 
 1. one useful reference implementation;

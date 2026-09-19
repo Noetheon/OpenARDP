@@ -31,7 +31,7 @@ Red/green commands (all offline, model-free):
 
 The isolated red/green worker invocations override pytest addopts but import only synthetic dependencies; the authoritative complete suite runs with the configured socket-denial and branch-coverage gates. The worker tests exercise actual request functions and dispatch, not model quality or numeric inference. Warm MCP tampering tests cover CAS body, reference mapping and a structurally valid projection with changed sensitivity; failures are body-free and a restored source prepares afresh.
 
-`uv sync --locked --all-extras` completed successfully. `uv run --locked ruff check .`, `uv run --locked ruff format --check .` (422 files), `uv run --locked mypy src` (129 source files), `uv run --locked python scripts/audit_maintainability.py`, `uv run --no-sync python scripts/audit_ci.py audit`, `uv run --no-sync pre-commit validate-config`, and `uv build` passed. Full pytest/coverage, final governance, independent convergence and remote CI are still pending.
+`uv sync --locked --all-extras` completed successfully. `uv run --locked ruff check .`, `uv run --locked ruff format --check .` (422 files), `uv run --locked mypy src` (129 source files), `uv run --locked python scripts/audit_maintainability.py`, `uv run --no-sync python scripts/audit_ci.py audit`, `uv run --no-sync pre-commit validate-config`, and `uv build` passed. Final suite and governance results follow below; remote CI remains the delivery gate.
 
 ## Independent convergence and durable design
 
@@ -48,3 +48,9 @@ The selected design uses no LRU, disk cache or multi-estimator compiler map: the
 After code convergence, unique planning decisions and validation are retained here and in `spec.md` and the private lifecycle contract. The full specify/plan/tasks/checklist history is committed before removing transient files, as required by repository governance. No external corpus/model result was regenerated. Rollback is a code revert with process restart; no data migration is needed. Scope churn intentionally gives up reuse of evicted vectors to keep session memory bounded.
 
 The archived original real-stdio probe was rerun after implementation: two successful tool responses, one compiler, one preparation and two provider scoring calls, matching the direct compiler-lifetime baseline (previously two compilers and two preparations).
+
+## Final local gates
+
+`uv run --locked pytest` executed the complete suite: 1,846 passed, 4 skipped, one stale milestone-locator assertion failed in 314.51 s; branch coverage 85.52% exceeds the unchanged 85% gate. The sole failure expected F036 in `.specify/feature.json` even though F037 is now active. Its expected locator was updated to F037 (no product code change). `uv run --locked pytest --lf --cov-append --cov-report=term:skip-covered` then passed the one failed test, preserving full-suite coverage at 85.52%. Thus all 1,847 non-skipped cases were exercised successfully across the complete run and narrow correction rerun. CI will run the full suite once against the final tree.
+
+`uv run --locked python scripts/validate_repository.py` and `git diff --check` pass after compaction. `git diff e8268f0 --name-only -- benchmarks corpora schemas uv.lock pyproject.toml` is empty. Required Linux/macOS/Windows CI must all succeed for the exact PR head before merge; its checks are the authoritative delivery record. The merge must preserve the planning commits so removed lifecycle files remain recoverable in Git history.

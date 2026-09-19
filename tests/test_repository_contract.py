@@ -206,7 +206,7 @@ def test_governance_and_prior_contracts_are_present_and_frozen(
 ) -> None:
     """Require compact feature records, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/036-downstream-evidence-utility"
+    assert active["feature_directory"] == "specs/037-semantic-session-reuse"
     transient = {
         "analysis.md",
         "data-model.md",

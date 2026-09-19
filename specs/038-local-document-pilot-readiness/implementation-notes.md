@@ -1,8 +1,8 @@
 # F038 implementation notes
 
-Risk tier: high-assurance. Acceptance: explicit readable source-backed bundles, unchanged default/JSON and retrieval, a verified practical guide, a preregisterable manual three-arm pilot with pending judgments and no invented evidence, a bounded GO/pause decision, canonical focus freeze and full quality gates. Implementation in progress. F037 merged with all platform checks green before this branch began.
+Risk tier: high-assurance. Acceptance: explicit readable source-backed bundles, unchanged default/JSON and retrieval, a verified practical guide, a preregisterable manual three-arm pilot with pending judgments and no invented evidence, a bounded GO/pause decision, canonical focus freeze and full quality gates. Implementation and independent code/protocol convergence complete; final delivery gates below. F037 merged with all platform checks green before this branch began.
 
-No new dependency, persisted format, public schema or architectural ADR trigger. Decisions, test-first results, smoke evidence, independent reviews, compaction and exact gates will be recorded here.
+No new dependency, persisted format, public schema or architectural ADR trigger. Decisions, test-first results, smoke evidence, independent reviews, compaction and exact gates are recorded here.
 
 ## Pre-implementation analysis corrections
 
@@ -49,3 +49,15 @@ uv run --locked pytest --no-cov tests/integration/test_cli_context_output.py tes
 All 30 tests passed in 2.38 seconds with the configured socket prohibition. The root's subsequent complete guide smoke passed as recorded above. `check-prerequisites.sh --json --require-tasks --include-tasks` resolved the full F038 lifecycle before compaction. Required final full-suite/coverage and remote CI remain delivery gates, not unimplemented product scope.
 
 Local `uv run --locked ruff check .`, `uv run --locked ruff format --check .` (423 files), `uv run --locked mypy src` (129 source files), `uv run --locked python scripts/audit_maintainability.py`, `uv run --locked python scripts/audit_ci.py audit`, `uv run --locked pre-commit validate-config`, and `uv build` all passed. The wheel and source distribution built successfully. `git diff 4504cbd --name-only -- benchmarks corpora schemas uv.lock pyproject.toml scripts/semantic_e2e_benchmark.py scripts/retrieval_holdout.py` was empty. Full suite/coverage and final governance follow lifecycle compaction; CI must succeed before merge.
+
+## Retained lifecycle and remaining delivery checks
+
+Full analyzed planning is recoverable at `21202a1`; implemented tasks, rationale, focused checks and independent convergence are recoverable at `2c7a48c`. After convergence, the transient plan/research/data-model/quickstart/tasks/checklist files were removed under repository artifact governance. Their lasting decisions and validation are retained here, the durable spec, user guide and normative pilot contract. No frozen study artifacts were regenerated. The feature locator and its repository-contract expectation both point to F038. A merge commit must preserve these planning commits.
+
+Remaining delivery checklist before merge: one complete locked pytest/coverage run, final repository validation, exact-head Linux/macOS/Windows CI, and verified remote/local merge. Actual pilot execution is outside F038 readiness acceptance and remains awaiting real user tasks, frozen inputs and an independent reviewer.
+
+## Final local gates
+
+`uv run --locked pytest` passed: **1,854 passed, 4 skipped in 188.85 seconds**, branch-aware total coverage **85.55%** against the required 85%. The four existing opt-in reference/model checks lack separately provisioned E5/PDF/real-world/semantic-E2E bundles; they are not claimed as executed. All new regression cases and the ordinary locked suite passed without any retry or weakened configuration. `uv run --locked python scripts/validate_repository.py` and `git diff --check` passed after final documentation and compaction. The earlier lint/format/type/maintainability/CI-policy/build results apply to the unchanged executable files.
+
+All local acceptance and governance checks are complete. The only remaining delivery gate is exact-head three-platform CI followed by verified merge; the PR's check and merge records provide that authoritative closure without fabricating a result in advance.

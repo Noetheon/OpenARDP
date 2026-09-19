@@ -325,6 +325,23 @@ def test_receive_close_and_terminate_are_bounded(
     provider.close()
 
 
+def test_prepared_query_combined_byte_limit_fails_before_worker(
+    provider: IsolatedE5SemanticProvider, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reject an oversized query plus prepared corpus before IPC or child termination."""
+    limits = SemanticRetrievalLimits(max_passage_bytes=1024, max_total_text_bytes=1024)
+    prepared = PreparedSemanticCorpus.from_passages(
+        provider.recipe.recipe_id, (_passage(text="ä" * 500),), limits
+    )
+    monkeypatch.setattr(
+        provider,
+        "_ensure_worker",
+        lambda _cancel: (_ for _ in ()).throw(AssertionError("worker must not be used")),
+    )
+    with pytest.raises(SemanticProviderLimitExceeded, match="request bytes"):
+        provider.score_prepared("ü" * 13, prepared, limits, lambda: False)
+
+
 def test_ensure_worker_reuses_live_child_and_rejects_bad_startup(
     provider: IsolatedE5SemanticProvider,
     monkeypatch: pytest.MonkeyPatch,

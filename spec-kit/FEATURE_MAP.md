@@ -53,6 +53,7 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 34 | `034-independent-retrieval-holdout` | Freeze and baseline an externally sourced 100-question multilingual retrieval holdout before any further retrieval optimization. |
 | 35 | `035-profiled-retrieval-optimization` | Attribute retrieval cost by phase, then improve F025 quality and warm latency together before one milestone-only F034 validation. |
 | 36 | `036-downstream-evidence-utility` | Measure bounded citation-valid evidence-review completion and time-to-ready on F025, then evaluate the frozen method once on F034. |
+| 37 | `037-semantic-session-reuse` | Preserve bounded preparation across real MCP calls and replace obsolete provider caches safely. |
 
 ## Dependency rule
 
@@ -86,6 +87,8 @@ and warm latency together. The frozen F034 holdout is evaluated exactly once aft
 Feature 036 adds no retrieval or answer-generation behavior. It derives a provider-free progressive-disclosure review task
 from immutable body-free F034/F035 evidence, freezes its budgets and decisions on F025, then evaluates F034 once without
 turning evidence coverage into a human- or generated-answer correctness claim.
+Feature 037 corrects only disposable semantic session state after the project audit. It preserves existing evidence,
+identities, limits and ranking; onboarding and prospective human-task evaluation remain separate work packages.
 
 ## Scope rule
 

@@ -45,7 +45,16 @@ and closed on normal exit or failure; embeddings remain bounded disposable proce
 The F035 profile prepares the exact ordered semantic corpus once in the isolated E5 worker. Warm requests carry only the
 query and opaque corpus identity. A second bounded compiler-local cache retains verified rich retrieval text for exact
 lexical rescoring; returned matches are CAS-reverified. Both caches bind the exact snapshot and limits and are discarded
-on drift or process close. Neither creates a vector database, durable index or provider-neutral document representation.
+on drift or process close. F037 retains one compiler across compatible requests in the actual MCP session, keyed by the
+complete estimator identity. Switching estimators replaces it; any semantic compilation failure drops it so the next
+request prepares fresh. Lexical requests do not change that slot.
+
+The E5 worker retains only the active request's unique object vectors and one prepared corpus. A scope change evicts
+obsolete entries while preserving overlap; separate evidence references may share one object vector. Conflicting bodies
+for one object ID are rejected before mutation. Prepared scoring requires the exact preparation limits, and direct
+scoring invalidates prepared handles. Re-preparing identical content may reactivate the same deterministic corpus ID.
+This bounds session history within the existing limits; it does not enlarge the supported corpus or change scoring.
+Neither cache creates a vector database, durable index or provider-neutral document representation.
 
 Warm catalog checks use a body-free digest of the accepted rich attempt and all ordered reference, projection and
 retrieval object mappings. This avoids rebuilding thousands of provider-native models while still comparing the cache

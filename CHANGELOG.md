@@ -8,6 +8,15 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 037 — bounded semantic session reuse
+
+- Reuse one semantic compiler across compatible MCP requests, bound to the complete estimator identity, and discard it
+  after semantic compilation failures.
+- Replace obsolete E5 passage-cache entries and prepared handles when scopes change; retain overlap and encode shared
+  objects only once. Conflicting object bodies and mismatched prepared limits fail closed.
+- Preserve existing authoritative source verification, limits, selection rules, persisted identities and frozen
+  benchmark results. These corrections establish lifecycle behavior, not a new measured speed or human-utility claim.
+
 ### Feature 036 — downstream evidence utility
 
 - Added a provider-free, answer-generator-free evidence-review benchmark over immutable body-free F034/F035 results.

@@ -30,6 +30,7 @@ from openardp.domain.context_compilation import (
     ContextCompileRequest,
     ContextEvidenceItem,
     ContextSelectionPolicy,
+    EstimatorIdentity,
     UntrustedContentEnvelope,
 )
 from openardp.domain.identity import canonical_json_bytes
@@ -294,6 +295,7 @@ class McpServer:
         self._search = search
         self._compiler_factory = compiler_factory
         self._semantic_compiler_factory = semantic_compiler_factory
+        self._semantic_compiler_slot: tuple[EstimatorIdentity, ContextCompilerService] | None = None
         self._limits = limits if limits is not None else SessionLimits()
         self._caps = caps if caps is not None else ServerCaps()
         self._clock = clock
@@ -432,6 +434,7 @@ class McpServer:
         deadline = RequestDeadline(self._limits.deadline_ms, clock=self._clock)
         started = self._clock()
         tool_name: str | None = None
+        semantic_compilation = False
         try:
             if request.method == METHOD_INITIALIZE:
                 result = self._lifecycle.initialize(request.params)
@@ -448,6 +451,10 @@ class McpServer:
                 # entry would reduce to the sanitized internal category below.
                 handler = self._dispatch[tool_name]
                 arguments = _validate_arguments(descriptor, raw_arguments)
+                semantic_compilation = (
+                    tool_name == "compile_context"
+                    and arguments.get("retrieval_profile") == "semantic"
+                )
                 deadline.check()
                 self._registry.check(request.request_id)
                 cancel = self._registry.cancellation_check(request.request_id, deadline)
@@ -464,6 +471,8 @@ class McpServer:
             self._registry.finish(request.request_id)
             return encoded
         except McpFailure as failure:
+            if semantic_compilation:
+                self._semantic_compiler_slot = None
             self._emit_audit(
                 tool_name or request.method,
                 request.request_id,
@@ -473,6 +482,8 @@ class McpServer:
             self._registry.finish(request.request_id)
             return encode_message(error_result(request.request_id, failure))
         except Exception as error:
+            if semantic_compilation:
+                self._semantic_compiler_slot = None
             mapped = (
                 McpFailure(McpErrorCategory.DEADLINE_EXCEEDED)
                 if isinstance(error, ContextCompilationCancelled) and deadline.is_expired
@@ -680,8 +691,8 @@ class McpServer:
         retrieval_profile = _optional_str(arguments, "retrieval_profile") or "lexical"
         if retrieval_profile == "lexical":
             compiler = self._compiler_factory(estimator)
-        elif retrieval_profile == "semantic" and self._semantic_compiler_factory is not None:
-            compiler = self._semantic_compiler_factory(estimator)
+        elif retrieval_profile == "semantic":
+            compiler = self._semantic_compiler(estimator)
         else:
             raise McpFailure(McpErrorCategory.INVALID_PARAMS)
         persisted = compiler.compile_and_persist(request, cancel=cancel)
@@ -713,6 +724,18 @@ class McpServer:
             _check_bundle_item_caps(result.bundle.items, self._caps)
             summary["bundle"] = result.bundle.model_dump(mode="json")
         return summary
+
+    def _semantic_compiler(self, estimator: ContextEstimator) -> ContextCompilerService:
+        """Retain one disposable compiler for the complete estimator identity."""
+        if self._semantic_compiler_factory is None:
+            raise McpFailure(McpErrorCategory.INVALID_PARAMS)
+        slot = self._semantic_compiler_slot
+        if slot is None or slot[0] != estimator.identity:
+            self._semantic_compiler_slot = None
+            compiler = self._semantic_compiler_factory(estimator)
+            self._semantic_compiler_slot = (estimator.identity, compiler)
+            return compiler
+        return slot[1]
 
     def _get_context_receipt(
         self,

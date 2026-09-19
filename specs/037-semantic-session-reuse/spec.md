@@ -2,7 +2,7 @@
 
 **Feature Branch**: `codex/f037-semantic-session-reuse`
 **Created**: 2026-09-19
-**Status**: Specified
+**Status**: Implemented; code converged, final validation pending
 **Governance Tier**: high-assurance
 **Input**: Implement the audited semantic session lifecycle corrections before expanding the product.
 
@@ -19,7 +19,8 @@ changing the selected source version or estimator requires a fresh valid prepara
 **Acceptance Scenarios**:
 
 1. Given an unchanged snapshot and estimator, two successful semantic requests reuse preparation and return the same
-   evidence and receipt identities as fresh compilation of each request.
+   evidence as fresh compilation of each request. Receipts match when provider cache-hit diagnostics and other audit
+   facts match; cold and warm diagnostic histories are not required to have the same receipt ID.
 2. Given an estimator or source-version change, a new request cannot reuse an incompatible prepared handle.
 3. Given cancellation, timeout, invalid provider output or another compilation failure, that request fails explicitly;
    the next request may prepare afresh without reopening the MCP session.
@@ -59,7 +60,8 @@ overlap is reused and old prepared handles are rejected.
 - **FR-006**: Prepared state MUST contain at most one corpus and its exact preparation limits; evicted handles and
   mismatched limits MUST be rejected. Direct scoring invalidates prepared state.
 - **FR-007**: Existing lexical behavior, scores, selection policy, public schemas, persisted identities and historical
-  benchmark evidence MUST remain unchanged. Cache-hit diagnostics may reflect actual reuse.
+  benchmark evidence MUST remain unchanged. Cache-hit diagnostics may reflect actual reuse and can therefore change a
+  new receipt ID; identity algorithms and historical replay remain unchanged.
 - **FR-008**: Offline regression tests MUST exercise actual MCP dispatch, worker request functions, invalidation and
   failure recovery without downloading models; local and applicable three-platform repository gates MUST pass.
 
@@ -80,7 +82,8 @@ disposable execution state under ADR 0019; prepared handles remain valid only wh
 - **SC-002**: Disjoint valid selections succeed sequentially without exceeding existing cache/handle bounds.
 - **SC-003**: Tampering, conflicting identities, stale handles and changed limits are rejected; a failed session request
   does not poison later valid requests.
-- **SC-004**: Results and historical identities stay unchanged and all required checks pass.
+- **SC-004**: Selected evidence and historical identities stay unchanged; equal complete audit facts produce equal
+  receipts. All required checks pass.
 
 ## Assumptions and Clarification Record
 

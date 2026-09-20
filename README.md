@@ -22,8 +22,10 @@ set of documents. Start with the [practical document workflow](docs/30_LOCAL_DOC
 Further platform expansion is paused until a [bounded real-task pilot](pilots/local-document/v0.1.0/README.md) shows a
 clear advantage over both the user's current work and a simple persistent native-parser cache with search. Existing
 synthetic and retrieval benchmarks do not establish human time savings, answer correctness or external adoption.
-The pilot is prepared; real tasks, measurements and independent judgments are still missing. A negative or inconclusive
-result means pausing further expansion, while keeping the tested technical foundation available.
+The human pilot is prepared but has not started; its real tasks, measurements and independent judgments remain pending.
+A separate, incomplete private agent exercise does not satisfy that protocol. The existing expansion pause remains in
+effect; see the [20 September maintenance status](docs/31_MAINTENANCE_STATUS.md). A negative or inconclusive pilot result
+means pausing further expansion, while keeping the tested technical foundation available.
 
 ## Why OpenARDP?
 

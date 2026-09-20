@@ -28,6 +28,11 @@ person-hours or ten working days. Missing evidence or unmet gates means pausing 
 not establish adoption: broader open-source investment additionally needs at least two independent repeat users.
 No pilot result changes the independent F015 release gate.
 
+The [20 September maintenance status](31_MAINTENANCE_STATUS.md) records the current operating posture and distinguishes
+an incomplete private agent exercise from the still-unstarted human pilot. It adds no roadmap feature, benchmark gate,
+or release decision. Necessary maintenance remains possible; further development must use the existing evidence and
+approval boundaries above rather than treating a prepared pilot as an obligation to launch another study.
+
 ## Adoption ladder
 
 1. one useful reference implementation;

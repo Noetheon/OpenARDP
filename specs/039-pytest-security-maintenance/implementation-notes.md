@@ -18,7 +18,7 @@ An intermediate test invocation using the fresh default-only Worktree environmen
 
 `uv audit --locked --output-format json` audited 142 packages and reported four advisory records for **two unique CVEs** in unchanged optional model packages: `accelerate 1.14.0` / CVE-2026-69112 and `transformers 5.8.1` / CVE-2026-9856. The command returns exit 1 because these remain. CVE-2025-71176 is absent from this post-change audit, which is the bounded pytest closure claim. Duplicate GHSA/PYSEC records are not four distinct vulnerabilities. No scanner or audit result establishes that the entire optional graph is free of vulnerabilities.
 
-GitHub Dependabot alerts were activated separately from this branch. The read-only API snapshot during this work package showed three open alerts on the repository’s current main dependency graph: pytest GHSA-6w46-j5rx-g56g, transformers GHSA-xrqw-3rrv-vx5w and accelerate GHSA-4j2p-28q2-5m79. This unmerged worktree does not yet update GitHub's main-branch graph or close the pytest alert. The pytest-only bump should close only GHSA-6w46-j5rx-g56g after a verified main-branch graph refresh; the two optional model alerts remain independent.
+GitHub Dependabot alerts were activated separately from this branch. The read-only pre-merge API snapshot showed three open alerts on the then-current main dependency graph: pytest GHSA-6w46-j5rx-g56g, transformers GHSA-xrqw-3rrv-vx5w and accelerate GHSA-4j2p-28q2-5m79. At that point the unmerged worktree had not yet updated GitHub's main-branch graph. The later verified alert outcome is recorded below; the two optional model alerts are independent.
 
 ## Exact preliminary commands and results
 
@@ -35,7 +35,7 @@ uv run --locked --all-extras pytest --no-cov tests/test_repository_validation.py
 uv audit --locked --output-format json                   EXIT 1; 4 records / 2 unchanged optional CVEs, no pytest CVE
 ```
 
-No test, socket setting, coverage floor, CI policy or application source was changed to resolve the intermediate failures. The full required gates ran after Spec-Kit convergence and removal of transient artifacts; their exact outputs appear below. The existing ready-PR Linux/macOS/Windows matrix remains a pre-merge delivery condition.
+No test, socket setting, coverage floor, CI policy or application source was changed to resolve the intermediate failures. The full required gates ran after Spec-Kit convergence and removal of transient artifacts; their exact outputs appear below. The existing ready-PR Linux/macOS/Windows matrix was a pre-merge delivery condition and later passed as recorded below.
 
 ## Tradeoffs, rollback and residual risk
 
@@ -57,7 +57,7 @@ uv run --locked pytest                          PASS; 1,854 passed, 4 skipped in
 
 The four skipped tests remain the existing opt-in reference/model checks; no skip was introduced by F039. Full-suite success includes the ordinary repository contract, Docling dependency contract, existing socket denial and unchanged coverage gate. No second full-suite run was needed for the subsequent documentation-only evidence update; the repository validator below checks that final text.
 
-The final worktree still requires exact-head Linux/macOS/Windows ready-PR CI, verified merge and GitHub main-branch dependency-graph refresh before a remote pytest alert can be marked closed. Local success does not override F038's pending human-pilot data or F015's release NO-GO.
+At local handoff, the worktree still required exact-head Linux/macOS/Windows ready-PR CI, verified merge and GitHub main-branch dependency-graph refresh before the remote pytest alert could be considered closed. These subsequent checks are recorded below. Local success did not override F038's pending human-pilot data or F015's release NO-GO.
 
 ## Final repository and audit checks
 
@@ -71,4 +71,14 @@ uv audit --locked --no-dev --no-extra docling --no-extra semantic --no-extra vis
                                                        PASS; 6 core packages, 0 advisory records
 ```
 
-The core-only audit is profile-specific, not a whole-lock clearance. The all-profile locked audit above still reports two unique optional model CVEs; its nonzero exit is expected until those are resolved in separate reviewed work. The generated distribution files are build outputs, not a release. Independent review of the scoped dependency diff found no critical/high static finding and matched the pytest 9.0.3 PyPI artifact hashes; local convergence likewise found no critical/high gap. Remote three-platform CI and alert closure are not claimed here.
+The core-only audit is profile-specific, not a whole-lock clearance. The all-profile locked audit above still reports two unique optional model CVEs; its nonzero exit is expected until those are resolved in separate reviewed work. The generated distribution files are build outputs, not a release. Independent review of the scoped dependency diff found no critical/high static finding and matched the pytest 9.0.3 PyPI artifact hashes; local convergence likewise found no critical/high gap. At this local-handoff stage, remote three-platform CI and alert closure were not yet claimed.
+
+## Post-merge delivery verification
+
+Routine documentation update on 23 September 2026: this section records the final delivery state of the completed F039 maintenance package. It changes no product behavior, dependency, test, public contract, security boundary or release decision. Acceptance is an exact-head merge, required CI success, current dependency-graph confirmation and truthful residual-risk status.
+
+[PR #51](https://github.com/Noetheon/OpenARDP/pull/51) merged at 2026-09-22T23:21:09Z with reviewed head `f3e8e287cf2bc82af38a87e4566abbd095aebd59` into `main` as merge commit `04cd0651921d3fc82b4593eee9db968eddce20b9`. The merge commit and reviewed head have the same Git tree. Local `main`, `origin/main` and the live remote ref matched that merge commit, with a clean working tree. The exact merged remote feature branch was subsequently removed.
+
+All required PR checks on that head succeeded: Preflight and Quality on Ubuntu, macOS and Windows. The additional release-evidence workflow jobs and aggregate check succeeded as workflow checks; they do **not** turn the preserved F015 `NO-GO` decision into a release GO. The separate post-merge `main` CI and Dependency Graph runs also succeeded; the full three-platform matrix ran on the ready PR, while the post-merge CI used its ordinary push/path scope.
+
+GitHub's refreshed SPDX-SBOM at 2026-09-22T23:22:38Z lists `pytest 9.0.3`. Dependabot marked pytest alert #1 `fixed` at 2026-09-22T23:22:15Z without a manual dismissal. Alerts #2 `transformers` and #3 `accelerate` remain `open`; automatic security updates remain disabled. This proves closure of the identified pytest advisory in the default-branch graph, not absence of other vulnerabilities. F038 still awaits real human tasks and effort evidence, and F015 remains `NO-GO`.

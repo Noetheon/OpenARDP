@@ -40,3 +40,35 @@ No test, socket setting, coverage floor, CI policy or application source was cha
 ## Tradeoffs, rollback and residual risk
 
 Choosing the first patched pytest release and a `<10` cap limits lock drift but moves the development test runner across a major version. The complete suite and three-platform CI are therefore required before merge. If a genuine compatibility problem appears, revert this one scoped change through a reviewed branch; do not drop tests, disable socket denial, reduce coverage or silently restore vulnerable pytest 8. Optional model advisories require separate, evidence-backed work if those profiles become necessary; this F039 package makes no claim about them.
+
+## Final local validation after convergence
+
+Spec-Kit convergence assessed all five functional requirements, four success criteria, the single maintainer scenario, the exact dependency diff and the governing constitution. It found **zero missing, partial, contradictory or unrequested implementation gaps**, and no new convergence task was needed. The first local commit `4979228` preserves the complete analyzed planning lifecycle in Git history. Transient planning files were then removed from the live tree, and `.specify/feature.json` returned to the F038 product-pilot record. The normal repository contract test therefore runs against the intended final state rather than a special-case exception.
+
+The final all-extras environment and unchanged required gates passed:
+
+```text
+uv sync --all-extras --locked                    PASS; resolved 143 packages, checked 121 installed packages
+uv run --locked ruff check .                     PASS; All checks passed
+uv run --locked ruff format --check .           PASS; 423 files already formatted
+uv run --locked mypy src                        PASS; no issues in 129 source files
+uv run --locked pytest                          PASS; 1,854 passed, 4 skipped in 205.86 seconds; branch coverage 85.56% >= 85%
+```
+
+The four skipped tests remain the existing opt-in reference/model checks; no skip was introduced by F039. Full-suite success includes the ordinary repository contract, Docling dependency contract, existing socket denial and unchanged coverage gate. No second full-suite run was needed for the subsequent documentation-only evidence update; the repository validator below checks that final text.
+
+The final worktree still requires exact-head Linux/macOS/Windows ready-PR CI, verified merge and GitHub main-branch dependency-graph refresh before a remote pytest alert can be marked closed. Local success does not override F038's pending human-pilot data or F015's release NO-GO.
+
+## Final repository and audit checks
+
+```text
+uv run --locked python scripts/validate_repository.py   PASS; Repository validation passed
+uv run --locked python scripts/audit_ci.py audit        PASS; finding_count 0
+uv lock --check                                        PASS; resolved 143 packages
+uv build                                               PASS; wheel and sdist built
+git diff --check                                       PASS; no whitespace errors
+uv audit --locked --no-dev --no-extra docling --no-extra semantic --no-extra visual --output-format json
+                                                       PASS; 6 core packages, 0 advisory records
+```
+
+The core-only audit is profile-specific, not a whole-lock clearance. The all-profile locked audit above still reports two unique optional model CVEs; its nonzero exit is expected until those are resolved in separate reviewed work. The generated distribution files are build outputs, not a release. Independent review of the scoped dependency diff found no critical/high static finding and matched the pytest 9.0.3 PyPI artifact hashes; local convergence likewise found no critical/high gap. Remote three-platform CI and alert closure are not claimed here.

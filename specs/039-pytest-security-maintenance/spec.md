@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-23
 
-**Status**: Draft
+**Status**: Locally implemented; cross-platform CI is a pre-merge gate
 
 **Governance Tier**: High assurance — development dependency and supply-chain change
 

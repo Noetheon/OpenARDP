@@ -10,7 +10,7 @@ This is necessary security maintenance during the F038 expansion pause. It is no
 
 ## Dependency and environment evidence
 
-The exact `git diff -- pyproject.toml uv.lock` changes one dev constraint, its `uv.lock` specifier, the pytest package version 8.4.2 → 9.0.3 and the pytest sdist/wheel URLs, sizes, timestamps and hashes. A `tomllib` comparison of the old and new lock parsed 143 package names on each side, with no additions/removals and exactly one changed package version: pytest. `uv lock --check` passed. A locked install reported pytest 9.0.3, pytest-cov 6.3.0 and pytest-socket 0.8.0.
+The branch diff against `main` changes one dev constraint, its `uv.lock` specifier, the pytest package version 8.4.2 → 9.0.3 and the pytest sdist/wheel URLs, sizes, timestamps and hashes. A `tomllib` comparison of the old and new lock parsed 143 package names on each side, with no additions/removals and exactly one changed package version: pytest. `uv lock --check` passed. A locked install reported pytest 9.0.3, pytest-cov 6.3.0 and pytest-socket 0.8.0.
 
 An intermediate test invocation using the fresh default-only Worktree environment produced **46 passed, 2 failed**. The failures had bounded setup causes: the repository validator rejected F039’s still-active transient planning files, and the Docling dependency contract could not find the optional Docling extra. They did not show pytest 9 incompatibility. Re-running the relevant checks with the repository’s all-extras profile and excluding only the temporary active-feature governance assertion yielded **27 passed** for text parser + Docling dependency and **20 passed, 1 deselected** for repository-validation unit cases. The omitted governance assertion, full coverage and all tests are mandatory in the final compacted state below; they are not treated as passed yet.
 
@@ -35,7 +35,7 @@ uv run --locked --all-extras pytest --no-cov tests/test_repository_validation.py
 uv audit --locked --output-format json                   EXIT 1; 4 records / 2 unchanged optional CVEs, no pytest CVE
 ```
 
-No test, socket setting, coverage floor, CI policy or application source was changed to resolve the intermediate failures. The full required gates must run after Spec-Kit convergence and removal of transient artifacts; their exact outputs will be appended here. The existing ready-PR Linux/macOS/Windows matrix remains a pre-merge delivery condition.
+No test, socket setting, coverage floor, CI policy or application source was changed to resolve the intermediate failures. The full required gates ran after Spec-Kit convergence and removal of transient artifacts; their exact outputs appear below. The existing ready-PR Linux/macOS/Windows matrix remains a pre-merge delivery condition.
 
 ## Tradeoffs, rollback and residual risk
 

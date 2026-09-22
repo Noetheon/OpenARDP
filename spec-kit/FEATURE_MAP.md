@@ -108,3 +108,10 @@ retrieval framework. Real tasks and independent human review remain prerequisite
 The [pilot contract](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md) fixes continuation and pause
 rules. No successor platform feature is authorized by this map while that value decision is pending; necessary
 correctness, compatibility and security maintenance remains in scope under the normal governance tiers.
+
+## Scoped maintenance record outside the product continuation sequence
+
+[F039 pytest security maintenance](../specs/039-pytest-security-maintenance/spec.md) updates only the development
+test-runner requirement and committed lock to the first patched pytest release for CVE-2025-71176. It adds no platform
+feature and does not satisfy, change or restart the F038 real-task pilot or the independent F015 release gate.
+The F038 pilot remains the active product continuation after this maintenance package converges.

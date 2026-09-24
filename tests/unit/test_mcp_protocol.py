@@ -13,6 +13,7 @@ from openardp.domain.search import SearchQueryRejected
 from openardp.interfaces.mcp_protocol import (
     DEFAULT_DEADLINE_MS,
     DEFAULT_RESPONSE_CAP_BYTES,
+    LATEST_PROTOCOL_REVISION,
     MAX_DEADLINE_MS,
     MAX_LINE_BYTES,
     MAX_RESPONSE_CAP_BYTES,
@@ -22,6 +23,7 @@ from openardp.interfaces.mcp_protocol import (
     MIN_RESPONSE_CAP_BYTES,
     PROTOCOL_REVISION,
     SERVER_NAME,
+    SUPPORTED_PROTOCOL_REVISIONS,
     TOOL_DESCRIPTORS,
     TOOL_NAMES,
     CancellationRegistry,
@@ -45,6 +47,7 @@ from openardp.interfaces.mcp_protocol import (
     success_result,
     tools_list_result,
 )
+from openardp.interfaces.mcp_tools import AGENT_TOOL_DESCRIPTORS, tools_listing
 from openardp.ports.catalog import (
     AmbiguousBlock,
     BlockNotFound,
@@ -255,32 +258,46 @@ def test_initialize_handshake_reports_identity_and_tools_only() -> None:
     assert set(result["capabilities"]) == {"tools"}
 
 
-def test_initialize_rejects_other_revisions_and_missing_version() -> None:
-    """Fail closed on revision mismatch with the stable version category."""
+@pytest.mark.parametrize("revision", SUPPORTED_PROTOCOL_REVISIONS)
+def test_initialize_echoes_every_supported_revision(revision: str) -> None:
+    """Accept each supported revision exactly as the client requested it."""
     lifecycle = SessionLifecycle()
-    with pytest.raises(McpFailure) as captured:
-        lifecycle.initialize(_initialize_params("2024-11-05"))
-    assert captured.value.category is McpErrorCategory.UNSUPPORTED_PROTOCOL_VERSION
+    result = lifecycle.initialize(_initialize_params(revision))
+    assert result["protocolVersion"] == revision
+    assert lifecycle.protocol_version == revision
+    assert "instructions" not in result
+
+
+def test_initialize_offers_latest_revision_and_rejects_missing_version() -> None:
+    """Negotiate unknown revisions to the newest one and fail malformed requests."""
+    lifecycle = SessionLifecycle(instructions="Use find, then read.")
     with pytest.raises(McpFailure) as missing:
         lifecycle.initialize({"capabilities": {}})
     assert missing.value.category is McpErrorCategory.INVALID_REQUEST
     with pytest.raises(McpFailure):
         lifecycle.initialize(None)
+    with pytest.raises(McpFailure):
+        lifecycle.initialize(_initialize_params("x" * 65))
     assert lifecycle.state is SessionState.START
+    result = lifecycle.initialize(_initialize_params("2030-01-01"))
+    assert result["protocolVersion"] == LATEST_PROTOCOL_REVISION == PROTOCOL_REVISION
+    assert result["instructions"] == "Use find, then read."
 
 
-def test_tool_calls_require_completed_initialization() -> None:
-    """Reject tool access before the initialized notification arrives."""
+def test_tool_calls_require_the_initialize_response() -> None:
+    """Reject tool access before initialize and tolerate a late initialized notice."""
     lifecycle = SessionLifecycle()
     with pytest.raises(McpFailure) as captured:
         lifecycle.require_ready()
     assert captured.value.category is McpErrorCategory.INVALID_REQUEST
     lifecycle.initialize(_initialize_params())
-    with pytest.raises(McpFailure):
-        lifecycle.require_ready()
+    lifecycle.require_ready()
     lifecycle.notify_initialized()
     assert lifecycle.state is SessionState.READY
     lifecycle.require_ready()
+    lifecycle.close()
+    with pytest.raises(McpFailure):
+        lifecycle.require_ready()
 
 
 def test_lifecycle_rejects_out_of_order_transitions() -> None:
@@ -406,7 +423,7 @@ def test_require_tool_returns_descriptor_or_stable_unknown_category() -> None:
     """Resolve known tools and fail unknown names with one stable category."""
     descriptor = require_tool("compile_context")
     assert descriptor.name == "compile_context"
-    assert descriptor.interface_version == "0.2.0"
+    assert descriptor.interface_version == MCP_INTERFACE_VERSION
     assert descriptor.input_schema["properties"]["retrieval_profile"] == {
         "type": "string",
         "enum": ["lexical", "semantic"],
@@ -432,12 +449,13 @@ def test_parse_tool_call_validates_envelope_and_arguments() -> None:
 
 
 def test_tools_list_result_is_deterministic_and_matches_golden(repository_root: Path) -> None:
-    """Pin descriptor bytes against the reviewed canonical fixture."""
-    first = encode_message(tools_list_result())
-    again = encode_message(tools_list_result())
+    """Pin the default agent tool listing against the reviewed canonical fixture."""
+    first = encode_message(tools_listing(AGENT_TOOL_DESCRIPTORS))
+    again = encode_message(tools_listing(AGENT_TOOL_DESCRIPTORS))
     assert first == again
     fixture_path = repository_root / "tests" / "fixtures" / "mcp" / "tools-list.json"
     assert first[:-1] == fixture_path.read_bytes()
+    assert encode_message(tools_list_result()) == encode_message(tools_list_result())
 
 
 # T012 — session limits, deadlines and cooperative cancellation

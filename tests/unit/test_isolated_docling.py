@@ -5,6 +5,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import socket
+import sys
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -12,11 +13,16 @@ from pathlib import Path
 import pytest
 
 from openardp.adapters.isolated_docling import (
+    _SINGLE_THREAD_ENVIRONMENT,
     IsolatedDoclingAdapter,
     _apply_offline_environment,
+    _apply_resource_limits,
+    _apply_thread_environment,
     _decode_worker_result,
     _error_from_code,
+    _memory_limit_resource,
     _parser_error_code,
+    _WorkerConfig,
 )
 from openardp.domain.rich_ingestion import (
     ComponentVersion,
@@ -64,6 +70,68 @@ def test_offline_environment_uses_one_fresh_explicit_cache_authority(
     assert os.environ["TRANSFORMERS_OFFLINE"] == "1"
     for name in ("HF_HOME", "HF_HUB_CACHE", "TRANSFORMERS_CACHE", "XDG_CACHE_HOME"):
         assert Path(os.environ[name]).is_relative_to(tmp_path)
+
+
+def test_thread_environment_pins_every_numeric_pool_to_one_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep worker memory independent of the host core count before provider import."""
+    for name in _SINGLE_THREAD_ENVIRONMENT:
+        monkeypatch.setenv(name, "64")
+
+    _apply_thread_environment()
+
+    assert {name: os.environ[name] for name in _SINGLE_THREAD_ENVIRONMENT} == dict.fromkeys(
+        _SINGLE_THREAD_ENVIRONMENT, "1"
+    )
+    assert {"OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"} <= set(
+        _SINGLE_THREAD_ENVIRONMENT
+    )
+
+
+class _ResourceStub:
+    RLIMIT_AS = 9
+    RLIMIT_DATA = 2
+
+
+class _AddressOnlyStub:
+    RLIMIT_AS = 9
+
+
+def test_memory_limit_bounds_writable_memory_on_linux_and_address_space_elsewhere() -> None:
+    """Select RLIMIT_DATA on Linux, RLIMIT_AS on other POSIX and nothing when unsupported."""
+    assert _memory_limit_resource(_ResourceStub(), "linux") == _ResourceStub.RLIMIT_DATA
+    assert _memory_limit_resource(_AddressOnlyStub(), "linux") == _AddressOnlyStub.RLIMIT_AS
+    assert _memory_limit_resource(_ResourceStub(), "darwin") == _ResourceStub.RLIMIT_AS
+    assert _memory_limit_resource(object(), "linux") is None
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX resource limits are not applied on Windows")
+def test_resource_limits_apply_the_platform_memory_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Apply CPU, descriptor and exactly one memory limit without raising hard limits."""
+    import resource
+
+    applied: dict[int, tuple[int, int]] = {}
+    monkeypatch.setattr(resource, "getrlimit", lambda kind: (0, resource.RLIM_INFINITY))
+    monkeypatch.setattr(resource, "setrlimit", lambda kind, value: applied.__setitem__(kind, value))
+    limits = RichParserLimits(max_address_space_bytes=123_456_789)
+    config = _WorkerConfig(
+        limits_json=limits.model_dump_json(),
+        model_root=None,
+        model_manifest_json=None,
+    )
+
+    _apply_resource_limits(config, 2.5)
+
+    memory = _memory_limit_resource(resource, sys.platform)
+    assert memory is not None
+    assert applied[memory] == (123_456_789, resource.RLIM_INFINITY)
+    assert applied[resource.RLIMIT_CPU] == (4, resource.RLIM_INFINITY)
+    assert applied[resource.RLIMIT_NOFILE] == (limits.max_open_files, resource.RLIM_INFINITY)
+    if sys.platform.startswith("linux"):
+        assert resource.RLIMIT_AS not in applied
 
 
 def _network_probe(

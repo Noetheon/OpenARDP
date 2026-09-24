@@ -206,7 +206,7 @@ def test_governance_and_prior_contracts_are_present_and_frozen(
 ) -> None:
     """Require compact feature records, accepted ADRs and frozen prior contracts."""
     active = json.loads((repository_root / ".specify/feature.json").read_text(encoding="utf-8"))
-    assert active["feature_directory"] == "specs/038-local-document-pilot-readiness"
+    assert active["feature_directory"] == "specs/040-agent-ready-access"
     transient = {
         "analysis.md",
         "data-model.md",
@@ -332,16 +332,16 @@ def test_f020_committed_reference_result_remains_valid(repository_root: Path) ->
 def test_constitution_mirror_and_compact_feature_policy_are_frozen(
     repository_root: Path,
 ) -> None:
-    """Keep the ratified tiered workflow and retention policy synchronized."""
+    """Keep the lean change-record, usefulness and retention policy synchronized."""
     managed = (repository_root / ".specify/memory/constitution.md").read_bytes()
     source = (repository_root / "spec-kit/CONSTITUTION_SOURCE.md").read_bytes()
     assert managed == source
     text = managed.decode("utf-8")
-    assert "**Current version:** 3.0.0" in text
-    assert "**Routine** changes" in text
-    assert "**Standard** changes" in text
-    assert "**High-assurance** changes" in text
-    assert "recoverable from Git history" in text
+    assert "**Current version:** 4.0.0" in text
+    assert "durable feature record" in text
+    assert "Spec Kit stages" in text and "optional tools" in text
+    assert "Usefulness First" in text and "Agent Efficiency" in text
+    assert "exact history remains in Git" in text
 
 
 def test_generated_local_state_is_not_tracked(repository_root: Path) -> None:
@@ -619,8 +619,8 @@ def test_f005a_constitution_is_ratified_and_canonical(repository_root: Path) -> 
     source = (repository_root / "spec-kit/CONSTITUTION_SOURCE.md").read_text(encoding="utf-8")
 
     assert constitution == source
-    assert "**Current version:** 3.0.0" in constitution
-    assert "**Last amended:** 2026-08-09" in constitution
+    assert "**Current version:** 4.0.0" in constitution
+    assert "**Last amended:** 2026-09-24" in constitution
     required_boundaries = (
         "implementation-first",
         "complete provider-native",

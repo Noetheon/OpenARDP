@@ -34,6 +34,7 @@ from openardp.domain.context_compilation import (
     UntrustedContentEnvelope,
 )
 from openardp.domain.identity import canonical_json_bytes
+from openardp.interfaces.mcp_agent_tools import AgentToolError, AgentToolHandlers, AgentWarmup
 from openardp.interfaces.mcp_protocol import (
     METHOD_INITIALIZE,
     METHOD_NOTIFICATION_CANCELLED,
@@ -60,13 +61,21 @@ from openardp.interfaces.mcp_protocol import (
     parse_tool_call,
     require_tool,
     success_result,
-    tools_list_result,
+)
+from openardp.interfaces.mcp_tools import (
+    ERROR_META_KEY,
+    SERVER_INSTRUCTIONS,
+    descriptors_for,
+    tool_error_result,
+    tool_result,
+    tools_listing,
 )
 from openardp.ports.context import (
     CancellationCheck,
     ContextCompilationCancelled,
     ContextEstimator,
 )
+from openardp.services.agent_access import AgentAccessService
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.document_query import DocumentQueryService
 from openardp.services.rich_evidence import RichEvidenceService
@@ -83,6 +92,15 @@ _MAX_PENDING_FRAMES = 64
 
 _UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _SHA256_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+# Tool execution failures the model can act on are returned as isError results.
+_TOOL_ERROR_HINTS: dict[McpErrorCategory, str | None] = {
+    McpErrorCategory.INVALID_PARAMS: "Check the arguments against the tool's input schema.",
+    McpErrorCategory.NOT_FOUND: "Call list_documents to see what is available.",
+    McpErrorCategory.CONFLICT: None,
+    McpErrorCategory.INTEGRITY_OR_WORKSPACE: (
+        "The local workspace needs attention; ask the user to run `openardp docs`."
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -96,7 +114,9 @@ class ServerCaps:
 
 
 AuditSink = Callable[[Mapping[str, JsonValue]], None]
-ToolHandler = Callable[[dict[str, JsonValue], RequestDeadline, CancellationCheck], dict[str, Any]]
+ToolHandler = Callable[
+    [dict[str, JsonValue], RequestDeadline, CancellationCheck], dict[str, Any] | str
+]
 CompilerFactory = Callable[[ContextEstimator], ContextCompilerService]
 
 
@@ -106,6 +126,17 @@ def _default_audit(record: Mapping[str, JsonValue]) -> None:
         "%s",
         json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
+
+
+def _audit_outcome(result: Mapping[str, Any]) -> str:
+    """Return ``ok`` or the taxonomy category of an isError tool result."""
+    if result.get("isError") is True:
+        meta = result.get("_meta")
+        error = meta.get(ERROR_META_KEY) if isinstance(meta, Mapping) else None
+        data = error.get("data") if isinstance(error, Mapping) else None
+        category = data.get("category") if isinstance(data, Mapping) else None
+        return str(category) if isinstance(category, str) else "tool_error"
+    return "ok"
 
 
 def _bounded_page(items: Sequence[Any], cap: int) -> tuple[Sequence[Any], bool]:
@@ -121,7 +152,12 @@ def _untrusted_envelope(body: str, caps: ServerCaps) -> dict[str, Any]:
     return envelope.model_dump(mode="json")
 
 
-def _validate_value(spec: Mapping[str, JsonValue], value: JsonValue) -> None:
+def _validate_value(
+    spec: Mapping[str, JsonValue],
+    value: JsonValue,
+    *,
+    multiline: bool = False,
+) -> None:
     """Validate one argument value against its bounded schema fragment."""
     expected = spec.get("type")
     if expected == "string":
@@ -133,7 +169,7 @@ def _validate_value(spec: Mapping[str, JsonValue], value: JsonValue) -> None:
             raise McpFailure(McpErrorCategory.INVALID_PARAMS)
         if isinstance(max_length, int) and len(value) > max_length:
             raise McpFailure(McpErrorCategory.INVALID_PARAMS)
-        if "\x00" in value or "\n" in value or "\r" in value:
+        if "\x00" in value or (not multiline and ("\n" in value or "\r" in value)):
             raise McpFailure(McpErrorCategory.INVALID_PARAMS)
         pattern = spec.get("pattern")
         if isinstance(pattern, str) and re.fullmatch(pattern, value) is None:
@@ -195,7 +231,7 @@ def _validate_arguments(
         spec = properties[key]
         if not isinstance(spec, dict):
             raise McpFailure(McpErrorCategory.INTERNAL)
-        _validate_value(spec, value)
+        _validate_value(spec, value, multiline=key in descriptor.multiline_arguments)
     return arguments
 
 
@@ -288,8 +324,14 @@ class McpServer:
         caps: ServerCaps | None = None,
         clock: Callable[[], float] = time.monotonic,
         audit: AuditSink | None = None,
+        agent: AgentAccessService | None = None,
+        toolset: str | None = None,
     ) -> None:
-        """Compose the session over existing verified read-only services."""
+        """Compose the session over existing verified read-only services.
+
+        ``toolset`` selects ``agent`` (default with an agent service), ``full`` or
+        ``legacy`` (default without one, the nine F009 tools).
+        """
         self._query = document_query
         self._rich_evidence = rich_evidence
         self._search = search
@@ -300,9 +342,15 @@ class McpServer:
         self._caps = caps if caps is not None else ServerCaps()
         self._clock = clock
         self._audit = audit if audit is not None else _default_audit
-        self._lifecycle = SessionLifecycle()
+        selected = toolset or ("agent" if agent is not None else "legacy")
+        if selected != "legacy" and agent is None:
+            raise ValueError("agent tools need an agent access service")
+        self._descriptors = descriptors_for(selected)
+        self._lifecycle = SessionLifecycle(
+            instructions=SERVER_INSTRUCTIONS if selected != "legacy" else None
+        )
         self._registry = CancellationRegistry()
-        self._dispatch: dict[str, ToolHandler] = {
+        dispatch: dict[str, ToolHandler] = {
             "list_documents": self._list_documents,
             "get_source_status": self._get_source_status,
             "get_document_outline": self._get_document_outline,
@@ -312,6 +360,13 @@ class McpServer:
             "get_evidence": self._get_evidence,
             "compile_context": self._compile_context,
             "get_context_receipt": self._get_context_receipt,
+        }
+        self._warmup: AgentWarmup | None = None
+        if agent is not None and selected != "legacy":
+            self._warmup = AgentWarmup(agent)
+            dispatch.update(AgentToolHandlers(agent, self._warmup).handlers())
+        self._dispatch = {
+            descriptor.name: dispatch[descriptor.name] for descriptor in self._descriptors
         }
 
     @property
@@ -334,6 +389,11 @@ class McpServer:
     def serve(self, source: BinaryIO, sink: BinaryIO) -> int:
         """Serve frames while reading cancellation notifications concurrently."""
         inbound: Queue[bytes | McpFailure | None] = Queue(maxsize=_MAX_PENDING_FRAMES)
+        # Interactive clients keep stdin open and wait for each answer, so read
+        # whatever is available instead of blocking until a full chunk arrives.
+        read_available = getattr(source, "read1", None) or source.read
+        if self._warmup is not None:
+            self._warmup.start()
 
         def _enqueue(item: bytes | McpFailure) -> bool:
             try:
@@ -347,7 +407,7 @@ class McpServer:
         def _read_input() -> None:
             buffer = LineBuffer(self._limits.max_line_bytes)
             while True:
-                chunk = source.read(_READ_CHUNK_BYTES)
+                chunk = read_available(_READ_CHUNK_BYTES)
                 if not chunk:
                     break
                 try:
@@ -442,32 +502,28 @@ class McpServer:
                 result = self._lifecycle.ping()
             elif request.method == METHOD_TOOLS_LIST:
                 self._lifecycle.require_ready()
-                result = tools_list_result()
+                result = tools_listing(self._descriptors)
             elif request.method == METHOD_TOOLS_CALL:
                 self._lifecycle.require_ready()
                 tool_name, raw_arguments = parse_tool_call(request.params)
-                descriptor = require_tool(tool_name)
-                # The dispatch covers the complete published tool set; a missing
-                # entry would reduce to the sanitized internal category below.
-                handler = self._dispatch[tool_name]
-                arguments = _validate_arguments(descriptor, raw_arguments)
+                descriptor = require_tool(tool_name, self._descriptors)
                 semantic_compilation = (
                     tool_name == "compile_context"
-                    and arguments.get("retrieval_profile") == "semantic"
+                    and raw_arguments.get("retrieval_profile") == "semantic"
                 )
-                deadline.check()
-                self._registry.check(request.request_id)
-                cancel = self._registry.cancellation_check(request.request_id, deadline)
-                result = handler(arguments, deadline, cancel)
-                deadline.check()
-                self._registry.check(request.request_id)
+                result = self._call_tool(descriptor, raw_arguments, request, deadline)
             else:
                 raise McpFailure(McpErrorCategory.INVALID_REQUEST, jsonrpc_code=-32601)
             encoded = ensure_within_response_cap(
                 encode_message(success_result(request.request_id, result)),
                 self._limits,
             )
-            self._emit_audit(tool_name or request.method, request.request_id, "ok", started)
+            self._emit_audit(
+                tool_name or request.method,
+                request.request_id,
+                _audit_outcome(result),
+                started,
+            )
             self._registry.finish(request.request_id)
             return encoded
         except McpFailure as failure:
@@ -497,6 +553,62 @@ class McpServer:
             )
             self._registry.finish(request.request_id)
             return encode_message(error_result(request.request_id, mapped))
+
+    def _call_tool(
+        self,
+        descriptor: ToolDescriptor,
+        raw_arguments: dict[str, JsonValue],
+        request: Request,
+        deadline: RequestDeadline,
+    ) -> dict[str, Any]:
+        """Run one tool; correctable failures become ``isError`` results for the model."""
+        result = self._run_tool(descriptor, raw_arguments, request, deadline)
+        if (
+            result.get("isError") is True
+            and descriptor.name == "compile_context"
+            and raw_arguments.get("retrieval_profile") == "semantic"
+        ):
+            # A failed semantic compilation must never leave warm prepared state behind.
+            self._semantic_compiler_slot = None
+        return result
+
+    def _run_tool(
+        self,
+        descriptor: ToolDescriptor,
+        raw_arguments: dict[str, JsonValue],
+        request: Request,
+        deadline: RequestDeadline,
+    ) -> dict[str, Any]:
+        try:
+            arguments = _validate_arguments(descriptor, raw_arguments)
+            deadline.check()
+            self._registry.check(request.request_id)
+            cancel = self._registry.cancellation_check(request.request_id, deadline)
+            payload = self._dispatch[descriptor.name](arguments, deadline, cancel)
+            deadline.check()
+            self._registry.check(request.request_id)
+        except AgentToolError as error:
+            return tool_error_result(error.category, error.detail)
+        except McpFailure as failure:
+            if failure.category not in _TOOL_ERROR_HINTS:
+                raise
+            return tool_error_result(failure.category, _TOOL_ERROR_HINTS[failure.category])
+        except Exception as error:
+            if isinstance(error, ContextCompilationCancelled) and deadline.is_expired:
+                raise McpFailure(McpErrorCategory.DEADLINE_EXCEEDED) from error
+            mapped = map_service_error(error)
+            if mapped.category not in _TOOL_ERROR_HINTS:
+                raise mapped from error
+            return tool_error_result(mapped.category, _TOOL_ERROR_HINTS[mapped.category])
+        result = tool_result(payload)
+        encoded = encode_message(success_result(request.request_id, result))
+        if len(encoded) > self._limits.response_cap_bytes:
+            return tool_error_result(
+                McpErrorCategory.INVALID_PARAMS,
+                "The result exceeds the response size cap; request less "
+                "(a lower max_tokens or limit, or a narrower range).",
+            )
+        return result
 
     def _emit_audit(
         self,

@@ -1,9 +1,10 @@
 # Start here
 
-**Using OpenARDP for a document task?** Start with the short
-[practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md). It covers importing, reading selected evidence,
-checking a source and replaying a receipt. The [prospective pilot](pilots/local-document/v0.1.0/README.md) then tests
-whether that workflow is worth continued work. The sections below are contributor setup and a broader command reference.
+**Using OpenARDP for a document task?** Start with [Agent access](docs/32_AGENT_ACCESS.md): `add` your files, then
+`find`, `read` and `verify` from the command line or through the MCP server in Claude Code, Codex or another client.
+The [document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md) covers the audit path with context bundles and replayable
+receipts. If you use OpenARDP for real work, add a line to the [usage log](pilots/usage-log/README.md). The sections
+below are contributor setup and a broader command reference.
 
 OpenARDP is built implementation-first through bounded, independently testable changes. The authoritative delivered
 sequence and current outcomes live only in the [feature map](spec-kit/FEATURE_MAP.md); feature directories retain accepted
@@ -11,9 +12,9 @@ requirements, final evidence and normative contracts without duplicating the pro
 
 ## 1. Read the authoritative rules
 
-Read [AGENTS.md](AGENTS.md), [Constitution 3.0.0](.specify/memory/constitution.md), the
+Read [AGENTS.md](AGENTS.md), [Constitution 4.0.0](.specify/memory/constitution.md), the
 [feature map](spec-kit/FEATURE_MAP.md), [operating procedure](spec-kit/OPERATING_PROCEDURE.md), accepted
-[ADRs](docs/adr/) and the durable active feature record required by its risk tier.
+[ADRs](docs/adr/) and the durable record of the feature you change.
 
 Version-suffixed v3.1 files are preserved adoption sources, not parallel authority. Removed transient feature planning is
 recoverable from Git history; retained specifications and implementation notes are the durable merged record.
@@ -46,6 +47,22 @@ Tests are offline by default, enforce branch coverage of at least 85 percent and
 fixtures.
 
 ## 4. Exercise the delivered workflow
+
+The agent commands are the everyday path:
+
+```bash
+openardp add ./documents --store .openardp
+openardp docs --store .openardp
+openardp find "Which exact controls are documented?" --store .openardp
+openardp toc controls.md --store .openardp
+openardp read controls.md --lines 12-40 --store .openardp
+openardp verify "Access is reviewed every quarter" --store .openardp
+openardp agent-view ../agent-docs --store .openardp
+openardp refresh --store .openardp
+openardp mcp --store .openardp          # five agent tools; --tools full adds the audit tools
+```
+
+The evidence-level and operational commands:
 
 ```bash
 openardp init --store .openardp
@@ -88,6 +105,12 @@ under an exact estimator budget, persists bundle and receipt atomically and repl
 recorded snapshot byte-identically. Feature 009 exposes those verified query, evidence,
 search and context services as nine identifier-scoped MCP tools without accepting client
 filesystem paths or opening a network listener.
+
+Feature 040 adds the agent path: disposable agent texts (exact source text, or Markdown rendered from the retained
+Docling output with page and slide markers), a disposable full-text agent index under `agent-cache/`, and the `add`,
+`docs`, `find`, `read`, `toc`, `verify`, `agent-view` and `refresh` commands. The MCP server now negotiates current
+protocol revisions and offers five compact agent tools by default. Returned text is rebuilt from CAS and catalog facts,
+never served from the index alone ([ADR 0020](docs/adr/0020-token-efficient-agent-access.md)).
 
 Feature 010 reconciles two explicitly selected READY F002 representations, persists
 logical continuity separately from exact reuse eligibility, and transactionally

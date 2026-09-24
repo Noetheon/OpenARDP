@@ -19,7 +19,7 @@ from openardp.domain.rich_ingestion import (
     RichRepresentationArtifacts,
     RichRepresentationCommitResult,
 )
-from openardp.domain.storage import encode_storage_datetime
+from openardp.domain.storage import StoredObject, encode_storage_datetime
 from openardp.ports.catalog import (
     RepresentationConflict,
     RepresentationIncomplete,
@@ -154,6 +154,29 @@ class _SQLiteCatalogRichMixin(_SQLiteCatalogBase):
         """Load one accepted rich aggregate from a single read snapshot."""
         with self._read_connection() as connection:
             return self._rich_representation(connection, scope)
+
+    def accepted_rich_native_object(self, scope: RepresentationScope) -> StoredObject | None:
+        """Return the accepted attempt's provider-native object without loading its bundle."""
+        with self._read_connection() as connection:
+            row = connection.execute(
+                "SELECT attempt.attempt_json, attempt.provider_native_object_id "
+                "FROM rich_accepted_representations AS accepted "
+                "JOIN rich_parse_attempts AS attempt "
+                "ON attempt.attempt_id = accepted.accepted_attempt_id "
+                "WHERE accepted.document_id = ? AND accepted.version_id = ? "
+                "AND accepted.representation_id = ?",
+                (str(scope.document_id), scope.version_id, scope.representation_id),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            attempt = RichParseAttempt.model_validate_json(str(row["attempt_json"]))
+        except ValueError as error:
+            raise RepresentationIntegrityError("rich attempt metadata is invalid") from error
+        native = attempt.provider_native_object
+        if attempt.scope != scope or native.object_id != str(row["provider_native_object_id"]):
+            raise RepresentationIntegrityError("rich attempt catalog facts are inconsistent")
+        return native
 
     def rich_evidence_authority_fingerprint(
         self,

@@ -62,6 +62,7 @@ from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
 from openardp.services.search import SearchService
 from tests.integration.test_rich_ingestion import _Clock, _Parser, _TamperingStore
+from tests.mcp_envelopes import tool_failure, unwrap_tool_result
 
 RICH_BODY = "alpha rich evidence alpha"
 UNKNOWN_UUID = "00000000-0000-4000-8000-000000000000"
@@ -272,12 +273,11 @@ def _result(envelope: dict[str, object]) -> dict[str, object]:
     assert "error" not in envelope, envelope.get("error")
     result = envelope["result"]
     assert isinstance(result, dict)
-    return result
+    return unwrap_tool_result(result)
 
 
 def _error(envelope: dict[str, object]) -> dict[str, object]:
-    assert "error" in envelope, envelope
-    error = envelope["error"]
+    error = tool_failure(envelope)
     assert isinstance(error, dict)
     return error
 
@@ -622,8 +622,8 @@ def _navigation_sequence(server: McpServer, corpus: _Corpus) -> list[bytes]:
         response = server.handle_line(payload)
         assert response is not None
         responses.append(response)
-    listing = json.loads(responses[-1])
-    projection_id = listing["result"]["projections"][0]["evidence_projection_id"]
+    listing = unwrap_tool_result(json.loads(responses[-1])["result"])
+    projection_id = listing["projections"][0]["evidence_projection_id"]
     final = server.handle_line(
         _tool_call("get_evidence", {"evidence_projection_id": projection_id}, request_id=5)
     )

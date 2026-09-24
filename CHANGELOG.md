@@ -8,6 +8,36 @@ semantic versioning once the public package lifecycle begins.
 - Give the unchanged complete Windows CI suite a measured 25-minute cap after the hosted runner reached 99 percent and
   was cancelled by the former 20-minute job limit.
 
+### Feature 041 — lean governance
+
+- Amend the constitution to 4.0.0: durable records only where behavior, contracts or trust change; Spec Kit stages
+  become optional tools; new articles Usefulness First (real use as primary evidence) and Agent Efficiency (compact,
+  located, verifiable agent output). Quality gates and evidence principles are unchanged.
+- Add a one-line-per-task [usage log](pilots/usage-log/README.md). The F038 pilot no longer gates development and remains
+  available for a deliberate formal comparison.
+
+### Feature 040 — agent-ready document access
+
+- Fix the MCP server for real clients: answer each request without waiting for end of input, negotiate protocol
+  revisions `2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05`, and return results as MCP `content` blocks with
+  `isError` results that carry a corrective hint (MCP interface 0.3.0).
+- Make five compact read-only tools the default MCP tool set: `list_documents`, `find`, `read`, `outline` and
+  `verify_quote`, with titles, annotations and server instructions. The nine earlier tools remain available with
+  `--tools legacy` or `--tools full`.
+- Add CLI commands:
+  - `add` prepares files and folders, creates the store on first use and reports added, updated, unchanged, failed and
+    skipped files;
+  - `docs`, `find`, `read`, `toc`, `verify` and `refresh` work with file names, pages, slides, sections and line ranges;
+  - `agent-view` writes a Markdown mirror with an `INDEX.md` for agents without MCP.
+- Render PDF, DOCX and PPTX as Markdown with page and slide markers from the retained Docling output; TXT, Markdown and
+  CSV keep their exact lines. A disposable full-text agent index finds passages. Returned text is rebuilt from the
+  content-addressed originals and catalog facts, and a modified index is detected and repaired (ADR 0020).
+- `context` accepts document names or selects documents automatically when none are given.
+- Fix the Docling worker on multi-core Linux by limiting the data segment instead of the address space and running
+  BLAS/OpenMP single-threaded. Failures now print a one-line hint.
+- Measured on identical MCP tasks, the agent path used 16–34 percent of the tokens of the earlier tool surface. This is
+  a token measurement, not an answer-quality or human-time claim.
+
 ### Feature 038 — local document pilot readiness
 
 - Display explicitly requested context bundles in human CLI output with exact source/version provenance, untrusted

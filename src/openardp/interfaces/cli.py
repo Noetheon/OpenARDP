@@ -23,11 +23,9 @@ from openardp.adapters.local_source import (
 from openardp.adapters.local_watch import LocalWatchScanner
 from openardp.adapters.local_workspace import (
     LocalWorkspace,
-    WorkspaceError,
     WorkspaceIncompatible,
 )
 from openardp.adapters.visual_policy import LocalOnlyVisualPolicy
-from openardp.domain.common import SCHEMA_VERSION
 from openardp.domain.context_compilation import (
     AlgorithmIdentity,
 )
@@ -36,16 +34,15 @@ from openardp.domain.maintenance import (
     InventoryLimits,
     RetentionPolicy,
 )
-from openardp.domain.release import (
-    EvidenceMalformed,
-    ReleaseEvidenceError,
-)
-from openardp.domain.search import SearchQueryRejected
 from openardp.domain.storage import Job
 from openardp.domain.watcher import WatchConfig, WatchCycleResult
+from openardp.interfaces.agent_cli import execute_add, execute_agent_command, render_agent_result
+from openardp.interfaces.agent_cli_arguments import AGENT_COMMANDS
+from openardp.interfaces.agent_composition import local_agent_access
 from openardp.interfaces.cli_arguments import ContextCommandUsageError as _UsageError
 from openardp.interfaces.cli_arguments import parse_uuid as _parse_uuid
 from openardp.interfaces.cli_arguments import parser as _parser
+from openardp.interfaces.cli_errors import render_failure
 from openardp.interfaces.cli_file_commands import (
     _interchange_limits,
     _load_model_manifest,
@@ -59,7 +56,6 @@ from openardp.interfaces.cli_output import (
     json_value as _json_value,  # noqa: F401 - retained test/adapter seam
 )
 from openardp.interfaces.cli_output import success as _success
-from openardp.interfaces.cli_output import write_json as _write_json
 from openardp.interfaces.context_cli import (
     compile_context_command,
 )
@@ -86,68 +82,22 @@ from openardp.interfaces.ingestion_composition import local_text_ingestion
 from openardp.interfaces.mcp_protocol import SessionLimits
 from openardp.interfaces.mcp_server import McpServer
 from openardp.ports.catalog import (
-    AmbiguousBlock,
-    BlockNotFound,
-    CatalogError,
-    CatalogIncompatible,
-    CatalogTooNew,
-    DocumentNotFound,
-    InvalidJobTransition,
-    JobConflict,
-    JobNotFound,
-    LeaseConflict,
     RepresentationBusy,
-    RepresentationConflict,
-    RepresentationIntegrityError,
-    RepresentationLeaseConflict,
     RepresentationNotFound,
-    SearchCapabilityUnavailable,
-    SearchIndexDrifted,
-    SearchIndexIncomplete,
 )
 from openardp.ports.context import (
-    ContextCompilationCancelled,
-    ContextConfigurationMismatch,
     ContextEstimator,
-    ContextIntegrityFailure,
-    ContextLimitExceeded,
-    ContextNotFound,
 )
-from openardp.ports.interchange import (
-    InterchangeDestinationConflict,
-    InterchangeError,
-    InterchangeIntegrityInvalid,
-    InterchangePolicyRejected,
-    InterchangePublicationFailed,
-    InterchangeRelationshipInvalid,
-    InterchangeResourceExceeded,
-    InterchangeSourceChanged,
-    MalformedPackage,
-    UnsupportedInterchangeVersion,
-)
-from openardp.ports.maintenance import InsufficientSpace, MaintenanceError
+from openardp.ports.maintenance import InsufficientSpace
 from openardp.ports.object_store import ObjectStoreError
 from openardp.ports.parser import ParserError, ParserTimedOut, UnsupportedTextMedia
-from openardp.ports.release import ReleaseEvidenceStoreError
 from openardp.ports.semantic_retrieval import (
-    SemanticRetrievalFailure,
     SemanticRetrievalProvider,
-)
-from openardp.ports.visual import (
-    UnsupportedVisualMedia,
-    VisualConflict,
-    VisualDependencyUnavailable,
-    VisualIntegrityError,
-    VisualResourceLimitExceeded,
-    VisualTargetUnavailable,
 )
 from openardp.ports.watcher import (
     WatchCancellationObserved,
     WatchPermanentIngestion,
     WatchRetryableIngestion,
-    WatchRootInvalid,
-    WatchRootOverlap,
-    WatchRootUnsupported,
 )
 from openardp.services.context_compiler import (
     ContextCompilerService,
@@ -158,9 +108,6 @@ from openardp.services.interchange import InterchangeService
 from openardp.services.maintenance import (
     IRREVERSIBLE_ACKNOWLEDGEMENT,
     MaintenanceService,
-)
-from openardp.services.release_benchmarks import (
-    ReleaseCorpusMalformed,
 )
 from openardp.services.rich_evidence import RichEvidenceService
 from openardp.services.rich_ingestion import RichIngestionService
@@ -208,6 +155,7 @@ _COMMANDS = {
     "release-evidence",
     "release-gate",
     "release-report",
+    *AGENT_COMMANDS,
 }
 
 
@@ -317,6 +265,7 @@ def _mcp_server(
     limits: SessionLimits,
     *,
     semantic_provider: SemanticRetrievalProvider | None = None,
+    toolset: str = "legacy",
 ) -> McpServer:
     """Compose MCP only from verified query, search, evidence and compiler services."""
     _ingestion, query, search = _services(workspace)
@@ -339,6 +288,8 @@ def _mcp_server(
             else None
         ),
         limits=limits,
+        agent=local_agent_access(workspace) if toolset != "legacy" else None,
+        toolset=toolset,
     )
 
 
@@ -362,7 +313,12 @@ def _serve_mcp(
     configuration = _semantic_configuration(arguments)
     provider = _open_semantic_provider(configuration) if configuration is not None else None
     try:
-        return _mcp_server(workspace, limits, semantic_provider=provider).serve(
+        return _mcp_server(
+            workspace,
+            limits,
+            semantic_provider=provider,
+            toolset=str(getattr(arguments, "tools", "legacy")),
+        ).serve(
             selected_source,
             selected_sink,
         )
@@ -543,6 +499,8 @@ def _execute(arguments: argparse.Namespace) -> object:
     if result is not _UNHANDLED:
         return result
     workspace = LocalWorkspace.open(Path(arguments.store))
+    if command in AGENT_COMMANDS:
+        return execute_agent_command(workspace, arguments)
     for handler in (
         _execute_watch_jobs,
         _execute_maintenance,
@@ -558,6 +516,8 @@ def _execute(arguments: argparse.Namespace) -> object:
 
 def _execute_standalone(arguments: argparse.Namespace, command: str) -> object:
     """Execute commands that do not open an existing workspace."""
+    if command == "add":
+        return execute_add(arguments)
     if command == "release-evidence":
         return _release_evidence(arguments)
     if command == "release-gate":
@@ -854,118 +814,6 @@ def _execute_evidence(
     return _UNHANDLED
 
 
-def _classification(error: Exception) -> tuple[int, str, str]:
-    if isinstance(error, _UsageError):
-        return 2, "invalid_usage", "command usage is invalid"
-    if isinstance(error, ReleaseCorpusMalformed):
-        return 4, "release_input_rejected", "release input was rejected"
-    if isinstance(error, (ReleaseEvidenceStoreError, ReleaseEvidenceError, EvidenceMalformed)):
-        return 6, "release_evidence_invalid", "release evidence is invalid or conflicts"
-    interchange_codes: tuple[tuple[type[InterchangeError], str], ...] = (
-        (UnsupportedInterchangeVersion, "unsupported_version"),
-        (InterchangeResourceExceeded, "resource_exhausted"),
-        (InterchangeIntegrityInvalid, "integrity_invalid"),
-        (InterchangeRelationshipInvalid, "relationship_invalid"),
-        (InterchangeSourceChanged, "source_changed"),
-        (InterchangeDestinationConflict, "destination_conflict"),
-        (InterchangePublicationFailed, "publication_failed"),
-        (InterchangePolicyRejected, "policy_rejected"),
-        (MalformedPackage, "malformed_package"),
-    )
-    for error_type, code in interchange_codes:
-        if isinstance(error, error_type):
-            return 2, code, "interchange operation was rejected"
-    if isinstance(error, MaintenanceError):
-        return 5, "maintenance_rejected", "maintenance operation was rejected"
-    if isinstance(error, ContextNotFound):
-        return 3, "not_found", "requested evidence was not found"
-    if isinstance(error, VisualTargetUnavailable):
-        return 3, "not_found", "requested visual evidence was not found"
-    if isinstance(error, ContextLimitExceeded):
-        return 4, "rejected_input", "input was rejected"
-    if isinstance(error, (ContextConfigurationMismatch, ContextCompilationCancelled)):
-        return 5, "conflict", "operation conflicts with current state"
-    if isinstance(error, SemanticRetrievalFailure):
-        return 5, "semantic_provider_rejected", "semantic provider is unavailable or rejected"
-    if isinstance(error, ContextIntegrityFailure):
-        return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"
-    if isinstance(
-        error,
-        (SourceNotFound, DocumentNotFound, RepresentationNotFound, BlockNotFound, JobNotFound),
-    ):
-        return 3, "not_found", "requested evidence was not found"
-    if isinstance(
-        error,
-        (
-            InvalidSourcePath,
-            SourceTooLarge,
-            UnsupportedTextMedia,
-            ParserError,
-            SearchQueryRejected,
-            UnsupportedVisualMedia,
-            VisualDependencyUnavailable,
-            VisualResourceLimitExceeded,
-            WatchRootInvalid,
-            WatchRootOverlap,
-            WatchRootUnsupported,
-            ValueError,
-        ),
-    ):
-        return 4, "rejected_input", "input was rejected"
-    if isinstance(
-        error,
-        (
-            RepresentationBusy,
-            RepresentationConflict,
-            RepresentationLeaseConflict,
-            InvalidJobTransition,
-            JobConflict,
-            LeaseConflict,
-            AmbiguousBlock,
-            VisualConflict,
-        ),
-    ):
-        return 5, "conflict", "operation conflicts with current state"
-    if isinstance(
-        error,
-        (
-            WorkspaceError,
-            CatalogIncompatible,
-            CatalogTooNew,
-            RepresentationIntegrityError,
-            SearchCapabilityUnavailable,
-            SearchIndexIncomplete,
-            SearchIndexDrifted,
-            ObjectStoreError,
-            CatalogError,
-            VisualIntegrityError,
-        ),
-    ):
-        return 6, "integrity_or_workspace", "workspace or persisted evidence is invalid"
-    return 1, "unexpected_failure", "operation failed"
-
-
-def _failure(
-    command: str,
-    error: Exception,
-    *,
-    json_output: bool,
-) -> int:
-    exit_code, code, message = _classification(error)
-    if json_output:
-        _write_json(
-            {
-                "command": command,
-                "error": {"code": code, "message": message},
-                "ok": False,
-                "schema_version": SCHEMA_VERSION,
-            }
-        )
-    else:
-        print(f"error[{code}]: {message}", file=sys.stderr)
-    return exit_code
-
-
 def _requested_command(argv: Sequence[str]) -> str:
     return next((item for item in argv if item in _COMMANDS), "unknown")
 
@@ -981,14 +829,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         if command == "mcp":
             return _serve_mcp(arguments)
         data = _execute(arguments)
-        _success(command, data, json_output=bool(arguments.json_output))
+        rendered = (
+            render_agent_result(
+                command,
+                data,
+                line_numbers=not getattr(arguments, "no_line_numbers", False),
+            )
+            if command in AGENT_COMMANDS and not arguments.json_output
+            else None
+        )
+        if rendered is not None:
+            print(rendered)
+        else:
+            _success(command, data, json_output=bool(arguments.json_output))
         return 0
     except SystemExit as error:
         return error.code if isinstance(error.code, int) else 1
     except KeyboardInterrupt:
         return 130
     except Exception as error:
-        return _failure(command, error, json_output=json_requested)
+        return render_failure(command, error, json_output=json_requested)
 
 
 if __name__ == "__main__":  # pragma: no cover - console script owns normal execution

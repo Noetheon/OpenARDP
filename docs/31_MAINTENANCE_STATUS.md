@@ -1,5 +1,11 @@
 # Maintenance status — 20 September 2026
 
+> [!NOTE]
+> **Superseded on 24 September 2026.** The expansion pause described below ended with constitution 4.0.0
+> ([F041](../specs/041-lean-governance/spec.md)). Work now follows the agent-ready access delivered by
+> [F040](../specs/040-agent-ready-access/spec.md), and real-use evidence is collected in the
+> [usage log](../pilots/usage-log/README.md). The release NO-GO is unchanged. The text below is kept as history.
+
 OpenARDP remains available at its tested technical baseline. The expansion pause established by
 [F038](../specs/038-local-document-pilot-readiness/spec.md) remains in effect. Preserve the implementation and its
 evidence; use the [existing document workflow](30_LOCAL_DOCUMENT_WORKFLOW.md) when it serves an actual task.
@@ -37,7 +43,7 @@ There is no new positive pilot or release decision. The existing expansion pause
 
 ## Conditions for reconsideration
 
-Use the [existing roadmap rules](08_ROADMAP_AND_GOVERNANCE.md#current-expansion-pause) and the unchanged human-pilot
+Use the [existing roadmap rules](08_ROADMAP_AND_GOVERNANCE.md#current-direction-agent-ready-documents) and the unchanged human-pilot
 protocol. A concrete recurring workflow and a demonstrated advantage over both current work and a usable persistent
 native-parser cache are required before expanding investment. A candidate improvement must address the demonstrated
 need in one bounded work package; the existence of a timing anomaly alone is not a reason to optimize.

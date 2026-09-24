@@ -269,6 +269,7 @@ def _worker_entry(
     try:
         cache_root = Path(tempfile.mkdtemp(prefix="openardp-docling-cache-"))
         _apply_offline_environment(cache_root)
+        _apply_thread_environment()
         _apply_resource_limits(config, timeout_seconds)
         _disable_network_access()
         behavior(input_receiver, result_sender, config)
@@ -436,6 +437,39 @@ def _apply_offline_environment(cache_root: Path) -> None:
     os.environ["XDG_CACHE_HOME"] = str(cache_root / "xdg")
 
 
+# Numeric libraries size per-thread buffers from the host core count at import time.
+# The reviewed provider profile already runs inference on one CPU thread, so pinning
+# every BLAS/OpenMP pool to one thread keeps worker memory independent of the host.
+_SINGLE_THREAD_ENVIRONMENT = (
+    "OPENBLAS_NUM_THREADS",
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
+
+
+def _apply_thread_environment() -> None:
+    """Pin numeric thread pools before any provider import sizes its buffers."""
+    for name in _SINGLE_THREAD_ENVIRONMENT:
+        os.environ[name] = "1"
+
+
+def _memory_limit_resource(resource_module: object, platform: str) -> int | None:
+    """Select the kernel limit that bounds actual worker memory on this platform.
+
+    Linux counts reserved but unused address space in RLIMIT_AS; GPU-enabled numeric
+    runtimes reserve several GiB they never touch. RLIMIT_DATA bounds private writable
+    memory instead, so it still stops runaway allocations without rejecting imports.
+    """
+    names = ("RLIMIT_DATA", "RLIMIT_AS") if platform.startswith("linux") else ("RLIMIT_AS",)
+    for name in names:
+        value = getattr(resource_module, name, None)
+        if isinstance(value, int):
+            return value
+    return None
+
+
 def _disable_network_access() -> None:
     def blocked(*args: object, **kwargs: object) -> NoReturn:
         raise RuntimeError("network access disabled")
@@ -457,8 +491,9 @@ def _apply_resource_limits(config: _WorkerConfig, timeout_seconds: float) -> Non
         (resource.RLIMIT_CPU, max(1, math.ceil(timeout_seconds) + 1)),
         (resource.RLIMIT_NOFILE, limits.max_open_files),
     ]
-    if hasattr(resource, "RLIMIT_AS"):
-        desired.append((resource.RLIMIT_AS, limits.max_address_space_bytes))
+    memory_resource = _memory_limit_resource(resource, sys.platform)
+    if memory_resource is not None:
+        desired.append((memory_resource, limits.max_address_space_bytes))
     for resource_kind, soft_limit in desired:
         try:
             _, hard_limit = resource.getrlimit(resource_kind)

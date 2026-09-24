@@ -1,8 +1,9 @@
 # Feature records
 
-This directory contains durable records for standard- and high-assurance changes. Routine changes do not require a
-feature directory. [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) is the single authoritative feature-status
-registry.
+This directory contains durable records for changes to user-visible behavior, public contracts, schemas, persisted
+identity, migrations, security/trust boundaries, providers or default dependencies
+([Article XI](../.specify/memory/constitution.md)). Documentation, tests and narrow fixes need only their pull-request
+record. [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) is the single authoritative feature-status registry.
 
 After a feature converges, its durable minimum is:
 
@@ -18,8 +19,8 @@ may refine those decisions but may not silently contradict them.
 
 ## Working-artifact retention
 
-High-assurance work may temporarily use plans, research notes, data models, quickstarts, task lists, analysis reports,
-checklists and feature prompts while the feature is active. After convergence, those working artifacts may be removed
+Work may temporarily use plans, research notes, data models, quickstarts, task lists, analysis reports, checklists and
+feature prompts while the feature is active; they are optional tools, not gates. After convergence, those working artifacts may be removed
 once durable requirements, decisions, evidence and normative contracts have been consolidated and all repository
 references have been migrated. Git history remains the recovery path; this policy does not rewrite history or reduce
 the size of existing Git objects.

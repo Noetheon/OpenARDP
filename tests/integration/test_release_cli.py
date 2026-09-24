@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from openardp.interfaces.cli import main
+from tests.error_envelopes import without_hint
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "benchmarks" / "release" / "v0.1.0"
@@ -109,7 +110,7 @@ def test_release_cli_rejects_duplicate_json_and_conflicting_projection(
     )
     assert code == 2
     payload = json.loads(capsys.readouterr().out)  # type: ignore[attr-defined]
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "invalid_usage",
         "message": "command usage is invalid",
     }

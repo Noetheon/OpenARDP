@@ -10,6 +10,7 @@ import pytest
 import openardp.interfaces.cli as cli
 from openardp.interfaces.mcp_protocol import require_tool
 from openardp.ports.semantic_retrieval import SemanticProviderUnavailable
+from tests.error_envelopes import without_hint
 from tests.integration.test_cli_context import _invoke_json, _WorkspaceCorpus
 from tests.integration.test_mcp_server import (
     _call_tool,
@@ -49,7 +50,7 @@ def test_cli_provider_failure_is_stable_and_body_free(
     )
     serialized = json.dumps(payload)
     assert code == 5 and stderr == ""
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "semantic_provider_rejected",
         "message": "semantic provider is unavailable or rejected",
     }

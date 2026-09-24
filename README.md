@@ -14,18 +14,29 @@ citations while keeping the default runtime local and provider-independent.
 
 **Compress access, not truth.**
 
-## Current focus: prove one recurring document workflow
+## Current focus: agent-ready documents
 
-The immediate goal is to help a local user repeatedly find and verify exact evidence in a small, explicitly selected
-set of documents. Start with the [practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md).
+The goal is to let an AI agent answer questions from a person's local files without wasting its context window.
+The agent finds the right passage, reads only the part it needs and verifies every quote against the exact source
+version before citing it. Start with [Agent access](docs/32_AGENT_ACCESS.md).
 
-Further platform expansion is paused until a [bounded real-task pilot](pilots/local-document/v0.1.0/README.md) shows a
-clear advantage over both the user's current work and a simple persistent native-parser cache with search. Existing
-synthetic and retrieval benchmarks do not establish human time savings, answer correctness or external adoption.
-The human pilot is prepared but has not started; its real tasks, measurements and independent judgments remain pending.
-A separate, incomplete private agent exercise does not satisfy that protocol. The existing expansion pause remains in
-effect; see the [20 September maintenance status](docs/31_MAINTENANCE_STATUS.md). A negative or inconclusive pilot result
-means pausing further expansion, while keeping the tested technical foundation available.
+```bash
+uv sync --extra docling --locked
+uv run openardp add ~/Documents/manuals --store ~/openardp-store      # files or folders, safe to repeat
+uv run openardp find "How often must the sensor be calibrated?" --store ~/openardp-store
+uv run openardp read manual.pdf --page 12 --store ~/openardp-store
+uv run openardp verify "Calibrate the sensor every morning" --store ~/openardp-store
+```
+
+For Claude Code, Codex or another MCP client, register the local read-only server once:
+
+```bash
+claude mcp add openardp -- uv run --directory /path/to/OpenARDP openardp mcp --store ~/openardp-store
+```
+
+On the same tasks, this path used 16–34 percent of the tokens of the older tool surface
+([measurement](specs/040-agent-ready-access/implementation-notes.md)). That is a token measurement, not a claim about
+answer quality or human time saved; real-use evidence is collected in the [usage log](pilots/usage-log/README.md).
 
 ## Why OpenARDP?
 
@@ -53,7 +64,7 @@ OpenARDP separates those concerns:
 | Ingestion | TXT, Markdown, and CSV in the core; optional Docling adapters for PDF, DOCX, and PPTX |
 | Retrieval | Verified lexical search by default; optional offline multilingual semantic and hybrid retrieval |
 | Context assembly | Deterministic, budgeted context bundles with source diversity, abstention, and replayable receipts |
-| Agent access | Read-only local MCP server over standard input/output |
+| Agent access | `find` / `read` / `verify` in the CLI and a read-only MCP server with five compact tools; optional Markdown agent view |
 | Visual evidence | Explicit, on-demand PDF page-region materialization |
 | Operations | Incremental freshness checks, retention, quarantine and recovery, backup, restore, and migration |
 | Portability | Experimental BagIt-based package export, verification, and import |
@@ -79,8 +90,8 @@ OpenARDP is designed around a few explicit constraints:
   persisted universal vector database.
 - **Evidence retrieval is not answer generation.** The current product assembles verifiable
   evidence and context; it does not generate an answer on the user's behalf.
-- **Agent access is read-only.** The current MCP surface retrieves evidence but cannot mutate the
-  workspace.
+- **Agent access is read-only.** The MCP server and agent commands retrieve evidence but cannot
+  modify the workspace. Returned text is verified against stored originals, never served from an index alone.
 
 See the [architecture](docs/02_ARCHITECTURE.md), [security model](docs/06_SECURITY_MODEL_V2.md),
 and [non-goals](docs/03_NON_GOALS.md) for the full boundaries.
@@ -93,49 +104,31 @@ and [non-goals](docs/03_NON_GOALS.md) for the full boundaries.
 - [uv](https://docs.astral.sh/uv/)
 - Git
 
-Clone the repository, install the locked core environment, and create a local workspace:
+Clone the repository, install the locked core environment, and prepare a folder of TXT, Markdown or CSV files:
 
 ```bash
 uv sync --locked
-uv run openardp init --store .openardp
+uv run openardp add ./notes --store .openardp
+uv run openardp docs --store .openardp
 ```
 
-Ingest a supported core document and inspect it:
+Ask, read and check:
 
 ```bash
-uv run openardp ingest ./notes.md --store .openardp
-uv run openardp list --store .openardp
-uv run openardp status ./notes.md --store .openardp
+uv run openardp find "Which exact controls are documented?" --store .openardp
+uv run openardp toc notes/controls.md --store .openardp
+uv run openardp read notes/controls.md --section "Access control" --store .openardp
+uv run openardp verify "Access is reviewed every quarter" --store .openardp
 ```
 
-The ingest command returns stable document and block identifiers. Use those identifiers to
-navigate and retrieve authoritative evidence:
+Hits and excerpts carry file and line (or page and slide) locations and the short version id. `--json` returns the
+standard JSON envelope. [Agent access](docs/32_AGENT_ACCESS.md) covers PDF, DOCX and PPTX, MCP clients and the
+Markdown agent view.
 
-```bash
-uv run openardp outline <document-uuid> --store .openardp
-uv run openardp get <block-uuid> --store .openardp
-uv run openardp search '"exact phrase" evidence' --store .openardp
-```
-
-Build a deterministic context bundle for a specific task:
-
-```bash
-uv run openardp context \
-  "Which exact controls are documented?" \
-  --document <document-uuid> \
-  --budget 12000 \
-  --unit tokens \
-  --mode verification \
-  --include-bundle \
-  --store .openardp
-```
-
-`--include-bundle` explicitly displays the selected evidence and its source/version identifiers. It does not generate
-an answer; check that each passage actually supports your question. Omit the switch for the usual body-free summary.
-
-For a tested first-use loop with source checking and exact replay, follow the
-[practical document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md). Contributor gates and the wider command reference
-remain in [Start Here](START_HERE.md) and the [maintainer walkthrough](docs/13_STEP_BY_STEP_USER_GUIDE.md).
+The evidence-level commands remain available for audits: `ingest`, `list`, `status`, `outline`, `get`, `search` and
+`context` with replayable selection receipts. The [document workflow](docs/30_LOCAL_DOCUMENT_WORKFLOW.md) walks through
+them. Contributor gates and the wider command reference remain in [Start Here](START_HERE.md) and the
+[maintainer walkthrough](docs/13_STEP_BY_STEP_USER_GUIDE.md).
 
 ## Optional capabilities
 
@@ -232,6 +225,7 @@ baselines. See [Validation](VALIDATION.md) for the evidence model and
 ## Documentation
 
 - [Start Here](START_HERE.md) — installation and first end-to-end workflow
+- [Agent access](docs/32_AGENT_ACCESS.md) — find, read and verify from the CLI or an MCP client
 - [Executive brief](docs/00_EXECUTIVE_BRIEF.md) — concise product and evidence position
 - [Architecture](docs/02_ARCHITECTURE.md) — components, data flow, and trust boundaries
 - [Security model](docs/06_SECURITY_MODEL_V2.md) — threat model and control design

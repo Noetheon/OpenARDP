@@ -24,13 +24,14 @@ uv run pytest
 Record the exact base commit, tool versions and result. Do not alter the lockfile unless the active feature explicitly
 owns a reviewed dependency change.
 
-## 3. Select and classify one bounded change
+## 3. Select one bounded change
 
-Use [`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md) for roadmap work and classify the change as routine, standard
-or high assurance using the constitution. Routine changes do not create feature directories. Standard changes retain a
-specification and implementation notes. High-assurance changes use the full lifecycle below.
+Name the person or agent task the change improves (Constitution Article XIII) and check the
+[`spec-kit/FEATURE_MAP.md`](../spec-kit/FEATURE_MAP.md). Documentation, tests and narrow fixes need only a pull-request
+record. Changes to behavior, contracts, schemas, identity, migrations, trust boundaries, providers or default
+dependencies keep a concise `spec.md` and `implementation-notes.md`. Irreversible decisions need an ADR first.
 
-## 4. Complete high-assurance planning when required
+## 4. Plan with Spec Kit when it helps
 
 ```text
 $speckit-specify
@@ -41,19 +42,19 @@ $speckit-tasks
 $speckit-analyze
 ```
 
-Correct contradictions in the highest-level originating artifact. Do not start high-assurance implementation while a
-critical/high finding remains. The full lifecycle is optional for standard changes and unnecessary for routine changes.
+These stages are optional tools. Correct contradictions in the highest-level originating artifact, and do not start
+implementation while a known critical or high-severity finding remains.
 
 ## 5. Implement test-first
 
-For high-assurance work, use `$speckit-implement` for the active phase. For every tier, add failing deterministic offline
+When you planned with Spec Kit, use `$speckit-implement` for the active phase. For every change, add failing deterministic offline
 tests before changed behavior or contracts where practical. Preserve original source bytes, provider-native artifacts,
 evidence provenance, local-first defaults and provider boundaries.
 
 ## 6. Validate and converge
 
-Run the applicable locked gate, repository validator and build. High-assurance work then runs `$speckit-converge`; append
-missing tasks and implement them until no critical/high finding remains. Compact temporary planning artifacts only after
+Run the applicable locked gate, repository validator and build. Planned work may run `$speckit-converge`; resolve every
+known critical or high finding before merge. Compact temporary planning artifacts only after
 their durable content and references have been migrated.
 
 ## 7. Commit and publish one work package

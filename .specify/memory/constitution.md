@@ -1,38 +1,26 @@
 <!--
 Sync Impact Report
 
-- Version change: 2.0.0 -> 3.0.0
-- Bump rationale: MAJOR because universal full-lifecycle governance is replaced by
-  risk-proportionate routine, standard and high-assurance change tiers.
+- Version change: 3.0.0 -> 4.0.0
+- Bump rationale: MAJOR because the mandatory full Spec Kit lifecycle for high-assurance changes is replaced by
+  lean durable change records, and two principles are added that change how work is chosen and how agent-facing
+  output is designed.
 - Modified principles:
-  - Article I Evidence Preservation -> Article I Source Truth and Evidence Preservation
-  - Article II Derived Data Is Disposable -> Article II Derived Data and Disposable Accelerators
-  - Article III Local-First and Provider-Neutral Core -> Article III Implementation First,
-    Reuse and Provider Neutrality
-  - Article IV Untrusted Document Boundary -> Article V Data Is Not Instruction and Execution Is Bounded
-  - Article V Determinism, Identity and Atomicity -> Article VI Determinism, Identity and Atomicity
-  - Article VI Progressive Context Delivery -> Article VII Progressive Context Delivery
-  - Article VII Test-First Quality Gates -> Article VIII Test-First Quality Gates
-  - Article VIII Measured Claims -> Article IX Fair Evidence and Measured Claims
-  - Article IX Simplicity and Incremental Delivery -> Article X Simplicity and Incremental Delivery
-  - Article XI Feature Isolation and Cross-Platform Quality -> Article XI Risk-Proportionate Change Governance and
-    Cross-Platform Quality
-  - Article XII Contract Evolution and Decision Governance -> Article XII Durable Records, Contract Evolution and
-    Decision Governance
-- Added principles: none
+  - Article XI Risk-Proportionate Change Governance and Cross-Platform Quality -> Article XI Lean Change Records and
+    Cross-Platform Quality (the lifecycle stages become optional tooling; gates and records stay mandatory)
+  - Article XII Durable Records, Contract Evolution and Decision Governance: plan/task alignment clause removed with
+    the mandatory lifecycle; ADR scope clarified to irreversible or architectural decisions
+- Added principles:
+  - Article XIII Usefulness First
+  - Article XIV Agent Efficiency
 - Removed principles: none
 - Dependent artifacts:
-  - ✅ .specify/templates/spec-template.md
-  - ✅ .specify/templates/plan-template.md
-  - ✅ .specify/templates/tasks-template.md
-  - ✅ spec-kit/CONSTITUTION_SOURCE.md
+  - ✅ spec-kit/CONSTITUTION_SOURCE.md (byte-identical mirror)
   - ✅ AGENTS.md
   - ✅ CONTRIBUTING.md
-  - ✅ START_HERE.md
-  - ✅ spec-kit/OPERATING_PROCEDURE.md
-  - ✅ docs/12_SPEC_KIT_INTEGRATION.md
-  - ✅ specs/README.md
-  - ✅ scripts/validate_repository.py and repository tests
+  - ✅ spec-kit/FEATURE_MAP.md
+  - ✅ specs/041-lean-governance
+- Migration impact: completed feature records remain valid; no plan.md or tasks.md is required for new work.
 - Deferred follow-up: none
 -->
 
@@ -134,47 +122,35 @@ Sync Impact Report
 1. The MVP is a modular local monolith.
 2. New abstractions require at least two concrete implementations or an accepted ADR demonstrating immediate need.
 3. Work proceeds in bounded, independently testable feature slices.
-4. One feature MUST converge and merge before dependent work begins.
+4. One feature MUST merge before dependent work begins.
 5. Microservices, mandatory vector databases, bidirectional Office synchronization and production Microsoft Graph
    access are outside the MVP unless approved by ADR.
 6. A custom export format remains an experiment until existing standards and packaging profiles are evaluated with
    evidence.
 
-## Article XI — Risk-Proportionate Change Governance and Cross-Platform Quality
+## Article XI — Lean Change Records and Cross-Platform Quality
 
 1. Each branch and pull request MUST contain one bounded change concern.
-2. A change MUST be classified before implementation:
-   - **Routine** changes are documentation, tests, internal refactoring or narrowly bounded fixes with no user-visible
-     behavior, public contract, schema, persistence, identity, migration, security/trust boundary, provider, dependency,
-     benchmark or release impact. They require a scoped pull-request record and proportionate validation, not a Spec Kit
-     feature directory.
-   - **Standard** changes add bounded user-visible behavior without a high-assurance trigger. They require durable
-     requirements in `spec.md`, final evidence in `implementation-notes.md` and proportionate planning; the complete Spec
-     Kit lifecycle is optional.
-   - **High-assurance** changes affect a public contract, schema, persisted identity, migration, security/trust boundary,
-     provider, external dependency, license/supply chain, benchmark methodology, release decision or similarly material
-     compatibility boundary. They MUST use specify, clarify, plan, checklist, tasks, analyze, implement and converge, plus
-     an ADR where Article XII requires one.
-3. An unknown, mixed or disputed classification MUST move upward to the safer tier.
-4. Unresolved critical or high-severity analysis findings block high-assurance implementation; unresolved critical or
-   high-severity convergence findings block its merge.
-5. Executable changes MUST pass the applicable locked lint, formatting, strict typing, test, build and Linux, macOS and
-   Windows checks defined by repository CI policy. Governance-only changes MAY use the reviewed fail-closed preflight path; tier
-   selection MUST NOT weaken executable quality or security gates.
-6. External dependencies require maintenance, license, security, lockfile and supply-chain review. Generated artifacts
+2. Every change MUST pass the applicable locked lint, formatting, strict typing, test, build and Linux, macOS and
+   Windows checks defined by repository CI policy. No record, tier or exception may weaken these gates.
+3. A change to user-visible behavior, a public contract, schema, persisted identity, migration, security/trust
+   boundary, provider or default dependency MUST keep a durable feature record: a concise `spec.md` (the problem, the
+   user or agent task it serves, acceptance criteria and decisions) and an `implementation-notes.md` (exact validation
+   commands and results, tradeoffs, residual risks and rollback). Other changes need only their pull-request record.
+4. Spec Kit stages (clarify, plan, checklist, tasks, analyze, converge) are optional tools. Use them when they reduce a
+   concrete risk; they are never a precondition for work or merge.
+5. External dependencies require maintenance, license, security, lockfile and supply-chain review. Generated artifacts
    require deterministic regeneration and drift validation.
-7. After convergence, a completed feature MUST retain accepted `spec.md`, final `implementation-notes.md` and normative
-   contracts. Plans, research, data-model notes, quickstarts, task lists, analyses, checklists and generated prompts MAY be
-   removed from the current tree after unique durable content and references are migrated; exact history remains in Git.
+6. A completed feature retains its `spec.md`, `implementation-notes.md` and normative contracts. Working notes MAY be
+   removed after their unique content is migrated; exact history remains in Git.
 
 ## Article XII — Durable Records, Contract Evolution and Decision Governance
 
 1. This constitution, `AGENTS.md`, accepted ADRs and public schemas are binding project-level constraints.
-2. Durable feature requirements and implementation evidence MUST trace back to these constraints. High-assurance
-   `spec.md`, `plan.md` and `tasks.md` MUST remain aligned throughout implementation and convergence.
-3. Conflicts MUST be corrected in the highest-level originating artifact rather than patched only in generated tasks or
-   implementation.
-4. Architectural changes require an accepted ADR before implementation.
+2. Durable feature records MUST trace back to these constraints.
+3. Conflicts MUST be corrected in the highest-level originating artifact rather than patched only in implementation.
+4. Irreversible or architectural decisions — persisted identity, storage format, security boundaries, default-install
+   dependencies and public contract compatibility — require an accepted ADR before implementation.
 5. Contract, application, workspace, provider-profile and export-profile versions MUST evolve independently.
 6. Breaking public-contract changes require versioning, migration notes, fixtures and an ADR. A contract MUST NOT become
    stable without external-use evidence and an independent implementation.
@@ -182,24 +158,39 @@ Sync Impact Report
    - this constitution and accepted security/legal constraints;
    - accepted ADRs and public schemas;
    - canonical project architecture and product requirements;
-   - active durable feature requirements and, when required, the implementation plan;
-   - active task list when the selected tier uses one;
+   - active durable feature records;
    - implementation.
-8. Historical and superseded durable records MUST remain discoverable and MUST identify their replacement. Removed
-   transient planning artifacts MUST remain recoverable from Git history; they need not be duplicated in a live archive.
+8. Historical and superseded durable records MUST remain discoverable and MUST identify their replacement.
+
+## Article XIII — Usefulness First
+
+1. Every feature MUST name the concrete person or agent task it improves and how that improvement is observed.
+2. Real use is the primary evidence: record actual tasks, friction and outcomes in the lightweight usage log.
+   Synthetic benchmarks are regression and fairness guards; they do not by themselves establish user value.
+3. Work on infrastructure, governance or measurement MUST NOT outpace demonstrated use. Prefer the smallest change that
+   a user or agent can try this week.
+4. A defect that blocks a real user path (installation, ingestion, agent connection, retrieval) takes priority over new
+   capability.
+
+## Article XIV — Agent Efficiency
+
+1. Agent-facing output MUST spend context on document content, not on bookkeeping. It names files, pages, slides and
+   lines by default; hashes, receipts and provenance records are available on request.
+2. Agent access MUST follow progressive disclosure: find or outline first, then read only the needed range, with an
+   explicit token bound and a way to continue.
+3. Quotes and claims an agent relies on MUST be verifiable against the exact source version, and changes to the source
+   after import MUST be reported.
+4. Agent tool surfaces MUST stay small and standards-conformant; every tool definition costs context on every turn.
 
 ## Governance
 
 - **Versioning:** Semantic versioning applies to this constitution.
-- **Current version:** 3.0.0
+- **Current version:** 4.0.0
 - **Ratified:** 2026-07-22
-- **Last amended:** 2026-08-09
+- **Last amended:** 2026-09-24
 - **Amendments:** Every amendment requires rationale, affected artifacts, migration impact, a semantic version increment
   and a Sync Impact Report propagated to dependent guidance and templates.
-- **Compliance:** Every change records its Article XI tier and proportionate evidence. High-assurance changes use the
-  complete lifecycle. Standard and high-assurance changes retain exact commands, results, tradeoffs, residual risks and
-  rollback instructions in durable evidence.
-- **Review:** Pull-request review MUST verify constitution alignment, evidence discipline, compatibility impact and feature
-  isolation before merge.
+- **Compliance:** Pull-request review MUST verify constitution alignment, evidence discipline, compatibility impact and
+  that the required durable record exists and states exact validation results.
 - **Exception process:** Temporary exceptions require an accepted ADR with owner, scope, expiry condition and compensating
   controls.

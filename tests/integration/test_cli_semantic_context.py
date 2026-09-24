@@ -15,6 +15,7 @@ from openardp.domain.semantic_retrieval import (
     SemanticScore,
 )
 from openardp.ports.context import CancellationCheck
+from tests.error_envelopes import without_hint
 from tests.integration.test_cli_context import _invoke_json, _WorkspaceCorpus
 
 
@@ -145,7 +146,7 @@ def test_cli_rejects_incomplete_or_lexical_semantic_configuration(
     corpus = _WorkspaceCorpus(tmp_path, capsys)
     code, payload, stderr = _invoke_json(capsys, [*corpus.context_arguments(), *extra])
     assert code == 2 and stderr == ""
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "invalid_usage",
         "message": "command usage is invalid",
     }
@@ -188,7 +189,7 @@ def test_cli_semantic_replay_requires_exact_provider_recipe(
     revision[0] = "9" * 40
     drift_code, drifted, _ = _invoke_json(capsys, replay)
     assert drift_code == 5
-    assert drifted["error"] == {
+    assert without_hint(drifted["error"]) == {
         "code": "conflict",
         "message": "operation conflicts with current state",
     }

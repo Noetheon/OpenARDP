@@ -23,12 +23,14 @@ from openardp.domain.context_compilation import (
     ContextCompileRequest,
     ContextSelectionPolicy,
 )
+from openardp.interfaces.agent_composition import local_agent_access
 from openardp.interfaces.context_composition import (
     RetrievalProfile,
     retrieval_profile_for_algorithm,
 )
 from openardp.ports.context import ContextConfigurationMismatch, ContextEstimator
 from openardp.ports.semantic_retrieval import SemanticRetrievalProvider
+from openardp.services.agent_access import MAX_FIND_LIMIT
 from openardp.services.context_compiler import ContextCompilerService
 
 
@@ -122,11 +124,35 @@ def open_semantic_provider(configuration: tuple[Path, Path]) -> IsolatedE5Semant
     return IsolatedE5SemanticProvider(bundle, expected_source_lock=source_lock)
 
 
-def _document_ids(values: list[str]) -> tuple[UUID, ...]:
-    try:
-        return tuple(sorted({UUID(str(value)) for value in values}, key=str))
-    except ValueError:
-        raise ContextCommandUsageError("identifier must be a UUID") from None
+MAX_CONTEXT_DOCUMENTS = 32
+
+
+def _document_ids(
+    workspace: LocalWorkspace,
+    values: list[str],
+    task: str,
+) -> tuple[UUID, ...]:
+    """Resolve UUIDs, file names or short ids; choose relevant documents when none given."""
+    identifiers: set[UUID] = set()
+    access = None
+    for value in values:
+        try:
+            identifiers.add(UUID(str(value)))
+        except ValueError:
+            access = access or local_agent_access(workspace)
+            identifiers.add(UUID(access.resolve(str(value)).document_id))
+    if identifiers:
+        return tuple(sorted(identifiers, key=str))
+    access = access or local_agent_access(workspace)
+    ranked: list[str] = []
+    for hit in access.find(task, limit=MAX_FIND_LIMIT).hits:
+        if hit.document.document_id not in ranked:
+            ranked.append(hit.document.document_id)
+    if not ranked:
+        ranked = [entry.document_id for entry in access.documents(check_freshness=False).documents]
+    if not ranked:
+        raise ContextCommandUsageError("no prepared documents")
+    return tuple(sorted((UUID(item) for item in ranked[:MAX_CONTEXT_DOCUMENTS]), key=str))
 
 
 def compile_context_command(
@@ -186,13 +212,11 @@ def compile_context_command(
             provider = provider_factory(configuration)
         elif configuration is not None:
             raise ContextCommandUsageError("lexical profile rejects semantic configuration")
-        if not arguments.document:
-            raise ContextCommandUsageError("at least one document is required")
         if arguments.budget is None:
             raise ContextCommandUsageError("a budget is required")
         request = ContextCompileRequest(
             task=task,
-            document_ids=_document_ids(arguments.document),
+            document_ids=_document_ids(workspace, list(arguments.document), task),
             budget_limit=int(arguments.budget),
             estimator=estimator.identity,
             policy=ContextSelectionPolicy(

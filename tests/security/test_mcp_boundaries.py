@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from openardp.interfaces.mcp_protocol import MAX_LINE_BYTES
+from openardp.interfaces.mcp_protocol import LATEST_PROTOCOL_REVISION, MAX_LINE_BYTES
 from openardp.interfaces.mcp_server import McpServer, ServerCaps
 from openardp.ports.catalog import SearchIndexDrifted
 from openardp.ports.object_store import ObjectCorrupt
@@ -19,6 +19,7 @@ from tests.integration.test_mcp_server import (
     _server,
     _tool_call,
 )
+from tests.mcp_envelopes import unwrap_tool_result
 
 HOSTILE_IDENTIFIERS = (
     "/etc/passwd",
@@ -211,9 +212,10 @@ def test_injection_shaped_tasks_stay_digested_and_handle_first(tmp_path: Path) -
                 "unit": "bytes",
             },
         )
-        result = envelope.get("result")
-        assert isinstance(result, dict), envelope
-        assert payload not in json.dumps(result, separators=(",", ":"))
+        raw = envelope.get("result")
+        assert isinstance(raw, dict), envelope
+        assert payload not in json.dumps(raw, separators=(",", ":"))
+        result = unwrap_tool_result(raw)
         receipt = _result(
             _call_tool(server, "get_context_receipt", {"receipt_id": result["receipt_id"]})
         )
@@ -236,10 +238,8 @@ def test_protocol_hostile_matrix_is_sanitized_and_session_recovers(tmp_path: Pat
 
     wrong_revision = server.handle_line(_request("initialize", {"protocolVersion": "1900-01-01"}))
     assert wrong_revision is not None
-    assert json.loads(wrong_revision)["error"]["data"]["category"] == (
-        "unsupported_protocol_version"
-    )
-    # A rejected revision does not consume initialization state.
+    # Unknown revisions are negotiated to the newest supported one, never echoed.
+    assert json.loads(wrong_revision)["result"]["protocolVersion"] == LATEST_PROTOCOL_REVISION
     _initialize(server)
     unknown_method = server.handle_line(_request("zyq/unknown"))
     unknown_tool = server.handle_line(_tool_call("zyq_unknown"))

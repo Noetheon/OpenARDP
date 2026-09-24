@@ -74,9 +74,14 @@ openardp context TASK --document ID [--document ID ...] --budget N \
     [--retrieval-profile lexical|semantic]
 openardp context TASK --replay RECEIPT_ID [--unit UNIT] [--retrieval-profile PROFILE]
 openardp context-receipt RECEIPT_ID
-openardp mcp --store PATH [--deadline-ms N] [--response-cap-bytes N] \
+openardp mcp --store PATH [--tools agent|full|legacy] [--deadline-ms N] [--response-cap-bytes N] \
     [--semantic-bundle PATH --semantic-source-lock PATH]
 ```
+
+`context` also accepts document names or path suffixes for `--document`. Without `--document`, it selects up to 32
+documents that match the task (or all prepared documents when nothing matches). The agent commands (`add`, `docs`,
+`find`, `read`, `toc`, `verify`, `agent-view` and `refresh`) are described in
+[Agent access](32_AGENT_ACCESS.md).
 
 Replay accepts only task, unit and receipt: the recorded snapshot, policy and budget
 are authoritative. New compilation remains lexical unless `semantic` is explicit. Semantic compile/replay additionally
@@ -90,8 +95,23 @@ mutations outside MCP and accept only registered identifiers.
 
 ## 7. Delivered MCP tools — read-only stdio
 
-The interface is experimental `0.2.0`, pins MCP protocol revision `2025-06-18` and
-publishes exactly these tools in fixture-pinned order:
+The interface is experimental `0.3.0`
+([F040 contract](../specs/040-agent-ready-access/contracts/mcp-agent-tools.md)). It negotiates MCP protocol revisions
+`2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05`, answering with the newest one for an unknown request. Every
+result is an MCP `content` block. Correctable failures are `isError` results with a hint, and the versioned error
+taxonomy is in `_meta`.
+
+The default `agent` tool set has five read-only tools with compact text results. Each result locates text by file,
+page or slide and line, and names the exact version:
+
+1. `list_documents` — prepared documents with type, size in tokens and source freshness.
+2. `find` — ranked passages for a question or keywords across all documents.
+3. `read` — one page, slide, section or line range, bounded by `max_tokens`.
+4. `outline` — headings or pages with line numbers and section sizes.
+5. `verify_quote` — exact or normalized quote verification, outdated-version detection and the closest passage.
+
+`--tools legacy` publishes the nine F009 tools below, and `--tools full` publishes both sets. Their JSON values are
+unchanged but are now carried as text content:
 
 1. `list_documents` — body-free summaries, at most 256.
 2. `get_source_status` — identifier-scoped freshness/integrity.
@@ -105,8 +125,9 @@ publishes exactly these tools in fixture-pinned order:
 9. `get_context_receipt` — fully verified body-free F008 receipt.
 
 Descriptors, parameter schemas, bounds and error fixtures live under
-`tests/fixtures/mcp/`; the normative feature-level contract is
-`specs/009-read-only-mcp/contracts/mcp-read-only-tools.md`.
+`tests/fixtures/mcp/` (`tools-list.json` is the agent listing; `tools-list-0.2.0.json` keeps the previous legacy
+listing). The normative contracts are `specs/040-agent-ready-access/contracts/mcp-agent-tools.md` and, for the legacy
+tools, `specs/009-read-only-mcp/contracts/mcp-read-only-tools.md`.
 
 ## 8. MCP safety
 
@@ -114,7 +135,8 @@ Descriptors, parameter schemas, bounds and error fixtures live under
   side-effect tool exists. `compile_context` may only publish reproducible immutable
   derived bundle/receipt objects through the exact F008 atomic path.
 - Tool descriptions explicitly state document text is untrusted data.
-- Clients supply stored identifiers, never paths or workspace roots.
+- Legacy tools take stored identifiers. Agent tools also accept a document's file name or path suffix, resolved only
+  among already prepared documents, never as a filesystem path.
 - Semantic bundle/source-lock paths are trusted server-start arguments only. A client requesting `semantic` from an
   unconfigured server receives `invalid_params`; the server never falls back to lexical retrieval.
 - Inbound lines are fixed at 64 KiB; complete responses default to 1 MiB and may be
@@ -128,8 +150,9 @@ Descriptors, parameter schemas, bounds and error fixtures live under
 ## 9. Codex integration
 
 Configure a local client to execute `openardp mcp --store /absolute/workspace` over
-stdio. Prefer `get_document_outline` or handle-first `compile_context` before exact
-body tools. Visual evidence is not an MCP tool. F011 lets the unchanged
+stdio; [Agent access](32_AGENT_ACCESS.md) shows the Claude Code and Codex configuration. With the default tool set,
+use `find` or `outline` first, `read` only the needed range and `verify_quote` before citing. With the audit tools,
+prefer `get_document_outline` or handle-first `compile_context` before exact body tools. Visual evidence is not an MCP tool. F011 lets the unchanged
 `compile_context` tool select a pre-materialized exact descriptor-object handle through
 the existing bundle shape; it still reports `visual_evidence_required` when no current
 record exists and never grants MCP rendering authority.

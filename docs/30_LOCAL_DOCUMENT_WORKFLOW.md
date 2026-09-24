@@ -1,5 +1,10 @@
 # Work with local document evidence
 
+> [!TIP]
+> For everyday questions over many documents, the shorter agent workflow (`add`, `find`, `read`, `verify`) in
+> [Agent access](32_AGENT_ACCESS.md) is faster and uses far fewer tokens. This page remains the audit path for
+> context bundles, receipts and exact replay.
+
 Use this workflow when you repeatedly need to check a passage against its exact source version. OpenARDP retrieves
 evidence; it does not write an answer or establish that the evidence is correct or complete. Start with a few TXT,
 Markdown or CSV files. The commands below use a synthetic Markdown file and a POSIX shell on macOS or Linux; they are

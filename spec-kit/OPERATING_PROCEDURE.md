@@ -1,52 +1,42 @@
 # OpenARDP Spec Kit operating procedure
 
 **Status:** Authoritative
-**Adopted:** 2026-07-26; risk-tier amendment 2026-08-09
+**Adopted:** 2026-07-26; risk-tier amendment 2026-08-09; lean-records amendment 2026-09-24 (Constitution 4.0.0)
 
-## Classify before planning
+## Start from the task
 
-Use the lowest tier whose complete conditions are satisfied. Unknown, mixed or disputed scope moves upward.
+Name the concrete person or agent task the change improves and how the improvement will be observed
+([Article XIII](CONSTITUTION_SOURCE.md)). Prefer the smallest change someone can try this week. Defects on real user
+paths (installation, ingestion, agent connection, retrieval) come before new capability.
 
-### Routine
+## Keep records in proportion
 
-Documentation, tests, internal refactoring or a narrow fix with no user-visible behavior, contract, schema, persistence,
-identity, migration, security/trust, provider, dependency, benchmark or release impact.
+- **Pull-request record only:** documentation, tests, internal refactoring and narrow fixes with no user-visible
+  behavior, contract, schema, persistence, identity, migration, security/trust, provider or default-dependency
+  impact. State scope, relevant tests, exact results and rollback where meaningful.
+- **Durable feature record:** user-visible behavior, public contracts, schemas, persisted identity, migrations,
+  security/trust boundaries, providers or default dependencies. Keep a concise `spec.md` (task served, acceptance
+  criteria, decisions) and an `implementation-notes.md` (exact commands and results, tradeoffs, residual risks,
+  rollback) under `specs/NNN-name/`, and add a feature-map row.
+- **ADR first:** irreversible or architectural decisions, such as persisted identity, storage format, security
+  boundaries, default-install dependencies and public contract compatibility.
 
-- No feature directory or Spec Kit lifecycle.
-- One bounded PR with scope, relevant tests, exact results, risks and rollback where meaningful.
-- Executable-path CI remains determined by the fail-closed CI classifier.
+Executable-path CI remains determined by the fail-closed CI classifier for every change.
 
-### Standard
+## Optional Spec Kit stages
 
-A bounded user-visible behavior change without a high-assurance trigger.
+Clarify, plan, checklist, tasks, analyze and converge are tools, not gates. Use a stage when it reduces a concrete risk,
+for example a checklist for a migration or an analysis for a security boundary. The steps that remain mandatory for
+any behavior change are:
 
-- Create concise accepted requirements in `spec.md`.
-- Use only planning artifacts that materially reduce risk.
-- Record exact final evidence, risks and rollback in `implementation-notes.md` before merge.
+1. Establish a clean branch, a green locked baseline and an exact rollback point.
+2. Add tests before behavior where practical; cover failure, cancellation, restart and recovery where the change can
+   meet them.
+3. Implement the smallest bounded change.
+4. Validate lint, format, strict typing, tests, build, offline behavior and supported-platform CI.
+5. Converge behavior, documentation, contracts, ADRs, changelog and the durable record.
+6. Submit one pull request with residual risks and exact rollback instructions, and confirm post-merge `main` CI.
 
-### High assurance
-
-Any public contract, schema, persisted identity, migration, security/trust boundary, provider, external dependency,
-license/supply-chain, benchmark methodology, release decision or similarly material compatibility change.
-
-Use the complete lifecycle below and any required ADR.
-
-## High-assurance lifecycle
-
-1. Establish a clean branch, green locked baseline and exact rollback commit.
-2. Specify a measurable outcome, explicit non-goals and compatibility impact.
-3. Clarify trust, identity, failure, cancellation, privacy, licensing and migration semantics.
-4. Plan architecture, dependency, ADR, storage, contract/version and operational effects.
-5. Run a requirements-quality checklist that challenges completeness and testability.
-6. Produce dependency-ordered, file-scoped tasks with tests before implementation where practical.
-7. Analyze specification, plan, tasks and constitution; block on every critical or high finding.
-8. Implement the smallest bounded change and mark tasks only after evidence exists.
-9. Validate lint, format, strict typing, unit/property/integration tests, build, offline behavior and supported-platform CI.
-10. Validate failure injection, cancellation, restart/idempotency, upgrade/rebuild and recovery paths where relevant.
-11. Converge behavior, documentation, contracts, ADRs, changelog, task state and validation evidence.
-12. Submit one feature pull request with residual risks and exact rollback instructions; confirm post-merge `main` CI.
-
-The high-assurance order is: constitution → specify → clarify → plan → checklist → tasks → analyze → implement → converge.
 Constitution amendments occur only when the active feature explicitly owns them.
 
 ## Completed-feature compaction
@@ -82,4 +72,4 @@ durable content and references have been migrated. Git history is the recovery p
 - No later-feature runtime behavior.
 - No unrelated dependency or lockfile change.
 - Durable historical records remain discoverable; removed transient planning remains recoverable from Git history.
-- Critical/high convergence findings block merge.
+- Known critical or high-severity defects in the change block merge.

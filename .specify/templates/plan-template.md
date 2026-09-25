@@ -2,10 +2,10 @@
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 
-**Input**: High-assurance feature specification from `/specs/[###-feature-name]/spec.md`
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is required for high-assurance changes and optional for standard changes. Routine changes do not
-create feature artifacts.
+**Note**: This template is an optional planning tool (Constitution 4.0.0, Article XI). Use it when structured planning
+reduces a concrete risk; it is never a precondition for work or merge.
 
 ## Summary
 
@@ -51,7 +51,7 @@ restart, recovery, resource-limit and supply-chain effects relevant to this feat
 
 ## Project Structure
 
-### Working documentation (high assurance only)
+### Working documentation (optional)
 
 ```text
 specs/[###-feature]/

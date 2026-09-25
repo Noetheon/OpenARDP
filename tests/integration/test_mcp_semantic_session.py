@@ -121,7 +121,8 @@ def _semantic_arguments(corpus: _Corpus, **overrides: object) -> dict[str, objec
 
 
 def _assert_private_failure(envelope: dict[str, object], corpus: _Corpus) -> str:
-    assert "result" not in envelope
+    result = envelope.get("result")
+    assert result is None or (isinstance(result, dict) and result.get("isError") is True)
     encoded = json.dumps(envelope)
     for forbidden in (RICH_BODY, "alpha text evidence", str(corpus.store), "PRIVATE-DETAIL"):
         assert forbidden not in encoded

@@ -11,6 +11,7 @@ import pytest
 
 from openardp.adapters.local_workspace import LocalWorkspace
 from openardp.interfaces.cli import main
+from tests.error_envelopes import without_hint
 from tests.integration.test_rich_catalog import NOW
 from tests.integration.visual_service_support import prepared_pdf_visual_service
 from tests.integration.visual_support import prepared_visual
@@ -79,14 +80,14 @@ def test_visual_commands_reject_bad_usage_and_report_missing_identifier(
         ["visual-evidence", "invalid", "--store", str(store)],
     )
     assert code == 3
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "not_found",
         "message": "requested visual evidence was not found",
     }
 
     code, payload, _ = _json_call(capsys, ["visual-materialize", "--store", str(store)])
     assert code == 2
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "invalid_usage",
         "message": "command usage is invalid",
     }

@@ -15,6 +15,7 @@ from openardp.interfaces.cli import main
 from openardp.services.context_compiler import ContextCompilerService
 from openardp.services.ingestion import IngestionService
 from openardp.services.rich_ingestion import RichIngestionService
+from tests.error_envelopes import without_hint
 from tests.integration.test_rich_ingestion import _Clock, _Parser
 
 TASK = "alpha evidence"
@@ -324,14 +325,16 @@ def test_context_failures_map_into_stable_sanitized_envelopes(
     tiny[tiny.index("--budget") + 1] = "1"
     code, payload, _ = _invoke_json(capsys, tiny)
     assert code == 4
-    assert payload["error"] == {"code": "rejected_input", "message": "input was rejected"}
+    assert payload["error"]["code"] == "rejected_input"
+    assert payload["error"]["message"] == "input was rejected"
+    assert "--budget" in payload["error"]["hint"]
 
     code, payload, _ = _invoke_json(
         capsys,
         ["context", "different task", "--replay", receipt_id, "--store", str(corpus.store)],
     )
     assert code == 5
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "conflict",
         "message": "operation conflicts with current state",
     }
@@ -350,7 +353,7 @@ def test_context_failures_map_into_stable_sanitized_envelopes(
         ],
     )
     assert code == 5
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "conflict",
         "message": "operation conflicts with current state",
     }
@@ -364,7 +367,7 @@ def test_context_failures_map_into_stable_sanitized_envelopes(
         ["context-receipt", receipt_id, "--store", str(corpus.store)],
     )
     assert code == 6
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "integrity_or_workspace",
         "message": "workspace or persisted evidence is invalid",
     }
@@ -374,14 +377,18 @@ def test_context_failures_map_into_stable_sanitized_envelopes(
         ["context-receipt", "not-a-receipt", "--store", str(corpus.store)],
     )
     assert code == 2
-    assert payload["error"] == {"code": "invalid_usage", "message": "command usage is invalid"}
+    assert without_hint(payload["error"]) == {
+        "code": "invalid_usage",
+        "message": "command usage is invalid",
+    }
 
     code, payload, _ = _invoke_json(
         capsys,
-        ["context", TASK, "--budget", "100", "--store", str(corpus.store)],
+        ["context", TASK, "--budget", "100000", "--store", str(corpus.store)],
     )
-    assert code == 2
-    assert payload["error"] == {"code": "invalid_usage", "message": "command usage is invalid"}
+    # Without --document the relevant prepared documents are selected automatically.
+    assert code == 0
+    assert payload["data"]["scopes"]
 
 
 def test_context_cancellation_maps_to_stable_envelope(
@@ -401,7 +408,7 @@ def test_context_cancellation_maps_to_stable_envelope(
 
     code, payload, _ = _invoke_json(capsys, corpus.context_arguments())
     assert code == 5
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "conflict",
         "message": "operation conflicts with current state",
     }

@@ -2,10 +2,11 @@
 
 ## Decision
 
-OpenARDP uses GitHub Spec Kit selectively as the high-assurance development-process layer for Codex. Spec Kit does not
-define the product or replace the architecture. Routine changes use a scoped PR, standard changes retain a compact
-requirements/evidence record, and high-assurance work turns checked-in product, security and architecture decisions into
-specifications, plans, tasks, analysis gates and implementation/convergence loops.
+OpenARDP uses GitHub Spec Kit as an optional development-process toolkit for coding agents. Spec Kit does not define
+the product or replace the architecture. Since Constitution 4.0.0, changes keep records in proportion to what they can
+break: a scoped PR for documentation, tests and narrow fixes, a concise durable `spec.md` and `implementation-notes.md`
+for behavior, contract and trust changes, and an ADR for irreversible decisions. Spec Kit stages are used when they
+reduce a concrete risk; they are not gates.
 
 ## Why it is appropriate
 
@@ -19,8 +20,8 @@ OpenARDP is unusually sensitive to semantic drift. A superficially plausible imp
 - introduce mandatory cloud dependencies;
 - claim performance improvements without benchmarks.
 
-A constitution-driven, risk-proportionate workflow keeps these constraints visible without turning every change into a
-large permanent dossier.
+A constitution-driven workflow with lean durable records keeps these constraints visible without turning every change
+into a large permanent dossier.
 
 ## Source-of-truth model
 
@@ -31,30 +32,26 @@ Accepted ADRs and public schemas
         ↓
 Project product requirements and architecture
         ↓
-Durable active requirements and required plan
-        ↓
-Tasks
+Durable feature records (spec.md, implementation-notes.md, contracts)
         ↓
 Code and tests
 ```
 
 A lower layer may implement or refine a higher layer but may not silently contradict it.
 
-## Risk classification
+## Records by impact
 
-Classify before implementation and move upward when scope is unknown, mixed or disputed:
+| Change | Durable record |
+|---|---|
+| Docs, tests, internal refactoring or narrow fixes without behavior, contract or trust impact | PR evidence only |
+| User-visible behavior, contracts, schemas, identity, migration, security/trust, providers or default dependencies | `spec.md` and `implementation-notes.md` |
+| Irreversible or architectural decisions | Accepted ADR before implementation, plus the durable record |
 
-| Tier | Boundary | Durable record |
-|---|---|---|
-| Routine | Docs, tests, internal refactoring or narrow fixes without behavior/contract/trust impact | PR evidence only |
-| Standard | Bounded behavior without a high-assurance trigger | `spec.md` and `implementation-notes.md` |
-| High assurance | Contracts, schemas, identity, migration, security/trust, providers, dependencies, benchmarks or release | Full lifecycle, then compact record |
+No record choice weakens executable CI, security, coverage, compatibility or release gates.
 
-Tier selection never weakens executable CI, security, coverage, compatibility or release gates.
+## Optional Spec Kit lifecycle
 
-## High-assurance lifecycle
-
-High-assurance work follows:
+When a change benefits from structured planning, the Spec Kit stages are:
 
 1. **Constitution** — project rules already established.
 2. **Specify** — what the bounded user/operator outcome is and why it matters.

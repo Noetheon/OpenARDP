@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Governance Tier**: [standard or high-assurance; routine changes do not create this file]
+**Record Type**: [durable feature record: behavior, contract, schema, identity, migration, trust, provider or default dependency change]
 
 **Input**: User description: "$ARGUMENTS"
 

@@ -12,26 +12,21 @@ reconciliation, visual evidence, retention/recovery, interchange, benchmark gate
 multilingual retrieval and its bounded product surface.
 
 Roadmap features proceed in dependency order and one dependent work package must converge before its successor begins.
-Routine and standard maintenance outside that sequence follows the risk-proportionate governance tiers and does not
+Maintenance outside that sequence follows the lean change-record rules of Constitution 4.0.0 and does not
 require artificial roadmap entries.
 
-## Current expansion pause
+## Current direction: agent-ready documents
 
-After F037/F038, prioritize the [existing local document workflow](30_LOCAL_DOCUMENT_WORKFLOW.md), necessary maintenance
-and the [bounded prospective pilot](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md).
-Do not start a broader feature roadmap merely because the foundation exists. New GUI, cloud, HTTP, connector, provider,
-export or specification-stabilization work needs a demonstrated workflow need and a subsequent bounded decision.
+F040 and F041 ended the F038 expansion pause. Work concentrates on one outcome: an agent answers questions from a
+person's local files with located, verifiable passages while using as little context as possible
+([Agent access](32_AGENT_ACCESS.md)). Priorities come from real use recorded in the
+[usage log](../pilots/usage-log/README.md) and from defects on real user paths (Constitution Article XIII). New GUI,
+cloud, HTTP, connector, provider, export or specification-stabilization work still needs a demonstrated need.
 
-The pilot compares current work, a usable parse-once native cache and OpenARDP on 30 distinct real tasks. It counts
-setup, checking and repair; human supporting-span review starts pending. The predeclared stop rule is 20 additional
-person-hours or ten working days. Missing evidence or unmet gates means pausing expansion. A personal limited-GO does
-not establish adoption: broader open-source investment additionally needs at least two independent repeat users.
-No pilot result changes the independent F015 release gate.
-
-The [20 September maintenance status](31_MAINTENANCE_STATUS.md) records the current operating posture and distinguishes
-an incomplete private agent exercise from the still-unstarted human pilot. It adds no roadmap feature, benchmark gate,
-or release decision. Necessary maintenance remains possible; further development must use the existing evidence and
-approval boundaries above rather than treating a prepared pilot as an obligation to launch another study.
+The [F038 pilot protocol](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md) remains available
+for a deliberate formal comparison, and its adoption criterion still applies to claims about broader open-source value:
+at least two independent repeat users. No usage result changes the independent F015 release gate. The
+[20 September maintenance status](31_MAINTENANCE_STATUS.md) is kept as history.
 
 ## Adoption ladder
 

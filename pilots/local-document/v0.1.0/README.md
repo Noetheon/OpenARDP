@@ -1,5 +1,10 @@
 # Private local-document pilot records
 
+> [!NOTE]
+> Since constitution 4.0.0 ([F041](../../../specs/041-lean-governance/spec.md)) this pilot is no longer a
+> precondition for further development. The templates stay available for a deliberate formal comparison. For
+> everyday evidence, use the lightweight [usage log](../../usage-log/README.md).
+
 These are empty templates, not a completed study. No user tasks, measurements, judgments or benefit are claimed.
 The [prospective protocol](../../../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md) is normative.
 Use the [local workflow guide](../../../docs/30_LOCAL_DOCUMENT_WORKFLOW.md) for the product steps.

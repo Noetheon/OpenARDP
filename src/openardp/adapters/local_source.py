@@ -32,6 +32,8 @@ _MEDIA_BY_SUFFIX: dict[str, SourceMediaType] = {
     ".pptx": RichMediaType.PPTX,
 }
 
+SUPPORTED_SUFFIXES = tuple(sorted(_MEDIA_BY_SUFFIX))
+
 
 class LocalSourceError(RuntimeError):
     """Base class for sanitized local-source failures."""
@@ -256,6 +258,7 @@ def _modified_at(metadata: os.stat_result) -> datetime:
 
 
 __all__ = [
+    "SUPPORTED_SUFFIXES",
     "InvalidSourcePath",
     "LocalSource",
     "LocalSourceError",

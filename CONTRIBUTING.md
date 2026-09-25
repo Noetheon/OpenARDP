@@ -45,17 +45,20 @@ uv run pre-commit run --all-files
 
 The local hooks call the same locked Ruff, format, mypy and pytest gates; they do not resolve an independent toolchain.
 
-## Change classification
+## Change records
 
-Classify work before implementation using [Article XI](.specify/memory/constitution.md):
+Keep records in proportion to what a change can break ([Article XI](.specify/memory/constitution.md)):
 
-- Routine changes use a scoped PR and proportionate validation; they do not create feature artifacts.
-- Standard behavior changes retain concise `spec.md` requirements and final `implementation-notes.md` evidence.
-- High-assurance contract, schema, identity, migration, security/trust, provider, dependency, benchmark and release work
-  uses `specify → clarify → plan → checklist → tasks → analyze → implement → converge`.
+- Documentation, tests, refactoring and narrow fixes need only a scoped PR with exact validation results.
+- User-visible behavior, contracts, schemas, identity, migrations, security/trust boundaries, providers and default
+  dependencies keep a concise `spec.md` (task served, acceptance criteria, decisions) and `implementation-notes.md`
+  (commands, results, tradeoffs, rollback).
+- Irreversible or architectural decisions need an accepted ADR first.
 
-Unknown or mixed scope moves upward. Correct conflicts in the highest-level source, add tests before behavior where
-practical, and do not implement high-assurance work while analysis has unresolved critical/high findings.
+Spec Kit stages are optional tools, not gates. Name the concrete person or agent task a change improves
+([Article XIII](.specify/memory/constitution.md)) and keep agent-facing output compact and verifiable
+([Article XIV](.specify/memory/constitution.md)). Correct conflicts in the highest-level source and add tests before
+behavior where practical.
 
 ## Pull-request expectations
 

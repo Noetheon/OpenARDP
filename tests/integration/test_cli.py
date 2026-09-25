@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from openardp.interfaces.cli import _execute, main
+from tests.error_envelopes import without_hint
 
 
 def _installed_openardp() -> Path:
@@ -63,7 +64,7 @@ def test_installed_entry_point_help_and_missing_workspace(
     code, payload, stderr = _invoke_json(capsys, ["list", "--store", str(missing)])
     assert code == 6
     assert payload["ok"] is False
-    assert payload["error"] == {
+    assert without_hint(payload["error"]) == {
         "code": "integrity_or_workspace",
         "message": "workspace or persisted evidence is invalid",
     }
@@ -249,7 +250,7 @@ def test_json_usage_and_not_found_failures_are_single_sanitized_envelopes(
     """Map parser and query errors to stable codes without tracebacks or bodies."""
     code, usage, stderr = _invoke_json(capsys, ["ingest"])
     assert code == 2
-    assert usage["error"] == {
+    assert without_hint(usage["error"]) == {
         "code": "invalid_usage",
         "message": "command usage is invalid",
     }
@@ -282,7 +283,7 @@ def test_internal_dispatch_rejects_unknown_command_without_mutation(
         ],
     )
     assert code == 3
-    assert missing["error"] == {
+    assert without_hint(missing["error"]) == {
         "code": "not_found",
         "message": "requested evidence was not found",
     }

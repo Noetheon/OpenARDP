@@ -1,5 +1,9 @@
 # Prospective local document pilot protocol
 
+> [!NOTE]
+> Since constitution 4.0.0 ([F041](../../041-lean-governance/spec.md)) this protocol no longer gates development.
+> It remains a valid method for a deliberate formal comparison.
+
 **Status:** Prepared for a future manual pilot; no real tasks, results or user benefit are asserted.
 **Scope:** One person's recurring local document workflow. This is an investment decision aid, not a release gate,
 population study or adoption claim. Historical benchmark inputs, evaluators, identities and results remain unchanged.

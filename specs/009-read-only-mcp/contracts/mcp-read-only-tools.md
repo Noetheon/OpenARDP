@@ -1,5 +1,10 @@
 # Contract: MCP Read-only Tool Surface 0.1.0 Experimental
 
+> [!NOTE]
+> Superseded in part by [F040](../../040-agent-ready-access/contracts/mcp-agent-tools.md) (MCP interface 0.3.0):
+> these nine tools are now the opt-in `legacy` tool set, results are wrapped in MCP `content` blocks and
+> protocol revisions are negotiated. The tool semantics below are unchanged.
+
 ## Status
 
 F009 adds the experimental `MCP interface 0.1.0` application contract. It is

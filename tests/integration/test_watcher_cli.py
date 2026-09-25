@@ -9,6 +9,7 @@ import pytest
 
 from openardp.interfaces import cli
 from openardp.interfaces.cli import main
+from tests.error_envelopes import without_hint
 
 
 def _json_call(
@@ -69,7 +70,7 @@ def test_watch_once_ingests_text_and_returns_only_body_free_summary(
         ["job-cancel", str(succeeded[0]), "--store", str(workspace)],
     )
     assert code == 5
-    assert conflict["error"] == {
+    assert without_hint(conflict["error"]) == {
         "code": "conflict",
         "message": "operation conflicts with current state",
     }
@@ -138,7 +139,7 @@ def test_jobs_and_cancel_are_bounded_and_hide_private_fields(
         ],
     )
     assert code == 3
-    assert missing["error"] == {
+    assert without_hint(missing["error"]) == {
         "code": "not_found",
         "message": "requested evidence was not found",
     }
@@ -160,6 +161,7 @@ def test_watch_rejects_overlap_and_bad_bounds_with_sanitized_errors(
     assert overlap["error"] == {
         "code": "rejected_input",
         "message": "input was rejected",
+        "hint": "The watched folder and the workspace (--store) must not contain each other.",
     }
     assert str(tmp_path) not in json.dumps(overlap)
 
@@ -178,7 +180,7 @@ def test_watch_rejects_overlap_and_bad_bounds_with_sanitized_errors(
         ],
     )
     assert code == 4
-    assert invalid["error"] == overlap["error"]
+    assert without_hint(invalid["error"]) == without_hint(overlap["error"])
 
     code, rich_invalid, _ = _json_call(
         capsys,
@@ -193,7 +195,7 @@ def test_watch_rejects_overlap_and_bad_bounds_with_sanitized_errors(
         ],
     )
     assert code == 4
-    assert rich_invalid["error"] == overlap["error"]
+    assert without_hint(rich_invalid["error"]) == without_hint(overlap["error"])
 
 
 def test_watch_help_and_continuous_interrupt_are_operationally_truthful(

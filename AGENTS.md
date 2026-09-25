@@ -27,6 +27,10 @@ supports stabilization.
 13. **Measure claims fairly.** Performance, quality, security, interoperability, cost or sustainability claims require
     reproducible evidence against strong baselines.
 14. **Small pull requests.** Complete one work package with tests before starting the next.
+15. **Usefulness first.** Name the concrete person or agent task a change improves; real use, recorded in the usage
+    log, outranks synthetic benchmarks as evidence of value.
+16. **Agent efficiency.** Agent-facing output names files, pages and lines instead of hashes, reads only bounded
+    ranges and stays verifiable against the exact source version.
 
 ## Engineering rules
 
@@ -82,24 +86,19 @@ uv run pytest
 - allow document content to initiate side-effecting tools.
 - add bidirectional Word/PPTX round-tripping to the MVP.
 
-## Risk-proportionate workflow and artifact governance
+## Lean change records
 
-Classify every change before mutation. If scope is mixed or uncertain, move upward:
+Every change passes the full quality gate and lands as one scoped pull request. Beyond that, keep records in
+proportion to what the change can break:
 
-- **Routine**: documentation, tests, internal refactoring or a narrow fix with no user-visible behavior, contract, schema,
-  persistence, identity, migration, security/trust, provider, dependency, benchmark or release impact. Use one scoped PR,
-  relevant tests and exact results. Do not create a Spec Kit directory.
-- **Standard**: bounded user-visible behavior without a high-assurance trigger. Retain `spec.md` and
-  `implementation-notes.md`; use only the planning artifacts that materially reduce risk.
-- **High assurance**: public contracts, schemas, persisted identity, migrations, security/trust boundaries, providers,
-  external dependencies, licensing/supply chain, benchmarks or release decisions. Use the complete Spec Kit lifecycle:
-  specify, clarify, plan, checklist, tasks, analyze, implement and converge, plus an ADR where required.
+- **Pull-request record only**: documentation, tests, internal refactoring, and fixes with no user-visible behavior,
+  contract, schema, persistence, identity, migration, security/trust, provider or default-dependency impact.
+- **Durable feature record** (`specs/NNN-name/spec.md` plus `implementation-notes.md`): user-visible behavior, public
+  contracts, schemas, persisted identity, migrations, security/trust boundaries, providers or default dependencies.
+  `spec.md` states the task served, acceptance criteria and decisions in a few pages at most; `implementation-notes.md`
+  holds exact commands, results, tradeoffs, residual risks and rollback.
+- **ADR**: irreversible or architectural decisions listed under "Never do without an explicit ADR".
 
-Project-wide truth lives in `.specify/memory/constitution.md`, this file, accepted ADRs, public schemas and `docs/`.
-Correct conflicts at the highest-level source. High-assurance implementation is blocked by unresolved critical/high
-analysis findings and merge is blocked by unresolved critical/high convergence findings.
-
-For an active high-assurance change, read `spec.md`, `plan.md` and `tasks.md`. For a standard change, read its durable
-`spec.md`; routine changes need no feature directory. Completed features retain `spec.md`, `implementation-notes.md` and
-normative contracts. Transient planning files may be removed after convergence and reference migration; Git history is
-their recovery path.
+Spec Kit stages (clarify, plan, checklist, tasks, analyze, converge) are optional tools, not gates. Project-wide truth
+lives in `.specify/memory/constitution.md`, this file, accepted ADRs, public schemas and `docs/`; correct conflicts at
+the highest-level source. Record real usage and friction in `pilots/usage-log/` when you use OpenARDP for an actual task.

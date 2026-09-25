@@ -10,6 +10,7 @@ from uuid import UUID
 from openardp.domain.context import ContextMode
 from openardp.domain.interchange import InterchangeLimits
 from openardp.domain.storage import JobState
+from openardp.interfaces.agent_cli_arguments import add_agent_arguments
 from openardp.interfaces.cli_query_arguments import add_query_arguments
 from openardp.interfaces.context_cli import ContextCommandUsageError
 from openardp.interfaces.context_composition import RetrievalProfile
@@ -44,6 +45,7 @@ def parser() -> ArgumentParser:
     _add_interchange_commands(subparsers)
     _add_release_commands(subparsers)
     add_query_arguments(subparsers, common_options=_common_options)
+    add_agent_arguments(subparsers, common_options=_common_options)
     _add_evidence_commands(subparsers)
     _add_context_commands(subparsers)
     _add_mcp_command(subparsers)
@@ -275,6 +277,13 @@ def _add_mcp_command(subparsers: _Subparsers) -> None:
     mcp.add_argument("--response-cap-bytes", type=int, default=1_048_576, dest="response_cap_bytes")
     mcp.add_argument("--semantic-bundle", type=Path)
     mcp.add_argument("--semantic-source-lock", type=Path, dest="semantic_source_lock")
+    mcp.add_argument(
+        "--tools",
+        choices=("agent", "full", "legacy"),
+        default="agent",
+        help="agent: five token-efficient tools (default); full: agent plus audit tools; "
+        "legacy: the nine F009 tools",
+    )
 
 
 def _common_options(command: argparse.ArgumentParser) -> None:

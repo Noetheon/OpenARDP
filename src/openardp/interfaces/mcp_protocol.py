@@ -45,8 +45,12 @@ from openardp.ports.context import (
 )
 from openardp.ports.object_store import ObjectStoreError
 
-PROTOCOL_REVISION = "2025-06-18"
-MCP_INTERFACE_VERSION = "0.2.0"
+# Newest first. Clients requesting another revision receive the newest one and decide
+# whether to continue, as the MCP lifecycle negotiation requires.
+SUPPORTED_PROTOCOL_REVISIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+LATEST_PROTOCOL_REVISION = SUPPORTED_PROTOCOL_REVISIONS[0]
+PROTOCOL_REVISION = LATEST_PROTOCOL_REVISION
+MCP_INTERFACE_VERSION = "0.3.0"
 MCP_ERROR_VERSION = 1
 SERVER_NAME = "openardp-mcp"
 MAX_LINE_BYTES = 65_536
@@ -169,6 +173,8 @@ class ToolDescriptor(DomainModel):
     description: str
     input_schema: dict[str, JsonValue]
     output_bounds: dict[str, int | str | bool]
+    title: str | None = None
+    multiline_arguments: tuple[str, ...] = ()
 
 
 _UUID_PATTERN = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
@@ -509,12 +515,25 @@ def map_service_error(error: BaseException) -> McpFailure:
     return McpFailure(McpErrorCategory.INTERNAL)
 
 
-def require_tool(name: str) -> ToolDescriptor:
+def require_tool(
+    name: str,
+    descriptors: tuple[ToolDescriptor, ...] = TOOL_DESCRIPTORS,
+) -> ToolDescriptor:
     """Return one published descriptor or fail with the stable tool category."""
-    for descriptor in TOOL_DESCRIPTORS:
+    for descriptor in descriptors:
         if descriptor.name == name:
             return descriptor
     raise McpFailure(McpErrorCategory.UNKNOWN_TOOL)
+
+
+def category_code(category: McpErrorCategory) -> int:
+    """Return the documented default JSON-RPC code of one error category."""
+    return _DEFAULT_JSONRPC_CODES[category]
+
+
+def category_message(category: McpErrorCategory) -> str:
+    """Return the fixed body-free message of one error category."""
+    return _FIXED_MESSAGES[category]
 
 
 def parse_tool_call(params: Mapping[str, JsonValue] | None) -> tuple[str, dict[str, JsonValue]]:
@@ -531,8 +550,13 @@ def parse_tool_call(params: Mapping[str, JsonValue] | None) -> tuple[str, dict[s
 
 
 def tools_list_result() -> dict[str, Any]:
-    """Return the deterministic complete descriptor listing."""
-    return {"tools": [descriptor.model_dump(mode="json") for descriptor in TOOL_DESCRIPTORS]}
+    """Return the internal F009 descriptor records, including declared output bounds."""
+    return {
+        "tools": [
+            descriptor.model_dump(mode="json", exclude={"title", "multiline_arguments"})
+            for descriptor in TOOL_DESCRIPTORS
+        ]
+    }
 
 
 def ensure_within_response_cap(payload: bytes, limits: SessionLimits) -> bytes:
@@ -543,34 +567,46 @@ def ensure_within_response_cap(payload: bytes, limits: SessionLimits) -> bytes:
 
 
 class SessionLifecycle:
-    """Pinned-revision MCP lifecycle state machine for one stdio session."""
+    """Version-negotiating MCP lifecycle state machine for one stdio session."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, instructions: str | None = None) -> None:
         """Start one session before initialization."""
         self._state = SessionState.START
+        self._instructions = instructions
+        self._protocol_version: str | None = None
 
     @property
     def state(self) -> SessionState:
         """Return the current lifecycle state."""
         return self._state
 
+    @property
+    def protocol_version(self) -> str | None:
+        """Return the negotiated protocol revision once initialization started."""
+        return self._protocol_version
+
     def initialize(self, params: Mapping[str, JsonValue] | None) -> dict[str, Any]:
-        """Complete the initialize handshake for exactly the pinned revision."""
+        """Negotiate the requested revision, or offer the newest supported one."""
         if self._state is not SessionState.START:
             raise McpFailure(McpErrorCategory.INVALID_REQUEST)
         if params is None or not isinstance(params, dict):
             raise McpFailure(McpErrorCategory.INVALID_REQUEST)
         revision = params.get("protocolVersion")
-        if not isinstance(revision, str):
+        if not isinstance(revision, str) or not revision or len(revision) > 64:
             raise McpFailure(McpErrorCategory.INVALID_REQUEST)
-        if revision != PROTOCOL_REVISION:
-            raise McpFailure(McpErrorCategory.UNSUPPORTED_PROTOCOL_VERSION)
+        negotiated = (
+            revision if revision in SUPPORTED_PROTOCOL_REVISIONS else LATEST_PROTOCOL_REVISION
+        )
+        self._protocol_version = negotiated
         self._state = SessionState.INITIALIZING
-        return {
-            "protocolVersion": PROTOCOL_REVISION,
+        result: dict[str, Any] = {
+            "protocolVersion": negotiated,
             "capabilities": {"tools": {"listChanged": False}},
             "serverInfo": {"name": SERVER_NAME, "version": MCP_INTERFACE_VERSION},
         }
+        if self._instructions is not None:
+            result["instructions"] = self._instructions
+        return result
 
     def notify_initialized(self) -> None:
         """Mark the session ready after the client initialized notification."""
@@ -579,8 +615,8 @@ class SessionLifecycle:
         self._state = SessionState.READY
 
     def require_ready(self) -> None:
-        """Fail any tool access before initialization completed."""
-        if self._state is not SessionState.READY:
+        """Fail tool access before the initialize response; tolerate a late notification."""
+        if self._state not in {SessionState.INITIALIZING, SessionState.READY}:
             raise McpFailure(McpErrorCategory.INVALID_REQUEST)
 
     def ping(self) -> dict[str, Any]:
@@ -679,6 +715,7 @@ class CancellationRegistry:
 __all__ = [
     "DEFAULT_DEADLINE_MS",
     "DEFAULT_RESPONSE_CAP_BYTES",
+    "LATEST_PROTOCOL_REVISION",
     "MAX_DEADLINE_MS",
     "MAX_LINE_BYTES",
     "MAX_RESPONSE_CAP_BYTES",
@@ -694,6 +731,7 @@ __all__ = [
     "MIN_RESPONSE_CAP_BYTES",
     "PROTOCOL_REVISION",
     "SERVER_NAME",
+    "SUPPORTED_PROTOCOL_REVISIONS",
     "TOOL_DESCRIPTORS",
     "TOOL_NAMES",
     "CancellationRegistry",
@@ -708,6 +746,8 @@ __all__ = [
     "SessionLimits",
     "SessionState",
     "ToolDescriptor",
+    "category_code",
+    "category_message",
     "decode_message",
     "encode_message",
     "ensure_within_response_cap",

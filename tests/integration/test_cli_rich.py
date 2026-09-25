@@ -9,6 +9,9 @@ import pytest
 
 from openardp.domain.rich_ingestion import ModelBundleManifest
 from openardp.interfaces.cli import _load_model_manifest, main
+from openardp.interfaces.cli_errors import hint_for
+from openardp.ports.parser import RichParserModelAssetsRequired
+from tests.error_envelopes import without_hint
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "rich"
 DOCUMENT_BODY = "A deterministic paragraph for native evidence."
@@ -104,7 +107,7 @@ def test_rich_ingest_evidence_and_exact_get_use_stable_json_envelopes(
         ],
     )
     assert code == 3
-    assert missing["error"] == {
+    assert without_hint(missing["error"]) == {
         "code": "not_found",
         "message": "requested evidence was not found",
     }
@@ -179,7 +182,9 @@ def test_rich_human_output_is_bounded_and_pdf_assets_fail_before_provider(
     assert rejected["error"] == {
         "code": "rejected_input",
         "message": "input was rejected",
+        "hint": hint_for(RichParserModelAssetsRequired("rich parser model assets required")),
     }
+    assert "docs/22_OFFLINE_PDF_MODEL_BUNDLE.md" in rejected["error"]["hint"]
     assert DOCUMENT_BODY not in json.dumps(rejected)
     assert str(pdf) not in json.dumps(rejected)
     assert stderr == ""
@@ -196,7 +201,7 @@ def test_rich_human_output_is_bounded_and_pdf_assets_fail_before_provider(
         ],
     )
     assert code == 4
-    assert incomplete_assets["error"] == {
+    assert without_hint(incomplete_assets["error"]) == {
         "code": "rejected_input",
         "message": "input was rejected",
     }

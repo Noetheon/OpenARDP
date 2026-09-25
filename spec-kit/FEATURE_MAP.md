@@ -2,7 +2,7 @@
 
 **Status:** Authoritative continuation order
 **Adopted:** 2026-07-26 through Feature 005A
-**Governance:** [Constitution 3.0.0](CONSTITUTION_SOURCE.md) and
+**Governance:** [Constitution 4.0.0](CONSTITUTION_SOURCE.md) and
 [operating procedure](OPERATING_PROCEDURE.md)
 
 ## Delivered foundation
@@ -55,6 +55,8 @@ Historical requirements and validation evidence remain under [`specs/`](../specs
 | 36 | `036-downstream-evidence-utility` | Measure bounded citation-valid evidence-review completion and time-to-ready on F025, then evaluate the frozen method once on F034. |
 | 37 | `037-semantic-session-reuse` | Preserve bounded preparation across real MCP calls and replace obsolete provider caches safely. |
 | 38 | `038-local-document-pilot-readiness` | Make explicit context evidence readable and prepare a bounded real-task pilot; further expansion awaits demonstrated recurring value. |
+| 40 | `040-agent-ready-access` | Agents find, read and verify exact passages across PDF, Office and text files through a working MCP server and compact CLI, at a fraction of the previous token cost. |
+| 41 | `041-lean-governance` | Constitution 4.0.0: usefulness first, agent efficiency, lean durable records and a lightweight usage log instead of a gating pilot. |
 
 ## Dependency rule
 
@@ -94,7 +96,8 @@ identities, limits and ranking; onboarding and prospective human-task evaluation
 ## Scope rule
 
 - One bounded change concern maps to one branch and one pull request.
-- High-assurance work follows the mapped feature sequence; routine and standard changes do not require a new roadmap row.
+- Features that change user-visible behavior, contracts or trust boundaries receive a roadmap row and a durable record;
+  documentation, tests and narrow fixes do not.
 - Do not implement later-feature runtime behavior as “preparation”.
 - Historical requirements, final evidence and normative contracts stay in place. Transient working artifacts remain
   recoverable from Git history after compaction.
@@ -102,16 +105,15 @@ identities, limits and ranking; onboarding and prospective human-task evaluation
 
 ## Current continuation boundary
 
-F038 narrows the active investment to one local recurring-document workflow. It corrects the explicit human bundle
-projection and prepares a prospective manual pilot without rewriting historical benchmark evidence or adding a new
-retrieval framework. Real tasks and independent human review remain prerequisites, not assumed completed work.
-The [pilot contract](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md) fixes continuation and pause
-rules. No successor platform feature is authorized by this map while that value decision is pending; necessary
-correctness, compatibility and security maintenance remains in scope under the normal governance tiers.
+F040 and F041 end the F038 expansion pause. The active direction is agent-ready document access: an agent answers
+questions from a person's local files with located, verifiable passages and minimal context use. Priorities come from
+real use recorded in the [usage log](../pilots/usage-log/README.md) and from defects on real user paths
+([Article XIII](CONSTITUTION_SOURCE.md)). The [F038 pilot protocol](../specs/038-local-document-pilot-readiness/contracts/pilot-protocol.md)
+remains available for a deliberate formal comparison but does not gate work. The F015 release NO-GO is unchanged.
 
 ## Scoped maintenance record outside the product continuation sequence
 
 [F039 pytest security maintenance](../specs/039-pytest-security-maintenance/spec.md) updates only the development
 test-runner requirement and committed lock to the first patched pytest release for CVE-2025-71176. It adds no platform
 feature and does not satisfy, change or restart the F038 real-task pilot or the independent F015 release gate.
-The F038 pilot remains the active product continuation after this maintenance package converges.
+F040 and F041 subsequently replaced the F038 pilot as the active continuation.

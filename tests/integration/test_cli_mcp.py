@@ -106,7 +106,9 @@ def test_missing_workspace_uses_existing_sanitized_cli_classification(
     assert captured.out == ""
     assert captured.err == (
         "error[integrity_or_workspace]: workspace or persisted evidence is invalid\n"
+        "hint: Create a workspace first: openardp init --store PATH\n"
     )
+    assert str(missing) not in captured.err
     assert not missing.exists()
 
 

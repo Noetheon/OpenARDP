@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -86,10 +87,11 @@ def test_foreign_format_and_corrupt_files_are_rebuilt(tmp_path: Path) -> None:
     """Discard an index of another format or an unreadable file instead of failing."""
     index = SQLiteAgentIndex.for_workspace(tmp_path)
     index.replace_document(_record("a", "text"), [_passage("a", "some text")])
-    with sqlite3.connect(index.path) as connection:
+    # Close every handle explicitly: Windows cannot delete a file that is still open.
+    with closing(sqlite3.connect(index.path)) as connection, connection:
         connection.execute("UPDATE meta SET value = 'old-format' WHERE key = 'format'")
     assert index.indexed_documents() == ()
-    with sqlite3.connect(index.path) as connection:
+    with closing(sqlite3.connect(index.path)) as connection:
         assert connection.execute("SELECT value FROM meta").fetchone()[0] == INDEX_FORMAT
     index.path.write_bytes(b"not a sqlite database" * 100)
     assert index.indexed_documents() == ()

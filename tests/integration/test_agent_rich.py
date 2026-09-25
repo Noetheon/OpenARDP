@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from uuid import UUID
 
@@ -107,7 +108,7 @@ def test_native_object_lookup_reads_only_the_accepted_attempt(
     assert workspace.catalog.accepted_rich_native_object(unknown) is None
     copy = tmp_path / "store"
     shutil.copytree(rich_store, copy)
-    with sqlite3.connect(copy / "catalog.sqlite3") as connection:
+    with closing(sqlite3.connect(copy / "catalog.sqlite3")) as connection, connection:
         connection.execute(
             "UPDATE rich_parse_attempts SET provider_native_object_id = ?",
             ("sha256:" + "f" * 64,),

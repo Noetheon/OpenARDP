@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sqlite3
 import time
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -234,7 +235,8 @@ def test_verify_detects_quotes_that_only_exist_in_an_earlier_version(store: _Sto
 
 def _forge(store: _Store, *statements: str) -> None:
     """Alter the disposable agent index the way corruption or tampering would."""
-    with sqlite3.connect(store.path / "agent-cache" / "agent-index.sqlite3") as connection:
+    index = store.path / "agent-cache" / "agent-index.sqlite3"
+    with closing(sqlite3.connect(index)) as connection, connection:
         for statement in statements:
             connection.execute(statement)
 
@@ -254,7 +256,8 @@ def test_returned_text_comes_from_authoritative_sources_not_the_index(store: _St
     assert "500 grams" in access.read("guide.md", section="Calibration").text
     forged = access.verify("The reference weight is 900 grams.")
     assert forged.status is VerifyStatus.NOT_FOUND
-    with sqlite3.connect(store.path / "agent-cache" / "agent-index.sqlite3") as connection:
+    index = store.path / "agent-cache" / "agent-index.sqlite3"
+    with closing(sqlite3.connect(index)) as connection:
         remaining = connection.execute(
             "SELECT (SELECT count(*) FROM documents WHERE text LIKE '%900 grams%')"
             " + (SELECT count(*) FROM passages WHERE text LIKE '%900 grams%')"
